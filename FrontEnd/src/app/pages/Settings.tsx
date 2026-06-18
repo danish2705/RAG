@@ -1,15 +1,28 @@
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Label } from '../components/ui/label';
-import { Switch } from '../components/ui/switch';
-import { Button } from '../components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
+import { Label } from "../components/ui/label";
+import { Switch } from "../components/ui/switch";
+import { Button } from "../components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 
 export function Settings() {
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-6 w-full">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-900">Settings</h1>
-        <p className="text-sm text-gray-500 mt-1">Configure system preferences and AI settings</p>
+        <p className="text-sm text-gray-500 mt-1">
+          Configure system preferences and AI settings
+        </p>
       </div>
 
       <div className="space-y-6">
@@ -21,7 +34,9 @@ export function Settings() {
           <CardContent className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <Label htmlFor="aiEnabled" className="text-base">Enable AI Recommendations</Label>
+                <Label htmlFor="aiEnabled" className="text-base">
+                  Enable AI Recommendations
+                </Label>
                 <p className="text-sm text-gray-500 mt-1">
                   Turn on AI-powered classification and suggestions
                 </p>
@@ -31,7 +46,9 @@ export function Settings() {
 
             <div className="flex items-center justify-between">
               <div>
-                <Label htmlFor="aiAutoAccept" className="text-base">Auto-Accept High Confidence AI Decisions</Label>
+                <Label htmlFor="aiAutoAccept" className="text-base">
+                  Auto-Accept High Confidence AI Decisions
+                </Label>
                 <p className="text-sm text-gray-500 mt-1">
                   Automatically accept AI suggestions above confidence threshold
                 </p>
@@ -40,7 +57,9 @@ export function Settings() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confidenceThreshold">Minimum Confidence Threshold</Label>
+              <Label htmlFor="confidenceThreshold">
+                Minimum Confidence Threshold
+              </Label>
               <Select defaultValue="85">
                 <SelectTrigger id="confidenceThreshold">
                   <SelectValue />
@@ -68,24 +87,36 @@ export function Settings() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label htmlFor="emailNotif" className="text-base">Email Notifications</Label>
-                <p className="text-sm text-gray-500 mt-1">Receive email alerts for critical events</p>
+                <Label htmlFor="emailNotif" className="text-base">
+                  Email Notifications
+                </Label>
+                <p className="text-sm text-gray-500 mt-1">
+                  Receive email alerts for critical events
+                </p>
               </div>
               <Switch id="emailNotif" defaultChecked />
             </div>
 
             <div className="flex items-center justify-between">
               <div>
-                <Label htmlFor="systemNotif" className="text-base">System Notifications</Label>
-                <p className="text-sm text-gray-500 mt-1">In-app notifications and alerts</p>
+                <Label htmlFor="systemNotif" className="text-base">
+                  System Notifications
+                </Label>
+                <p className="text-sm text-gray-500 mt-1">
+                  In-app notifications and alerts
+                </p>
               </div>
               <Switch id="systemNotif" defaultChecked />
             </div>
 
             <div className="flex items-center justify-between">
               <div>
-                <Label htmlFor="capaReminders" className="text-base">CAPA Due Date Reminders</Label>
-                <p className="text-sm text-gray-500 mt-1">Receive reminders before CAPA deadlines</p>
+                <Label htmlFor="capaReminders" className="text-base">
+                  CAPA Due Date Reminders
+                </Label>
+                <p className="text-sm text-gray-500 mt-1">
+                  Receive reminders before CAPA deadlines
+                </p>
               </div>
               <Switch id="capaReminders" defaultChecked />
             </div>
@@ -115,7 +146,9 @@ export function Settings() {
 
             <div className="flex items-center justify-between">
               <div>
-                <Label htmlFor="crossTrigger" className="text-base">Enable Cross-Module Triggers</Label>
+                <Label htmlFor="crossTrigger" className="text-base">
+                  Enable Cross-Module Triggers
+                </Label>
                 <p className="text-sm text-gray-500 mt-1">
                   Automatically link related deviations and change controls
                 </p>
@@ -133,8 +166,12 @@ export function Settings() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label htmlFor="detailedAudit" className="text-base">Detailed Audit Trail</Label>
-                <p className="text-sm text-gray-500 mt-1">Log all system activities including AI actions</p>
+                <Label htmlFor="detailedAudit" className="text-base">
+                  Detailed Audit Trail
+                </Label>
+                <p className="text-sm text-gray-500 mt-1">
+                  Log all system activities including AI actions
+                </p>
               </div>
               <Switch id="detailedAudit" defaultChecked />
             </div>

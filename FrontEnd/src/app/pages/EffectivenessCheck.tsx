@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 import { Label } from '../components/ui/label';
 import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Badge } from '../components/ui/badge';
 import { AlertBanner } from '../components/qms/AlertBanner';
@@ -29,7 +30,7 @@ export function EffectivenessCheck() {
   const [responsible, setResponsible] = useState(aiEffectivenessData.responsible);
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-900">Effectiveness Check</h1>
         <p className="text-sm text-gray-500 mt-1">AI-generated effectiveness verification plan</p>
@@ -114,9 +115,10 @@ export function EffectivenessCheck() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="metric">Measurable Metric *</Label>
-                  <Input
+                  <Textarea
                     id="metric"
                     placeholder="e.g., Zero temperature excursions > 2°C for 90 consecutive days"
+                    rows={3}
                     value={metric}
                     onChange={(e) => setMetric(e.target.value)}
                   />
@@ -127,9 +129,10 @@ export function EffectivenessCheck() {
 
                 <div className="space-y-2">
                   <Label htmlFor="dataSource">Data Source</Label>
-                  <Input
+                  <Textarea
                     id="dataSource"
                     placeholder="e.g., Environmental Monitoring System reports"
+                    rows={2}
                     value={dataSource}
                     onChange={(e) => setDataSource(e.target.value)}
                   />

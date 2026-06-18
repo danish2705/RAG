@@ -12,7 +12,7 @@ export function HistoricalMatches() {
   const navigate = useNavigate();
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+   <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-900">Historical Analysis</h1>
         <p className="text-sm text-gray-500 mt-1">Similar events detected in the system</p>
@@ -42,6 +42,7 @@ export function HistoricalMatches() {
             </CardTitle>
           </CardHeader>
           <CardContent>
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -77,6 +78,7 @@ export function HistoricalMatches() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
 
@@ -113,7 +115,7 @@ export function HistoricalMatches() {
             Back
           </Button>
           <Button onClick={() => navigate('/deviation/root-cause')} className="bg-blue-600 hover:bg-blue-700">
-            Continue to Root Cause & CAPA
+            Continue to Root Cause Analysis
           </Button>
         </div>
       </div>

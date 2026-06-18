@@ -6,7 +6,8 @@ import { AIRecommendation } from "./pages/AIRecommendation";
 import { ImmediateCorrection } from "./pages/ImmediateCorrection";
 import { ImpactAssessment } from "./pages/ImpactAssessment";
 import { HistoricalMatches } from "./pages/HistoricalMatches";
-import { RootCauseCapa } from "./pages/RootCauseCapa";
+import { RootCause } from "./pages/RootCause";
+import { Capa } from "./pages/Capa";
 import { EffectivenessCheck } from "./pages/EffectivenessCheck";
 import { ChangeControl } from "./pages/ChangeControl";
 import { ChangeDecision } from "./pages/ChangeDecision";
@@ -27,7 +28,8 @@ export const router = createBrowserRouter([
       { path: "deviation/immediate-correction", Component: ImmediateCorrection },
       { path: "deviation/impact-assessment", Component: ImpactAssessment },
       { path: "deviation/historical-analysis", Component: HistoricalMatches },
-      { path: "deviation/root-cause", Component: RootCauseCapa },
+      { path: "deviation/root-cause", Component: RootCause },
+      { path: "deviation/capa", Component: Capa },
       { path: "deviation/effectiveness-check", Component: EffectivenessCheck },
       { path: "change-control", Component: ChangeControl },
       { path: "change-control/decision", Component: ChangeDecision },

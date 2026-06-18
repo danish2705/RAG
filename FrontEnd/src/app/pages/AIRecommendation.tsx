@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '../components/ui/label';
 import { StatusBadge } from '../components/qms/StatusBadge';
 import { AIResponse, impactLevelToStatus } from '../types/aiResponse';
-import { ImpactCard } from '../components/qms/ImpactCard';
+/* import { ImpactCard } from '../components/qms/ImpactCard'; */
 import { exampleGxpDeviationWithChangeControl } from '../lib/mockAIResponses';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -20,6 +20,9 @@ export function AIRecommendation() {
   const [expanded, setExpanded] = useState(false);
   const [showOverrideDialog, setShowOverrideDialog] = useState(false);
   const [overrideJustification, setOverrideJustification] = useState('');
+  // Added state for reject dialog and justification
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectJustification, setRejectJustification] = useState('');
   // In production, this would come from an API call
   const [aiResponse, setAiResponse] = useState<AIResponse>(exampleGxpDeviationWithChangeControl);
   const [isEditingSeverity, setIsEditingSeverity] = useState(false);
@@ -35,6 +38,14 @@ export function AIRecommendation() {
     if (overrideJustification.trim()) {
       setShowOverrideDialog(false);
       navigate('/deviation/immediate-correction');
+    }
+  };
+
+  // CHANGE 2: Added handleReject function — navigates to /deviation on confirm
+  const handleReject = () => {
+    if (rejectJustification.trim()) {
+      setShowRejectDialog(false);
+      navigate('/deviation');
     }
   };
 
@@ -179,7 +190,6 @@ export function AIRecommendation() {
                 ></div>
               </div>
             </div>
-
             {/* Expandable Rationale */}
             <div className="border-t pt-4">
               <button
@@ -196,60 +206,6 @@ export function AIRecommendation() {
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Initial Impact Assessment */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Initial Impact Assessment</CardTitle>
-            <p className="text-xs text-gray-500 mt-1">Preliminary impact screening - detailed assessment follows later in the workflow</p>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <ImpactCard
-                category="Patient Safety"
-                status={impactLevelToStatus(aiResponse.impact_assessment.patient_safety)}
-                description={`Impact level: ${aiResponse.impact_assessment.patient_safety}`}
-              />
-              <ImpactCard
-                category="Product Quality"
-                status={impactLevelToStatus(aiResponse.impact_assessment.product_quality)}
-                description={`Impact level: ${aiResponse.impact_assessment.product_quality}`}
-              />
-              <ImpactCard
-                category="Data Integrity"
-                status={impactLevelToStatus(aiResponse.impact_assessment.data_integrity)}
-                description={`Impact level: ${aiResponse.impact_assessment.data_integrity}`}
-              />
-              <ImpactCard
-                category="Regulatory Compliance"
-                status={impactLevelToStatus(aiResponse.impact_assessment.regulatory)}
-                description={`Impact level: ${aiResponse.impact_assessment.regulatory}`}
-              />
-              <ImpactCard
-                category="Validated State"
-                status={impactLevelToStatus(aiResponse.impact_assessment.validated_state)}
-                description={`Impact level: ${aiResponse.impact_assessment.validated_state}`}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Recommended Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recommended Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2">
-              {aiResponse.recommended_actions.map((action, index) => (
-                <li key={index} className="flex items-start gap-2 text-sm text-gray-700">
-                  <span className="text-blue-600 font-semibold shrink-0">{index + 1}.</span>
-                  <span>{action}</span>
-                </li>
-              ))}
-            </ul>
           </CardContent>
         </Card>
 
@@ -273,6 +229,13 @@ export function AIRecommendation() {
                   className="flex-1"
                 >
                   Override Classification
+                </Button>
+                {/*  Added Reject Classification button in red */}
+                <Button
+                  onClick={() => setShowRejectDialog(true)}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Reject Classification
                 </Button>
               </div>
               <p className="text-xs text-gray-500 mt-3 text-center">
@@ -313,6 +276,42 @@ export function AIRecommendation() {
               disabled={!overrideJustification.trim()}
             >
               Confirm Override
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Dialog */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject AI Classification</DialogTitle>
+            <DialogDescription>
+              Please provide a reason for rejecting this AI classification. You will be redirected to the deviation form. This will be recorded in the audit trail.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="rejectJustification">Reason for Rejection *</Label>
+              <Textarea
+                id="rejectJustification"
+                placeholder="Explain why you are rejecting the AI classification..."
+                rows={4}
+                value={rejectJustification}
+                onChange={(e) => setRejectJustification(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRejectDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleReject}
+              disabled={!rejectJustification.trim()}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Confirm Rejection
             </Button>
           </DialogFooter>
         </DialogContent>

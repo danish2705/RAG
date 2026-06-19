@@ -31,13 +31,13 @@ export function AIRecommendation() {
   const severityWasEdited = aiResponse.severity !== originalSeverity;
 
   const handleAccept = () => {
-    navigate('/deviation/immediate-correction');
+    navigate('/deviation/impact-assessment');
   };
 
   const handleOverride = () => {
     if (overrideJustification.trim()) {
       setShowOverrideDialog(false);
-      navigate('/deviation/immediate-correction');
+      navigate('/deviation/impact-assessment');
     }
   };
 
@@ -45,7 +45,7 @@ export function AIRecommendation() {
   const handleReject = () => {
     if (rejectJustification.trim()) {
       setShowRejectDialog(false);
-      navigate('/deviation');
+      navigate('/deviation/impact-assessment');
     }
   };
 

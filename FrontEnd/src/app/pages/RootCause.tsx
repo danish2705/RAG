@@ -82,7 +82,7 @@ export function RootCause() {
         </Card>
 
         <div className="flex justify-between">
-          <Button variant="outline" onClick={() => navigate('/deviation/historical-analysis')}>
+          <Button variant="outline" onClick={() => navigate('/deviation/impact-assessment')}>
             Back
           </Button>
           <Button

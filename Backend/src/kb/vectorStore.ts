@@ -29,7 +29,9 @@ function squaredL2(a: number[], b: number[]): number {
 
 /** Equivalent to build_index(chunks) in the notebook. */
 export async function buildIndex(chunks: DocChunk[]): Promise<VectorIndex> {
-  const texts = chunks.map((c) => c.text).filter((t) => t && t.trim().length > 0);
+  const texts = chunks
+    .map((c) => c.text)
+    .filter((t) => t && t.trim().length > 0);
 
   if (texts.length === 0) {
     throw new Error("No valid text found in chunks!");
@@ -44,7 +46,7 @@ export async function buildIndex(chunks: DocChunk[]): Promise<VectorIndex> {
 export async function retrieve(
   query: string,
   index: VectorIndex,
-  topK = 3
+  topK = 3,
 ): Promise<RetrievedChunk[]> {
   const [queryVector] = await embedTexts([query]);
 

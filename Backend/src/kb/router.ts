@@ -9,11 +9,7 @@ export interface QueryRouting {
   reason: string;
 }
 
-// NOTE: this is the lightweight "which knowledge base do I search" router
-// from the notebook's classify_query()/route(). It is NOT the same thing as
-// the pipeline's classification stage (src/pipeline/classify.ts), which
-// decides the GxP classification of the event itself. Keeping these
-// separate avoids conflating "which docs to retrieve" with "what is this".
+
 const ROUTER_SYSTEM_PROMPT = `
 You are a routing assistant. Decide which knowledge base(s) a query needs.
 Return JSON only.

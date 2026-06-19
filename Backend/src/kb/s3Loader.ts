@@ -1,4 +1,8 @@
-import { S3Client, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  ListObjectsV2Command,
+  GetObjectCommand,
+} from "@aws-sdk/client-s3";
 import type { Readable } from "node:stream";
 import pdfParse from "pdf-parse";
 import { config } from "../config.js";
@@ -25,14 +29,16 @@ export async function listPdfKeys(prefix: string): Promise<string[]> {
         Bucket: config.aws.bucket,
         Prefix: prefix,
         ContinuationToken: continuationToken,
-      })
+      }),
     );
 
     for (const obj of response.Contents ?? []) {
       if (obj.Key?.endsWith(".pdf")) keys.push(obj.Key);
     }
 
-    continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined;
+    continuationToken = response.IsTruncated
+      ? response.NextContinuationToken
+      : undefined;
   } while (continuationToken);
 
   return keys;
@@ -47,7 +53,7 @@ async function streamToBuffer(stream: Readable): Promise<Buffer> {
 /** Equivalent to load_pdf_from_s3(key) in the notebook. */
 export async function loadPdfFromS3(key: string): Promise<string> {
   const response = await s3.send(
-    new GetObjectCommand({ Bucket: config.aws.bucket, Key: key })
+    new GetObjectCommand({ Bucket: config.aws.bucket, Key: key }),
   );
   const buffer = await streamToBuffer(response.Body as Readable);
   const { text } = await pdfParse(buffer);
@@ -55,7 +61,10 @@ export async function loadPdfFromS3(key: string): Promise<string> {
 }
 
 /** Equivalent to load_kb(prefix, doc_type) in the notebook. */
-export async function loadKnowledgeBase(prefix: string, docType: string): Promise<SourceDoc[]> {
+export async function loadKnowledgeBase(
+  prefix: string,
+  docType: string,
+): Promise<SourceDoc[]> {
   const keys = await listPdfKeys(prefix);
   const docs: SourceDoc[] = [];
 

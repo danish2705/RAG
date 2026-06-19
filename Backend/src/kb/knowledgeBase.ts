@@ -1,7 +1,16 @@
 import { loadKnowledgeBase } from "./s3Loader.js";
 import { prepareChunks } from "./chunker.js";
-import { buildIndex, retrieve, type VectorIndex, type RetrievedChunk } from "./vectorStore.js";
-import { classifyQueryType, routeToSources, type QueryRouting } from "./router.js";
+import {
+  buildIndex,
+  retrieve,
+  type VectorIndex,
+  type RetrievedChunk,
+} from "./vectorStore.js";
+import {
+  classifyQueryType,
+  routeToSources,
+  type QueryRouting,
+} from "./router.js";
 import { config } from "../config.js";
 
 let devIndex: VectorIndex | undefined;
@@ -41,9 +50,13 @@ export function initKnowledgeBase(): Promise<void> {
  * Equivalent to Steps 1-3 of the notebook's run_agent(): classify the query
  * to pick a source, then retrieve context chunks from the relevant index/indexes.
  */
-export async function retrieveContext(query: string): Promise<RetrieveContextResult> {
+export async function retrieveContext(
+  query: string,
+): Promise<RetrieveContextResult> {
   if (!devIndex || !ccIndex) {
-    throw new Error("Knowledge base not initialized. Call initKnowledgeBase() first.");
+    throw new Error(
+      "Knowledge base not initialized. Call initKnowledgeBase() first.",
+    );
   }
 
   const routing = await classifyQueryType(query);

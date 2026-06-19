@@ -8,6 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { AlertBanner } from '../components/qms/AlertBanner';
 import { rootCauseOptions } from '../lib/mockData';
 import { Sparkles } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
 
 const aiSuggestions = {
   rootCause: 'Equipment Failure',
@@ -19,6 +27,30 @@ export function RootCause() {
   const navigate = useNavigate();
   const [rootCause, setRootCause] = useState(aiSuggestions.rootCause);
   const [rootCauseDetail, setRootCauseDetail] = useState(aiSuggestions.rootCauseDetail);
+
+  // Decision Required state
+  const [showOverrideDialog, setShowOverrideDialog] = useState(false);
+  const [overrideJustification, setOverrideJustification] = useState('');
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectJustification, setRejectJustification] = useState('');
+
+  const handleAccept = () => {
+    navigate('/deviation/capa');
+  };
+
+  const handleOverride = () => {
+    if (overrideJustification.trim()) {
+      setShowOverrideDialog(false);
+      navigate('/deviation/capa');
+    }
+  };
+
+  const handleReject = () => {
+    if (rejectJustification.trim()) {
+      setShowRejectDialog(false);
+      navigate('/deviation');
+    }
+  };
 
   return (
    <div className="p-6 max-w-7xl mx-auto">
@@ -81,18 +113,116 @@ export function RootCause() {
           </CardContent>
         </Card>
 
+        {/* Decision Required */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Decision Required</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-4">
+              <Button
+                onClick={handleAccept}
+                className="flex-1 bg-green-600 hover:bg-green-700"
+              >
+                Accept Root Cause
+              </Button>
+              <Button
+                onClick={() => setShowOverrideDialog(true)}
+                variant="outline"
+                className="flex-1"
+              >
+                Override Root Cause
+              </Button>
+              <Button
+                onClick={() => setShowRejectDialog(true)}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              >
+                Reject Root Cause
+              </Button>
+            </div>
+            <p className="text-xs text-gray-500 mt-3 text-center">
+              Your decision will be logged in the audit trail
+            </p>
+          </CardContent>
+        </Card>
+
         <div className="flex justify-between">
           <Button variant="outline" onClick={() => navigate('/deviation/impact-assessment')}>
             Back
           </Button>
-          <Button
-            onClick={() => navigate('/deviation/capa')}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            Continue to CAPA
-          </Button>
         </div>
       </div>
+
+      {/* Override Dialog */}
+      <Dialog open={showOverrideDialog} onOpenChange={setShowOverrideDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Override Root Cause</DialogTitle>
+            <DialogDescription>
+              Please provide a justification for overriding the root cause analysis. This will be recorded in the audit trail.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="overrideJustification">Justification *</Label>
+              <Textarea
+                id="overrideJustification"
+                placeholder="Explain why you are overriding the root cause analysis..."
+                rows={4}
+                value={overrideJustification}
+                onChange={(e) => setOverrideJustification(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowOverrideDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleOverride}
+              disabled={!overrideJustification.trim()}
+            >
+              Confirm Override
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Dialog */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Root Cause</DialogTitle>
+            <DialogDescription>
+              Please provide a reason for rejecting this root cause analysis. You will be redirected to the deviation form. This will be recorded in the audit trail.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="rejectJustification">Reason for Rejection *</Label>
+              <Textarea
+                id="rejectJustification"
+                placeholder="Explain why you are rejecting the root cause analysis..."
+                rows={4}
+                value={rejectJustification}
+                onChange={(e) => setRejectJustification(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRejectDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleReject}
+              disabled={!rejectJustification.trim()}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Confirm Rejection
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

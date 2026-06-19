@@ -17,11 +17,26 @@ import {
 } from "../components/ui/select";
 import { Pencil, Save } from "lucide-react";
 import { impactAssessments } from "../lib/mockData";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
+import { Label } from "../components/ui/label";
 
 export function ImpactAssessment() {
   const navigate = useNavigate();
 
   const [isEditing, setIsEditing] = useState(false);
+
+  // Decision Required state
+  const [showOverrideDialog, setShowOverrideDialog] = useState(false);
+  const [overrideJustification, setOverrideJustification] = useState("");
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectJustification, setRejectJustification] = useState("");
 
   const [assessments, setAssessments] = useState(
     impactAssessments.map((item) => ({
@@ -75,6 +90,24 @@ export function ImpactAssessment() {
     setIsEditing(false);
 
     alert("Impact Assessment saved successfully");
+  };
+
+  const handleAccept = () => {
+    navigate("/deviation/root-cause");
+  };
+
+  const handleOverride = () => {
+    if (overrideJustification.trim()) {
+      setShowOverrideDialog(false);
+      navigate("/deviation/root-cause");
+    }
+  };
+
+  const handleReject = () => {
+    if (rejectJustification.trim()) {
+      setShowRejectDialog(false);
+      navigate("/deviation");
+    }
   };
 
   return (
@@ -219,6 +252,39 @@ export function ImpactAssessment() {
           </CardContent>
         </Card>
 
+        {/* Decision Required */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Decision Required</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-4">
+              <Button
+                onClick={handleAccept}
+                className="flex-1 bg-green-600 hover:bg-green-700"
+              >
+                Accept & Continue to Root Cause Analysis
+              </Button>
+              <Button
+                onClick={() => setShowOverrideDialog(true)}
+                variant="outline"
+                className="flex-1"
+              >
+                Override Assessment
+              </Button>
+              <Button
+                onClick={() => setShowRejectDialog(true)}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              >
+                Reject Assessment
+              </Button>
+            </div>
+            <p className="text-xs text-gray-500 mt-3 text-center">
+              Your decision will be logged in the audit trail
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Footer Buttons */}
         <div className="flex justify-between items-center pt-2">
           <Button
@@ -235,16 +301,81 @@ export function ImpactAssessment() {
                 Save Changes
               </Button>
             )}
-
-            <Button
-              onClick={() => navigate("/deviation/root-cause")}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              Continue to Root Cause Analysis
-            </Button>
           </div>
         </div>
       </div>
+
+      {/* Override Dialog */}
+      <Dialog open={showOverrideDialog} onOpenChange={setShowOverrideDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Override Impact Assessment</DialogTitle>
+            <DialogDescription>
+              Please provide a justification for overriding the assessment. This will be recorded in the audit trail.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="overrideJustification">Justification *</Label>
+              <Textarea
+                id="overrideJustification"
+                placeholder="Explain why you are overriding the impact assessment..."
+                rows={4}
+                value={overrideJustification}
+                onChange={(e) => setOverrideJustification(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowOverrideDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleOverride}
+              disabled={!overrideJustification.trim()}
+            >
+              Confirm Override
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Dialog */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Impact Assessment</DialogTitle>
+            <DialogDescription>
+              Please provide a reason for rejecting this assessment. You will be redirected to the deviation form. This will be recorded in the audit trail.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="rejectJustification">Reason for Rejection *</Label>
+              <Textarea
+                id="rejectJustification"
+                placeholder="Explain why you are rejecting the impact assessment..."
+                rows={4}
+                value={rejectJustification}
+                onChange={(e) => setRejectJustification(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRejectDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleReject}
+              disabled={!rejectJustification.trim()}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Confirm Rejection
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+

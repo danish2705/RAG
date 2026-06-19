@@ -6,3 +6,4 @@ Backend/node_modules/
 Backend/package-lock.json
 FrontEnd/node_modules/
 FrontEnd/package-lock.json
+Backend/.env

@@ -27,6 +27,10 @@ export async function callLLM(userPrompt: string, systemPrompt: string): Promise
     );
   }
 
+  if (!config.llm.apiUrl){
+    throw new Error("API_URL is not set in your .env")
+  }
+
   const response = await fetch(config.llm.apiUrl, {
     method: "POST",
     headers: {

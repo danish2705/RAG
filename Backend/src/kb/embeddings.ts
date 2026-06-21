@@ -1,5 +1,6 @@
 import { pipeline, type FeatureExtractionPipeline } from "@xenova/transformers";
 import { config } from "../config.js";
+// process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 let extractorPromise: Promise<FeatureExtractionPipeline> | undefined;
 

@@ -1,7 +1,7 @@
 import { createBrowserRouter } from "react-router";
 import { Layout } from "./components/layout/Layout";
 import { Dashboard } from "./pages/Dashboard";
-import { NewDeviation } from "./pages/NewDeviation";
+import { NewDeviation } from "./pages/InputQuery";
 import { AIRecommendation } from "./pages/AIRecommendation";
 import { ImmediateCorrection } from "./pages/ImmediateCorrection";
 import { ImpactAssessment } from "./pages/ImpactAssessment";

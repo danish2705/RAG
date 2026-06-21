@@ -1,14 +1,28 @@
 import { z } from "zod";
 
+// Severity scale for each of the 4 impact-assessment parameters.
+// Adjust these labels if your SOP defines a different scale —
+// nothing else in the pipeline hardcodes these strings except the prompt.
+export const SeverityLevel = z.enum(["None", "Minor", "Major", "Critical"]);
+export type SeverityLevel = z.infer<typeof SeverityLevel>;
+
+// One impact parameter = a rated severity + the narrative justifying it.
+// Replaces the old plain-string fields so severity is an enforced,
+// machine-checkable value instead of free text the LLM could phrase any way.
+const ImpactParameter = z.object({
+  severity: SeverityLevel,
+  rationale: z.string().min(1),
+});
+
 // Equivalent to ClassificationResponse(BaseModel) in the notebook.
 export const ClassificationSchema = z.object({
   classification: z.string().min(1),
   rationale: z.string().min(1),
   impact_assessment: z.object({
-    product_impact: z.string(),
-    patient_impact: z.string(),
-    data_integrity_impact: z.string(),
-    compliance_impact: z.string(),
+    product_impact: ImpactParameter,
+    patient_impact: ImpactParameter,
+    data_integrity_impact: ImpactParameter,
+    compliance_impact: ImpactParameter,
   }),
   confidence_score: z.number().min(0).max(100),
 });

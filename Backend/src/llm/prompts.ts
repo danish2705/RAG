@@ -28,19 +28,31 @@ Your task:
 - classify the event (e.g. GxP Deviation, Non-GxP Event, Planned Departure,
   Change Control Required, Change Control NOT Required, Out of Scope,
   Wrong Process (Redirect))
-- assess impact across product, patient, data integrity, and compliance
+- rate severity across exactly 4 parameters: product, patient, data integrity,
+  and compliance impact
 - provide rationale
 - provide confidence_score
+
+Severity rules:
+- For EACH of the 4 impact parameters, assign one severity level:
+  "None", "Minor", "Major", or "Critical".
+- Base the level on the actual consequence to that parameter, not on the
+  overall event classification — one parameter can be "Critical" while
+  another is "None".
+- Every severity level must be backed by a short rationale that justifies
+  that specific level (not a restatement of the event description).
+- Do not default to "None" when evidence is missing — say so in the
+  rationale and lower confidence_score instead.
 
 Required JSON structure:
 {
   "classification": "",
   "rationale": "",
   "impact_assessment": {
-      "product_impact": "",
-      "patient_impact": "",
-      "data_integrity_impact": "",
-      "compliance_impact": ""
+      "product_impact": { "severity": "None | Minor | Major | Critical", "rationale": "" },
+      "patient_impact": { "severity": "None | Minor | Major | Critical", "rationale": "" },
+      "data_integrity_impact": { "severity": "None | Minor | Major | Critical", "rationale": "" },
+      "compliance_impact": { "severity": "None | Minor | Major | Critical", "rationale": "" }
   },
   "confidence_score": 0
 }

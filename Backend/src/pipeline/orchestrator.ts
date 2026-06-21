@@ -21,19 +21,6 @@ export interface PipelineResult {
   auditTrail: AuditEntry[];
 }
 
-/**
- * Replaces the notebook's run_agent(), which made exactly one LLM call
- * (generate_answer with the giant SYSTEM_PROMPT) and never used the
- * RCA_PROMPT / CAPA_PROMPT / Pydantic models it had defined.
- *
- * This version makes three separate calls, in order, and stops the chain
- * the moment a stage fails its gate (see confidenceGate.ts for exactly
- * what "fails" means — it's not only the confidence score).
- *
- * Whatever stage it stops at, the case is handed to manual/human review
- * (HITL-06) instead of continuing with a low-confidence or invalid output
- * feeding the next stage.
- */
 export async function runDeviationPipeline(
   query: string,
   contextText: string

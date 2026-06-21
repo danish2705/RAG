@@ -1,4 +1,5 @@
-import { loadKnowledgeBase } from "./s3Loader.js";
+import { loadKnowledgeBase as loadFromS3 } from "./s3Loader.js";
+import { loadKnowledgeBase as loadFromDisk } from "./localLoader.js";
 import { prepareChunks } from "./chunker.js";
 import {
   buildIndex,
@@ -33,6 +34,9 @@ export interface RetrieveContextResult {
 export function initKnowledgeBase(): Promise<void> {
   if (!initPromise) {
     initPromise = (async () => {
+      const loadKnowledgeBase =
+        config.kb.source === "s3" ? loadFromS3 : loadFromDisk;
+
       const [deviationDocs, ccDocs] = await Promise.all([
         loadKnowledgeBase(config.aws.deviationPrefix, "deviation"),
         loadKnowledgeBase(config.aws.changeControlPrefix, "change_control"),

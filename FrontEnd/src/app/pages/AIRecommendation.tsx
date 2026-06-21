@@ -136,7 +136,7 @@ export function AIRecommendation() {
             <p className="text-sm text-gray-400 mt-1">
               Please go back and submit a quality event first.
             </p>
-            <Button className="mt-4" onClick={() => navigate("/deviation/new")}>
+            <Button className="mt-4" onClick={() => navigate("/deviation")}>
               Go Back
             </Button>
           </CardContent>

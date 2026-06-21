@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-import { Pencil, Save, AlertTriangle, Sparkles } from "lucide-react";
+import { Pencil, Save, AlertTriangle, Sparkles, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -69,16 +69,45 @@ interface ImpactAssessmentStage {
   gate: unknown;
 }
 
+// Populated by POST /api/deviations/rca, fired only after the user
+// accepts/overrides the impact assessment below.
+interface RCAResult {
+  sequence_of_events: string[];
+  immediate_cause: string;
+  primary_root_cause: string;
+  contributing_factors: string[];
+  evidence: string[];
+  impact_assessment: string;
+  confidence_score: number;
+}
+
+interface RCAStage {
+  rawText: string;
+  parsed: RCAResult | null;
+  error: unknown;
+  gate: unknown;
+}
+
 interface PipelineResult {
   status: "halted_for_human_review" | "completed_pending_human_review";
   haltedAt: StageName | "impact_assessment" | null;
   stages: {
     classification?: ClassificationStage;
     impactAssessment?: ImpactAssessmentStage;
+    rca?: RCAStage;
   };
   auditTrail: unknown[];
   query: string;
   routing?: unknown;
+}
+
+// Shape returned by POST /api/deviations/rca
+interface RCAApiResponse {
+  status: "halted_for_human_review" | "completed_pending_human_review";
+  haltedAt: StageName | "impact_assessment" | null;
+  stages: { rca?: RCAStage };
+  auditTrail: unknown[];
+  query: string;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -142,6 +171,11 @@ export function ImpactAssessment() {
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectJustification, setRejectJustification] = useState("");
 
+  // RCA call only fires once the user approves the impact assessment
+  // (Accept or Override below) — never automatically.
+  const [isGeneratingRCA, setIsGeneratingRCA] = useState(false);
+  const [rcaError, setRcaError] = useState<string | null>(null);
+
   // ── Guard ──────────────────────────────────────────────────────────────
   // Guard on impactParsed (not classificationParsed) — this page renders
   // severity data, which only exists once Stage 2 has actually run.
@@ -177,16 +211,63 @@ export function ImpactAssessment() {
     alert("Impact Assessment saved successfully");
   };
 
+  // This is the fix: accepting/overriding the impact assessment now
+  // triggers the Stage 3 LLM call (POST /api/deviations/rca). That call
+  // only happens here, after the human approves — never automatically and
+  // never bundled into the impact-assessment response.
+  const runRCA = async () => {
+    setRcaError(null);
+    setIsGeneratingRCA(true);
+
+    try {
+      const response = await fetch("/api/deviations/rca", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: result!.query,
+          classification: classificationParsed,
+        }),
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(
+          body?.error || `Request failed with status ${response.status}`,
+        );
+      }
+
+      const rcaResult: RCAApiResponse = await response.json();
+
+      navigate("/deviation/root-cause", {
+        state: {
+          result: {
+            ...result,
+            stages: {
+              ...result!.stages,
+              rca: rcaResult.stages.rca,
+            },
+          },
+        },
+      });
+    } catch (err) {
+      setRcaError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong generating the root cause analysis. Please try again.",
+      );
+    } finally {
+      setIsGeneratingRCA(false);
+    }
+  };
+
   const handleAccept = () => {
-    // Pass result forward to next page
-    navigate("/deviation/root-cause", { state: { result } });
+    void runRCA();
   };
 
   const handleOverride = () => {
-    if (overrideJustification.trim()) {
-      setShowOverrideDialog(false);
-      navigate("/deviation/root-cause", { state: { result } });
-    }
+    if (!overrideJustification.trim()) return;
+    setShowOverrideDialog(false);
+    void runRCA();
   };
 
   const handleReject = () => {
@@ -329,29 +410,50 @@ export function ImpactAssessment() {
             <CardTitle>Decision Required</CardTitle>
           </CardHeader>
           <CardContent>
+            {rcaError && (
+              <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-medium">Root cause analysis failed</p>
+                  <p className="mt-1">{rcaError}</p>
+                </div>
+              </div>
+            )}
             <div className="flex flex-col sm:flex-row gap-4">
               <Button
                 onClick={handleAccept}
-                className="flex-1 bg-green-600 hover:bg-green-700"
+                disabled={isGeneratingRCA}
+                className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50"
               >
-                Accept & Continue to Root Cause Analysis
+                {isGeneratingRCA ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating Root Cause Analysis...
+                  </>
+                ) : (
+                  "Accept & Continue to Root Cause Analysis"
+                )}
               </Button>
               <Button
                 onClick={() => setShowOverrideDialog(true)}
                 variant="outline"
+                disabled={isGeneratingRCA}
                 className="flex-1"
               >
                 Override Assessment
               </Button>
               <Button
                 onClick={() => setShowRejectDialog(true)}
+                disabled={isGeneratingRCA}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white"
               >
                 Reject Assessment
               </Button>
             </div>
             <p className="text-xs text-gray-500 mt-3 text-center">
-              Your decision will be logged in the audit trail
+              Your decision will be logged in the audit trail. Accepting or
+              overriding runs root cause analysis — it only starts now, not
+              before you decide.
             </p>
           </CardContent>
         </Card>
@@ -406,9 +508,16 @@ export function ImpactAssessment() {
             </Button>
             <Button
               onClick={handleOverride}
-              disabled={!overrideJustification.trim()}
+              disabled={!overrideJustification.trim() || isGeneratingRCA}
             >
-              Confirm Override
+              {isGeneratingRCA ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Running...
+                </>
+              ) : (
+                "Confirm Override"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

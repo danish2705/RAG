@@ -1,11 +1,16 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Label } from '../components/ui/label';
-import { Textarea } from '../components/ui/textarea';
-import { AlertBanner } from '../components/qms/AlertBanner';
-import { Sparkles } from 'lucide-react';
+import { useState } from "react";
+import { useNavigate, useLocation } from "react-router";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Label } from "../components/ui/label";
+import { Textarea } from "../components/ui/textarea";
+import { AlertBanner } from "../components/qms/AlertBanner";
+import { AlertTriangle, Sparkles } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -13,55 +18,153 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '../components/ui/dialog';
+} from "../components/ui/dialog";
 
-const aiSuggestions = {
-  correction:
-    'Affected product batches (Batch #2024-Q1-047, #2024-Q1-048, #2024-Q1-049) immediately moved to validated backup cold storage unit. Temperature logs reviewed for the past 30 days to identify full extent of excursion. Impacted materials quarantined pending stability testing results.',
-  correctiveAction:
-    'Replace all temperature sensors in Cold Storage Unit 3. Calibrate new sensors per SOP-QA-022. Implement enhanced monitoring with dual sensors and automated alert system. Conduct stability testing on affected batches before disposition decision. Update preventive maintenance schedule to include sensor replacement every 3 years instead of 5 years.',
-  preventiveAction:
-    'Implement predictive maintenance program for all cold storage units using IoT sensors. Reduce sensor replacement interval from 5 years to 3 years across all facilities. Install redundant temperature monitoring with real-time SMS/email alerts. Conduct FMEA on all critical storage equipment. Upgrade to Industry 4.0 monitoring platform with machine learning anomaly detection.',
-};
+// ── Types (mirrors backend src/llm/schemas.ts) ──────────────────────────────
+
+type StageName = "classification" | "rca" | "capa";
+
+interface CAPAResult {
+  capa_required: boolean;
+  corrective_actions: string[];
+  preventive_actions: string[];
+  effectiveness_check: string;
+  due_date: string;
+  confidence_score: number;
+}
+
+interface CAPAStage {
+  rawText: string;
+  parsed: CAPAResult | null;
+  error: unknown;
+  gate: unknown;
+}
+
+interface PipelineResult {
+  status: "halted_for_human_review" | "completed_pending_human_review";
+  haltedAt: StageName | "impact_assessment" | null;
+  stages: {
+    capa?: CAPAStage;
+    [key: string]: unknown;
+  };
+  auditTrail: unknown[];
+  query: string;
+  routing?: unknown;
+}
 
 export function Capa() {
   const navigate = useNavigate();
-  const [correction, setCorrection] = useState(aiSuggestions.correction);
-  const [correctiveAction, setCorrectiveAction] = useState(aiSuggestions.correctiveAction);
-  const [preventiveAction, setPreventiveAction] = useState(aiSuggestions.preventiveAction);
+  const location = useLocation();
+
+  const { result } = (location.state ?? {}) as { result?: PipelineResult };
+  const capaParsed = result?.stages?.capa?.parsed ?? null;
+
+  // Editable fields, seeded from the real CAPA stage — not mock data.
+  // NOTE: the backend's CAPASchema has no separate "immediate correction"
+  // field (only corrective_actions / preventive_actions / effectiveness_check
+  // / due_date) — so "Correction" here starts blank rather than pretending
+  // to be AI-generated. Fill it in manually based on what was actually done.
+  const [correction, setCorrection] = useState("");
+  const [correctiveAction, setCorrectiveAction] = useState(
+    (capaParsed?.corrective_actions ?? []).join("\n"),
+  );
+  const [preventiveAction, setPreventiveAction] = useState(
+    (capaParsed?.preventive_actions ?? []).join("\n"),
+  );
+  const [effectivenessCheck, setEffectivenessCheck] = useState(
+    capaParsed?.effectiveness_check ?? "",
+  );
+  const [dueDate, setDueDate] = useState(capaParsed?.due_date ?? "");
   const [showWeakCapaWarning, setShowWeakCapaWarning] = useState(false);
 
   // Decision Required state
   const [showOverrideDialog, setShowOverrideDialog] = useState(false);
-  const [overrideJustification, setOverrideJustification] = useState('');
+  const [overrideJustification, setOverrideJustification] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
-  const [rejectJustification, setRejectJustification] = useState('');
+  const [rejectJustification, setRejectJustification] = useState("");
+
+  // ── Guard ──────────────────────────────────────────────────────────────
+  if (!capaParsed || !result) {
+    return (
+      <div className="p-6 w-full">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <AlertTriangle className="h-10 w-10 text-yellow-500 mx-auto mb-3" />
+            <p className="text-gray-600 font-medium">No CAPA data found.</p>
+            <p className="text-sm text-gray-400 mt-1">
+              Please go back and complete the root cause analysis first.
+            </p>
+            <Button className="mt-4" onClick={() => navigate("/deviation/new")}>
+              Go Back
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const handleCorrectiveActionChange = (value: string) => {
     setCorrectiveAction(value);
     setShowWeakCapaWarning(value.length > 0 && value.length < 50);
   };
 
+  // This is the final stage in the current pipeline — there is no further
+  // LLM call after CAPA, so Accept/Override just carry the (possibly
+  // human-edited) CAPA fields forward. If a future stage is added (e.g.
+  // effectiveness-check generation), give it the same treatment as
+  // RootCause.tsx/ImpactAssessment.tsx: a real fetch with a loading state,
+  // not a bare navigate.
+  const buildApprovedCAPA = (): CAPAResult => ({
+    ...capaParsed,
+    corrective_actions: correctiveAction
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean),
+    preventive_actions: preventiveAction
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean),
+    effectiveness_check: effectivenessCheck,
+    due_date: dueDate,
+  });
+
+  const proceed = () => {
+    navigate("/deviation/effectiveness-check", {
+      state: {
+        result: {
+          ...result,
+          stages: {
+            ...result.stages,
+            capa: {
+              ...result.stages.capa,
+              parsed: buildApprovedCAPA(),
+            },
+          },
+          correction,
+        },
+      },
+    });
+  };
+
   const handleAccept = () => {
-    navigate('/deviation/effectiveness-check');
+    proceed();
   };
 
   const handleOverride = () => {
-    if (overrideJustification.trim()) {
-      setShowOverrideDialog(false);
-      navigate('/deviation/effectiveness-check');
-    }
+    if (!overrideJustification.trim()) return;
+    setShowOverrideDialog(false);
+    proceed();
   };
 
   const handleReject = () => {
     if (rejectJustification.trim()) {
       setShowRejectDialog(false);
-      navigate('/deviation');
+      navigate("/deviation");
     }
   };
 
   return (
- <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-900">CAPA</h1>
         <p className="text-sm text-gray-500 mt-1">
@@ -73,20 +176,18 @@ export function Capa() {
         <AlertBanner
           type="info"
           title="AI Suggested – Please review and edit if required"
-          message="All fields below have been automatically populated by AI based on the root cause findings and historical patterns."
+          message="Corrective and preventive actions below have been automatically populated by AI based on the root cause findings. The immediate correction field is not AI-generated — please fill it in based on what was actually done."
         />
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              Correction
-              <Sparkles className="h-5 w-5 text-blue-600" />
-            </CardTitle>
+            <CardTitle>Correction</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               <Label htmlFor="correction">
-                Immediate Correction (What was done to fix the immediate problem?)
+                Immediate Correction (What was done to fix the immediate
+                problem?)
               </Label>
               <Textarea
                 id="correction"
@@ -95,10 +196,6 @@ export function Capa() {
                 value={correction}
                 onChange={(e) => setCorrection(e.target.value)}
               />
-              <p className="text-xs text-gray-500 flex items-center gap-1">
-                <Sparkles className="h-3 w-3 text-blue-600" />
-                AI-generated from immediate actions taken — edit as needed
-              </p>
             </div>
           </CardContent>
         </Card>
@@ -113,7 +210,8 @@ export function Capa() {
           <CardContent>
             <div className="space-y-2">
               <Label htmlFor="correctiveAction">
-                Corrective Action (What will prevent THIS deviation from recurring?)
+                Corrective Action (What will prevent THIS deviation from
+                recurring?) — one action per line
               </Label>
               <Textarea
                 id="correctiveAction"
@@ -148,7 +246,8 @@ export function Capa() {
           <CardContent>
             <div className="space-y-2">
               <Label htmlFor="preventiveAction">
-                Preventive Action (What will prevent SIMILAR deviations?)
+                Preventive Action (What will prevent SIMILAR deviations?) — one
+                action per line
               </Label>
               <Textarea
                 id="preventiveAction"
@@ -159,8 +258,37 @@ export function Capa() {
               />
               <p className="text-xs text-gray-500 flex items-center gap-1">
                 <Sparkles className="h-3 w-3 text-blue-600" />
-                AI-generated preventive actions based on historical patterns — edit as needed
+                AI-generated preventive actions — edit as needed
               </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              Effectiveness Check & Due Date
+              <Sparkles className="h-5 w-5 text-blue-600" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="effectivenessCheck">Effectiveness Check</Label>
+              <Textarea
+                id="effectivenessCheck"
+                rows={3}
+                value={effectivenessCheck}
+                onChange={(e) => setEffectivenessCheck(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dueDate">Due Date</Label>
+              <Textarea
+                id="dueDate"
+                rows={1}
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+              />
             </div>
           </CardContent>
         </Card>
@@ -199,13 +327,15 @@ export function Capa() {
         </Card>
 
         <div className="flex justify-between">
-          <Button variant="outline" onClick={() => navigate('/deviation/root-cause')}>
+          <Button
+            variant="outline"
+            onClick={() =>
+              navigate("/deviation/root-cause", { state: { result } })
+            }
+          >
             Back
           </Button>
-          <Button
-            onClick={() => navigate('/deviation/effectiveness-check')}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
+          <Button onClick={proceed} className="bg-blue-600 hover:bg-blue-700">
             Complete Analysis
           </Button>
         </div>
@@ -217,7 +347,8 @@ export function Capa() {
           <DialogHeader>
             <DialogTitle>Override CAPA</DialogTitle>
             <DialogDescription>
-              Please provide a justification for overriding the CAPA. This will be recorded in the audit trail.
+              Please provide a justification for overriding the CAPA. This will
+              be recorded in the audit trail.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -233,7 +364,10 @@ export function Capa() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowOverrideDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowOverrideDialog(false)}
+            >
               Cancel
             </Button>
             <Button
@@ -252,12 +386,16 @@ export function Capa() {
           <DialogHeader>
             <DialogTitle>Reject CAPA</DialogTitle>
             <DialogDescription>
-              Please provide a reason for rejecting this CAPA. You will be redirected to the deviation form. This will be recorded in the audit trail.
+              Please provide a reason for rejecting this CAPA. You will be
+              redirected to the deviation form. This will be recorded in the
+              audit trail.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="rejectJustification">Reason for Rejection *</Label>
+              <Label htmlFor="rejectJustification">
+                Reason for Rejection *
+              </Label>
               <Textarea
                 id="rejectJustification"
                 placeholder="Explain why you are rejecting the CAPA..."
@@ -268,7 +406,10 @@ export function Capa() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRejectDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowRejectDialog(false)}
+            >
               Cancel
             </Button>
             <Button

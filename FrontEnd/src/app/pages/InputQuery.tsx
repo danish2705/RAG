@@ -30,7 +30,6 @@ import {
 //   response: PipelineResult  <-- see types below
 // The API has no file-upload handling today, so attachments are kept
 // client-side only and are NOT sent yet. See the comment near handleSubmit.
-const API_URL = "/api/deviations/analyze";
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 const ALLOWED_FILE_TYPES = ["application/pdf", "image/png", "image/jpeg"];
@@ -268,7 +267,7 @@ export function NewDeviation() {
       // attachments, switch this to a FormData request and append them.
       const query = buildQueryFromForm(formData);
 
-      const response = await fetch("http://localhost:3000/inputQuery", {
+      const response = await fetch("/api/inputQuery", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query }),

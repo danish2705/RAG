@@ -37,6 +37,10 @@ const ALLOWED_FILE_TYPES = ["application/pdf", "image/png", "image/jpeg"];
 // ── Backend response types (mirrors src/pipeline/orchestrator.ts) ──────────
 
 type StageName = "classification" | "rca" | "capa";
+// Includes "impact_assessment" because the orchestrator's HaltedStage union
+// is wider than StageName (impact assessment has its own halt reason but
+// reuses the rca-shaped gate — see orchestrator.ts's runImpactAssessmentOnly).
+type HaltedStage = StageName | "impact_assessment";
 type GateReasonCode =
   | "invalid_output"
   | "missing_confidence_score"
@@ -61,9 +65,19 @@ interface ImpactParameter {
   rationale: string;
 }
 
+// Stage 1: routing decision ONLY. No severity/impact data here — that's a
+// separate stage (ImpactAssessmentResult below) that only runs after a
+// human accepts/overrides this classification on the AIRecommendation page.
 interface ClassificationResult {
   classification: string;
-  rationale: string;
+  rationale: string[];
+  confidence_score: number;
+}
+
+// Stage 2: populated only after POST /api/deviations/impact-assessment.
+// This is the stage InputQuery.tsx itself never calls — it's triggered
+// later, from AIRecommendation.tsx, after human approval.
+interface ImpactAssessmentResult {
   impact_assessment: {
     product_impact: ImpactParameter;
     patient_impact: ImpactParameter;
@@ -94,13 +108,16 @@ interface CAPAResult {
 
 interface PipelineStages {
   classification?: (ClassificationResult & { gate: GateResult }) | undefined;
+  impactAssessment?:
+    | (ImpactAssessmentResult & { gate: GateResult })
+    | undefined;
   rca?: (RCAResult & { gate: GateResult }) | undefined;
   capa?: (CAPAResult & { gate: GateResult }) | undefined;
 }
 
 export interface PipelineResult {
   status: "halted_for_human_review" | "completed_pending_human_review";
-  haltedAt: StageName | null;
+  haltedAt: HaltedStage | null;
   stages: PipelineStages;
   auditTrail: GateResult[];
   query: string;

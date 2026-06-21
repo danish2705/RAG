@@ -1,6 +1,9 @@
 import { callLLM } from "../llm/client.js";
 import { CLASSIFICATION_PROMPT } from "../llm/prompts.js";
-import { ClassificationSchema, type ClassificationResult } from "../llm/schemas.js";
+import {
+  ClassificationSchema,
+  type ClassificationResult,
+} from "../llm/schemas.js";
 import { extractJson } from "../utils/jsonExtractor.js";
 
 export interface ClassificationStageResult {
@@ -10,8 +13,11 @@ export interface ClassificationStageResult {
 }
 
 /**
- * Stage 1 of 3. Equivalent to the classification portion of the notebook's
- * single generate_answer() call, now isolated into its own LLM round trip.
+ * Stage 1 of 4 (classification → impact assessment → RCA → CAPA).
+ * Routing decision ONLY (Deviation / Change Control / Hybrid) — no
+ * severity/impact rating happens here. A human must accept or override
+ * this classification (frontend: AIRecommendation page) before
+ * runImpactAssessmentStage() is ever called.
  *
  * Returns { rawText, parsed, error }:
  *  - parsed is set (and error is null) only if the output was valid JSON
@@ -19,7 +25,7 @@ export interface ClassificationStageResult {
  */
 export async function runClassificationStage(
   query: string,
-  contextText: string
+  contextText: string,
 ): Promise<ClassificationStageResult> {
   const userPrompt = `
 Event Description:

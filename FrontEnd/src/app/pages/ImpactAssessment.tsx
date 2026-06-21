@@ -39,12 +39,6 @@ interface ImpactParameter {
 interface ClassificationParsed {
   classification: "Deviation" | "Change Control" | "Hybrid";
   rationale: string[];
-  impact_assessment: {
-    product_impact: ImpactParameter;
-    patient_impact: ImpactParameter;
-    data_integrity_impact: ImpactParameter;
-    compliance_impact: ImpactParameter;
-  };
   confidence_score: number;
 }
 
@@ -55,10 +49,33 @@ interface ClassificationStage {
   gate: unknown;
 }
 
+// Populated by a separate LLM call (POST /api/deviations/impact-assessment)
+// that only runs after the classification stage was accepted/overridden —
+// see AIRecommendation.tsx's handleAccept/handleOverride.
+interface ImpactAssessmentParsed {
+  impact_assessment: {
+    product_impact: ImpactParameter;
+    patient_impact: ImpactParameter;
+    data_integrity_impact: ImpactParameter;
+    compliance_impact: ImpactParameter;
+  };
+  confidence_score: number;
+}
+
+interface ImpactAssessmentStage {
+  rawText: string;
+  parsed: ImpactAssessmentParsed | null;
+  error: unknown;
+  gate: unknown;
+}
+
 interface PipelineResult {
   status: "halted_for_human_review" | "completed_pending_human_review";
-  haltedAt: StageName | null;
-  stages: { classification?: ClassificationStage };
+  haltedAt: StageName | "impact_assessment" | null;
+  stages: {
+    classification?: ClassificationStage;
+    impactAssessment?: ImpactAssessmentStage;
+  };
   auditTrail: unknown[];
   query: string;
   routing?: unknown;
@@ -101,11 +118,14 @@ export function ImpactAssessment() {
   const location = useLocation();
 
   const { result } = (location.state ?? {}) as { result?: PipelineResult };
-  const parsed = result?.stages?.classification?.parsed ?? null;
+  const classificationParsed = result?.stages?.classification?.parsed ?? null;
+  const impactParsed = result?.stages?.impactAssessment?.parsed ?? null;
 
-  // Build assessment rows from real backend data
-  const initialAssessments = parsed
-    ? Object.entries(parsed.impact_assessment).map(([key, val]) => ({
+  // Build assessment rows from the impact-assessment stage's real backend
+  // data — NOT from the classification stage (that stage no longer carries
+  // impact_assessment at all; it's routing-only).
+  const initialAssessments = impactParsed
+    ? Object.entries(impactParsed.impact_assessment).map(([key, val]) => ({
         key,
         category: PARAMETER_LABELS[key] ?? key,
         severity: val.severity, // None/Minor/Major/Critical
@@ -123,7 +143,9 @@ export function ImpactAssessment() {
   const [rejectJustification, setRejectJustification] = useState("");
 
   // ── Guard ──────────────────────────────────────────────────────────────
-  if (!parsed) {
+  // Guard on impactParsed (not classificationParsed) — this page renders
+  // severity data, which only exists once Stage 2 has actually run.
+  if (!impactParsed || !classificationParsed) {
     return (
       <div className="p-6 w-full">
         <Card>
@@ -174,8 +196,8 @@ export function ImpactAssessment() {
     }
   };
 
-  // Overall confidence from classification stage
-  const confidenceScore = parsed.confidence_score;
+  // Confidence from the impact-assessment stage itself, not classification
+  const confidenceScore = impactParsed.confidence_score;
 
   return (
     <div className="p-6 w-full">
@@ -207,7 +229,7 @@ export function ImpactAssessment() {
           <CardContent>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-gray-600">
-                Based on {parsed.classification} classification
+                Based on {classificationParsed.classification} classification
               </span>
               <span className="text-sm font-semibold text-gray-900">
                 {confidenceScore}%

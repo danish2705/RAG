@@ -9,9 +9,20 @@ const ImpactParameter = z.object({
 });
 
 // rationale is now an array of bullet-point strings
+// NOTE: routing decision ONLY. Severity/impact is a separate stage
+// (ImpactAssessmentSchema below) that only runs after a human approves
+// this classification — see pipeline/impactAssessment.ts.
 export const ClassificationSchema = z.object({
   classification: z.enum(["Deviation", "Change Control", "Hybrid"]),
   rationale: z.array(z.string().min(1)).min(1),
+  confidence_score: z.number().min(0).max(100),
+});
+
+export type ClassificationResult = z.infer<typeof ClassificationSchema>;
+
+// Stage 2: impact/severity assessment. Only invoked after a human has
+// accepted (or overridden) the Stage 1 classification above.
+export const ImpactAssessmentSchema = z.object({
   impact_assessment: z.object({
     product_impact: ImpactParameter,
     patient_impact: ImpactParameter,
@@ -21,7 +32,7 @@ export const ClassificationSchema = z.object({
   confidence_score: z.number().min(0).max(100),
 });
 
-export type ClassificationResult = z.infer<typeof ClassificationSchema>;
+export type ImpactAssessmentResult = z.infer<typeof ImpactAssessmentSchema>;
 
 // sequence_of_events, contributing_factors, evidence — all plain string arrays
 export const RCASchema = z.object({

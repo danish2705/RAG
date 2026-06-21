@@ -9,7 +9,7 @@ import {
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Textarea } from "../components/ui/textarea";
-import { Sparkles, Info, Edit2, Check, X, AlertTriangle } from "lucide-react";
+import { Sparkles, Info, AlertTriangle, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -25,13 +25,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../components/ui/tooltip";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../components/ui/select";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -50,15 +43,13 @@ interface ImpactParameter {
 }
 
 // rationale is now array of bullet strings (matches updated prompt + schema)
+// NOTE: classification stage is routing-only now — no impact_assessment
+// field here. Severity comes from a separate call to
+// /api/deviations/impact-assessment, made only after the user approves
+// this classification (see handleAccept/handleOverride below).
 interface ClassificationParsed {
   classification: "Deviation" | "Change Control" | "Hybrid";
   rationale: string[];
-  impact_assessment: {
-    product_impact: ImpactParameter;
-    patient_impact: ImpactParameter;
-    data_integrity_impact: ImpactParameter;
-    compliance_impact: ImpactParameter;
-  };
   confidence_score: number;
 }
 
@@ -80,15 +71,33 @@ interface PipelineResult {
   routing?: unknown;
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────
-
-function getSeverityBadgeClass(severity: string): string {
-  const s = severity.toLowerCase();
-  if (s === "critical") return "bg-red-100 text-red-800 border-red-200";
-  if (s === "major") return "bg-orange-100 text-orange-800 border-orange-200";
-  if (s === "minor") return "bg-yellow-100 text-yellow-800 border-yellow-200";
-  return "bg-gray-100 text-gray-600 border-gray-200";
+// Shape returned by POST /api/deviations/impact-assessment
+interface ImpactAssessmentParsed {
+  impact_assessment: {
+    product_impact: ImpactParameter;
+    patient_impact: ImpactParameter;
+    data_integrity_impact: ImpactParameter;
+    compliance_impact: ImpactParameter;
+  };
+  confidence_score: number;
 }
+
+interface ImpactAssessmentApiResponse {
+  status: "halted_for_human_review" | "completed_pending_human_review";
+  haltedAt: StageName | "impact_assessment" | null;
+  stages: {
+    impactAssessment?: {
+      rawText: string;
+      parsed: ImpactAssessmentParsed | null;
+      error: unknown;
+      gate: GateResult;
+    };
+  };
+  auditTrail: unknown[];
+  query: string;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
 
 function getClassificationBadgeClass(type: string): string {
   if (type === "Deviation") return "bg-red-100 text-red-800 border-red-200";
@@ -111,17 +120,15 @@ export function AIRecommendation() {
   const classificationStage = result?.stages?.classification;
   const parsed = classificationStage?.parsed;
 
-  const originalSeverity =
-    parsed?.impact_assessment?.product_impact?.severity ?? "Minor";
-  const [savedSeverity, setSavedSeverity] = useState(originalSeverity);
-  const [editedSeverity, setEditedSeverity] = useState(originalSeverity);
-  const [isEditingSeverity, setIsEditingSeverity] = useState(false);
-  const severityWasEdited = savedSeverity !== originalSeverity;
-
   const [showOverrideDialog, setShowOverrideDialog] = useState(false);
   const [overrideJustification, setOverrideJustification] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectJustification, setRejectJustification] = useState("");
+
+  // Impact-assessment call only fires once the user approves routing
+  // (Accept or Override below) — never automatically.
+  const [isAssessing, setIsAssessing] = useState(false);
+  const [assessError, setAssessError] = useState<string | null>(null);
 
   // ── Guard ──────────────────────────────────────────────────────────────
   if (!result || !parsed) {
@@ -145,27 +152,76 @@ export function AIRecommendation() {
     );
   }
 
-  const handleAccept = () =>
-    navigate("/deviation/impact-assessment", { state: { result } });
-  const handleOverride = () => {
-    if (overrideJustification.trim()) {
-      setShowOverrideDialog(false);
-      navigate("/deviation/impact-assessment", { state: { result } });
+  // This is the actual fix: routing approval (Accept or Override) now
+  // triggers the Stage 2 LLM call (POST /api/deviations/impact-assessment).
+  // That call only happens here, after the human has approved/overridden
+  // the classification — never before, and never bundled into Stage 1.
+  const runImpactAssessment = async (
+    approvedClassification: ClassificationParsed,
+  ) => {
+    setAssessError(null);
+    setIsAssessing(true);
+
+    try {
+      const response = await fetch("/api/deviations/impact-assessment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: result.query,
+          classification: approvedClassification,
+        }),
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(
+          body?.error || `Request failed with status ${response.status}`,
+        );
+      }
+
+      const impactResult: ImpactAssessmentApiResponse = await response.json();
+
+      navigate("/deviation/impact-assessment", {
+        state: {
+          result: {
+            ...result,
+            stages: {
+              ...result.stages,
+              impactAssessment: impactResult.stages.impactAssessment,
+            },
+          },
+        },
+      });
+    } catch (err) {
+      setAssessError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong running the impact assessment. Please try again.",
+      );
+    } finally {
+      setIsAssessing(false);
     }
   };
+
+  const handleAccept = () => {
+    void runImpactAssessment(parsed);
+  };
+
+  const handleOverride = () => {
+    if (!overrideJustification.trim()) return;
+    setShowOverrideDialog(false);
+    // The override justification is for the audit trail; the classification
+    // value itself is whatever the reviewer left in place (this UI doesn't
+    // offer a different classification value to override TO — only a
+    // reason). Send the same approved classification forward.
+    void runImpactAssessment(parsed);
+  };
+
   const handleReject = () => {
     if (rejectJustification.trim()) {
       setShowRejectDialog(false);
       navigate("/deviation/new");
     }
-  };
-  const handleSaveSeverity = () => {
-    setSavedSeverity(editedSeverity);
-    setIsEditingSeverity(false);
-  };
-  const handleCancelSeverity = () => {
-    setEditedSeverity(savedSeverity);
-    setIsEditingSeverity(false);
   };
 
   // ── Render ─────────────────────────────────────────────────────────────
@@ -203,69 +259,10 @@ export function AIRecommendation() {
               </Badge>
             </div>
 
-            {/* Severity — editable */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-600">
-                Severity Level:
-              </span>
-              {!isEditingSeverity ? (
-                <>
-                  <Badge className={getSeverityBadgeClass(savedSeverity)}>
-                    {savedSeverity}
-                  </Badge>
-                  {severityWasEdited && (
-                    <Badge
-                      variant="outline"
-                      className="bg-blue-50 text-blue-700 border-blue-200 text-xs"
-                    >
-                      Manually Edited
-                    </Badge>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsEditingSeverity(true)}
-                    className="h-7 px-2 text-xs"
-                  >
-                    <Edit2 className="h-3 w-3 mr-1" />
-                    Edit
-                  </Button>
-                </>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Select
-                    value={editedSeverity}
-                    onValueChange={setEditedSeverity}
-                  >
-                    <SelectTrigger className="w-32 h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Critical">Critical</SelectItem>
-                      <SelectItem value="Major">Major</SelectItem>
-                      <SelectItem value="Minor">Minor</SelectItem>
-                      <SelectItem value="None">None</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleSaveSeverity}
-                    className="h-7 px-2 text-green-700 hover:bg-green-50"
-                  >
-                    <Check className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleCancelSeverity}
-                    className="h-7 px-2 text-gray-600 hover:bg-gray-50"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-            </div>
+            {/* Severity now lives on the Impact Assessment page only —
+                it's produced by a separate LLM call that fires after this
+                classification is accepted/overridden below, so it can't be
+                shown or edited here. */}
 
             {/* Confidence score */}
             <div>
@@ -333,29 +330,50 @@ export function AIRecommendation() {
             <CardTitle>Decision Required</CardTitle>
           </CardHeader>
           <CardContent>
+            {assessError && (
+              <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-medium">Impact assessment failed</p>
+                  <p className="mt-1">{assessError}</p>
+                </div>
+              </div>
+            )}
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
                 onClick={handleAccept}
-                className="flex-1 bg-green-600 hover:bg-green-700"
+                disabled={isAssessing}
+                className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50"
               >
-                Accept Classification
+                {isAssessing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Running Impact Assessment...
+                  </>
+                ) : (
+                  "Accept Classification"
+                )}
               </Button>
               <Button
                 onClick={() => setShowOverrideDialog(true)}
                 variant="outline"
+                disabled={isAssessing}
                 className="flex-1"
               >
                 Override Classification
               </Button>
               <Button
                 onClick={() => setShowRejectDialog(true)}
+                disabled={isAssessing}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white"
               >
                 Reject Classification
               </Button>
             </div>
             <p className="text-xs text-gray-500 mt-3 text-center">
-              Your decision will be logged in the audit trail
+              Your decision will be logged in the audit trail. Accepting or
+              overriding runs a fresh impact assessment — it only starts now,
+              not before you decide.
             </p>
           </CardContent>
         </Card>
@@ -392,9 +410,16 @@ export function AIRecommendation() {
             </Button>
             <Button
               onClick={handleOverride}
-              disabled={!overrideJustification.trim()}
+              disabled={!overrideJustification.trim() || isAssessing}
             >
-              Confirm Override
+              {isAssessing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Running...
+                </>
+              ) : (
+                "Confirm Override"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

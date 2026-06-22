@@ -8,6 +8,7 @@ import { ImpactAssessment } from "./pages/ImpactAssessment";
 import { HistoricalMatches } from "./pages/HistoricalMatches";
 import { RootCause } from "./pages/RootCause";
 import { Capa } from "./pages/Capa";
+import { Summary } from "./pages/Summary";
 import { ChangeControl } from "./pages/ChangeControl";
 import { ChangeDecision } from "./pages/ChangeDecision";
 import { ActionPlan } from "./pages/ActionPlan";
@@ -24,11 +25,15 @@ export const router = createBrowserRouter([
       { index: true, Component: Dashboard },
       { path: "deviation", Component: NewDeviation },
       { path: "deviation/ai-recommendation", Component: AIRecommendation },
-      { path: "deviation/immediate-correction", Component: ImmediateCorrection },
+      {
+        path: "deviation/immediate-correction",
+        Component: ImmediateCorrection,
+      },
       { path: "deviation/impact-assessment", Component: ImpactAssessment },
       { path: "deviation/historical-analysis", Component: HistoricalMatches },
       { path: "deviation/root-cause", Component: RootCause },
       { path: "deviation/capa", Component: Capa },
+      { path: "deviation/summary", Component: Summary },
       { path: "change-control", Component: ChangeControl },
       { path: "change-control/decision", Component: ChangeDecision },
       { path: "change-control/action-plan", Component: ActionPlan },

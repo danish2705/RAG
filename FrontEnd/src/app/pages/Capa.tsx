@@ -67,6 +67,10 @@ export function Capa() {
   // Tracks whether the user confirmed an override so the header badge
   // reflects that this CAPA was human-modified.
   const [overrideConfirmed, setOverrideConfirmed] = useState(false);
+
+  // Tracks whether the user has clicked Accept CAPA — gates the
+  // "Get Summary" button until a decision has been made.
+  const [capaAccepted, setCapaAccepted] = useState(false);
   const [correction, setCorrection] = useState("");
   const [correctiveAction, setCorrectiveAction] = useState(
     (capaParsed?.corrective_actions ?? []).join("\n"),
@@ -128,7 +132,7 @@ export function Capa() {
   });
 
   const proceed = () => {
-    navigate("/deviation/effectiveness-check", {
+    navigate("/deviation/summary", {
       state: {
         result: {
           ...result,
@@ -145,8 +149,11 @@ export function Capa() {
     });
   };
 
+  // Accepting CAPA no longer navigates away immediately — it just records
+  // the decision so the "Get Summary" button becomes available. The user
+  // explicitly clicks Get Summary to move on.
   const handleAccept = () => {
-    proceed();
+    setCapaAccepted(true);
   };
 
   // Step 1: clicking Override CAPA enters edit mode
@@ -212,12 +219,27 @@ export function Capa() {
             })
           }
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
           Back
         </Button>
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">CAPA</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Corrective and Preventive Actions — review and edit as needed</p>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Corrective and Preventive Actions — review and edit as needed
+          </p>
         </div>
         {isOverrideEditing && (
           <Badge className="ml-auto bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
@@ -232,7 +254,6 @@ export function Capa() {
       </div>
 
       <div className="space-y-6">
-
         {/* Correction — always editable (not AI-generated) */}
         <Card>
           <CardHeader>
@@ -276,7 +297,9 @@ export function Capa() {
                 value={correctiveAction}
                 onChange={(e) => handleCorrectiveActionChange(e.target.value)}
                 readOnly={!isOverrideEditing}
-                className={!isOverrideEditing ? "bg-gray-100 cursor-default" : ""}
+                className={
+                  !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
+                }
               />
             </div>
           </CardContent>
@@ -311,7 +334,9 @@ export function Capa() {
                 value={preventiveAction}
                 onChange={(e) => setPreventiveAction(e.target.value)}
                 readOnly={!isOverrideEditing}
-                className={!isOverrideEditing ? "bg-gray-100 cursor-default" : ""}
+                className={
+                  !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
+                }
               />
             </div>
           </CardContent>
@@ -334,7 +359,9 @@ export function Capa() {
                 value={effectivenessCheck}
                 onChange={(e) => setEffectivenessCheck(e.target.value)}
                 readOnly={!isOverrideEditing}
-                className={!isOverrideEditing ? "bg-gray-100 cursor-default" : ""}
+                className={
+                  !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
+                }
               />
             </div>
             <div className="space-y-2">
@@ -345,7 +372,9 @@ export function Capa() {
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 readOnly={!isOverrideEditing}
-                className={!isOverrideEditing ? "bg-gray-100 cursor-default" : ""}
+                className={
+                  !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
+                }
               />
             </div>
           </CardContent>
@@ -396,8 +425,12 @@ export function Capa() {
         </Card>
 
         <div className="flex justify-end">
-          <Button onClick={proceed} className="bg-blue-600 hover:bg-blue-700">
-            Complete Analysis
+          <Button
+            onClick={proceed}
+            disabled={!capaAccepted}
+            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Get Summary
           </Button>
         </div>
       </div>

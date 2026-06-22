@@ -226,7 +226,7 @@ export function ImpactAssessment() {
                     assessments.map((a) => [
                       a.key,
                       { severity: a.severity, rationale: a.description },
-                    ])
+                    ]),
                   ),
                 },
               },
@@ -247,6 +247,37 @@ export function ImpactAssessment() {
   };
 
   const handleAccept = () => {
+    // If RCA was already generated for this deviation (e.g. the user went
+    // Back from a later step) and nothing was overridden on this visit,
+    // reuse it instead of calling the AI again.
+    const existingRCA = result!.stages?.rca;
+    if (!overrideConfirmed && existingRCA?.parsed) {
+      navigate("/deviation/root-cause", {
+        state: {
+          result: {
+            ...result,
+            stages: {
+              ...result!.stages,
+              impactAssessment: {
+                ...result!.stages.impactAssessment,
+                parsed: {
+                  ...impactParsed,
+                  impact_assessment: Object.fromEntries(
+                    assessments.map((a) => [
+                      a.key,
+                      { severity: a.severity, rationale: a.description },
+                    ]),
+                  ),
+                },
+              },
+              rca: existingRCA,
+            },
+          },
+        },
+      });
+      return;
+    }
+
     void runRCA();
   };
 
@@ -302,7 +333,7 @@ export function ImpactAssessment() {
                           assessments.map((a) => [
                             a.key,
                             { severity: a.severity, rationale: a.description },
-                          ])
+                          ]),
                         ),
                       },
                     },
@@ -312,12 +343,29 @@ export function ImpactAssessment() {
             })
           }
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
           Back
         </Button>
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Impact Assessment</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Evaluate the impact across critical quality areas</p>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Impact Assessment
+          </h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Evaluate the impact across critical quality areas
+          </p>
         </div>
         {isOverrideEditing && (
           <Badge className="ml-auto bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
@@ -494,7 +542,6 @@ export function ImpactAssessment() {
             </p>
           </CardContent>
         </Card>
-
       </div>
 
       {/* Override Dialog — shown after Save Changes */}

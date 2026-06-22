@@ -65,9 +65,15 @@ interface ClassificationStage {
 
 interface PipelineResult {
   status: "halted_for_human_review" | "completed_pending_human_review";
-  haltedAt: StageName | null;
+  haltedAt: StageName | "impact_assessment" | null;
   stages: {
     classification?: ClassificationStage;
+    impactAssessment?: {
+      rawText: string;
+      parsed: ImpactAssessmentParsed | null;
+      error: unknown;
+      gate: GateResult;
+    };
   };
   auditTrail: unknown[];
   query: string;
@@ -215,19 +221,43 @@ export function AIRecommendation() {
   };
 
   const handleAccept = () => {
-    if (overrideConfirmed) {
-      const overriddenParsed: ClassificationParsed = {
-        ...parsed,
-        classification: editedClassification,
-        rationale: editedRationale
-          .split("\n")
-          .map((s) => s.trim())
-          .filter(Boolean),
-      };
-      void runImpactAssessment(overriddenParsed);
-    } else {
-      void runImpactAssessment(parsed);
+    const overriddenParsed: ClassificationParsed | null = overrideConfirmed
+      ? {
+          ...parsed,
+          classification: editedClassification,
+          rationale: editedRationale
+            .split("\n")
+            .map((s) => s.trim())
+            .filter(Boolean),
+        }
+      : null;
+
+    const approvedClassification = overriddenParsed ?? parsed;
+
+    // If an impact assessment was already generated for this deviation (e.g.
+    // the user went Back from a later step) and nothing was overridden on
+    // this visit, reuse it instead of calling the AI again.
+    const existingImpactAssessment = result.stages?.impactAssessment;
+    if (!overrideConfirmed && existingImpactAssessment?.parsed) {
+      navigate("/deviation/impact-assessment", {
+        state: {
+          result: {
+            ...result,
+            stages: {
+              ...result.stages,
+              classification: {
+                ...result.stages.classification,
+                parsed: approvedClassification,
+              },
+              impactAssessment: existingImpactAssessment,
+            },
+          },
+        },
+      });
+      return;
     }
+
+    void runImpactAssessment(approvedClassification);
   };
 
   // Step 1: clicking Override Classification enters edit mode
@@ -266,7 +296,10 @@ export function AIRecommendation() {
     ? {
         ...parsed,
         classification: editedClassification,
-        rationale: editedRationale.split("\n").map((s) => s.trim()).filter(Boolean),
+        rationale: editedRationale
+          .split("\n")
+          .map((s) => s.trim())
+          .filter(Boolean),
       }
     : parsed;
 
@@ -275,8 +308,12 @@ export function AIRecommendation() {
     <div className="p-6 w-full">
       <div className="mb-6 flex items-center gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">AI Classification</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Review AI-generated classification and severity</p>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            AI Classification
+          </h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Review AI-generated classification and severity
+          </p>
         </div>
         {isOverrideEditing && (
           <Badge className="ml-auto bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
@@ -320,7 +357,9 @@ export function AIRecommendation() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Deviation">Deviation</SelectItem>
-                    <SelectItem value="Change Control">Change Control</SelectItem>
+                    <SelectItem value="Change Control">
+                      Change Control
+                    </SelectItem>
                     <SelectItem value="Hybrid">Hybrid</SelectItem>
                   </SelectContent>
                 </Select>

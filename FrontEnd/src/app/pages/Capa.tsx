@@ -254,6 +254,38 @@ export function Capa() {
       </div>
 
       <div className="space-y-6">
+        {/* Overall confidence score */}
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-blue-600" />
+              Overall AI Confidence Score
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600">
+                Based on CAPA recommendations
+              </span>
+              <span className="text-sm font-semibold text-gray-900">
+                {capaParsed.confidence_score}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className={`h-2 rounded-full ${
+                  capaParsed.confidence_score >= 80
+                    ? "bg-green-500"
+                    : capaParsed.confidence_score >= 60
+                      ? "bg-yellow-500"
+                      : "bg-red-500"
+                }`}
+                style={{ width: `${capaParsed.confidence_score}%` }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Correction — always editable (not AI-generated) */}
         <Card>
           <CardHeader>

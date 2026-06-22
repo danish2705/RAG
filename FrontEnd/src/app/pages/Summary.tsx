@@ -354,6 +354,18 @@ export function Summary() {
         </div>
 
         {/* 3. Root Cause Analysis */}
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-blue-600" />
+              Root Cause Analysis — Overall Confidence
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ConfidenceBar score={rcaParsed.confidence_score} />
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -426,6 +438,18 @@ export function Summary() {
         </Card>
 
         {/* 4. CAPA */}
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-blue-600" />
+              CAPA — Overall Confidence
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ConfidenceBar score={capaParsed.confidence_score} />
+          </CardContent>
+        </Card>
+
         {result.correction && (
           <Card>
             <CardHeader>

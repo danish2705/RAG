@@ -213,6 +213,43 @@ export function RootCause() {
   };
 
   const handleAccept = () => {
+    // If CAPA was already generated for this deviation (e.g. the user went
+    // Back from the CAPA step) and nothing was overridden on this visit,
+    // reuse it instead of calling the AI again.
+    const existingCAPA = result.stages?.capa;
+    if (!overrideConfirmed && existingCAPA?.parsed) {
+      const approvedRCA: RCAResult = {
+        ...rcaParsed,
+        primary_root_cause: primaryRootCause,
+        immediate_cause: immediateCause,
+        contributing_factors: contributingFactors
+          .split("\n")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        evidence: evidence
+          .split("\n")
+          .map((s) => s.trim())
+          .filter(Boolean),
+      };
+
+      navigate("/deviation/capa", {
+        state: {
+          result: {
+            ...result,
+            stages: {
+              ...result.stages,
+              rca: {
+                ...result.stages.rca,
+                parsed: approvedRCA,
+              },
+              capa: existingCAPA,
+            },
+          },
+        },
+      });
+      return;
+    }
+
     void runCAPA();
   };
 
@@ -279,12 +316,29 @@ export function RootCause() {
             })
           }
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
           Back
         </Button>
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Root Cause Analysis</h1>
-          <p className="text-sm text-gray-500 mt-0.5">AI-generated root cause analysis — review and edit as needed</p>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Root Cause Analysis
+          </h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            AI-generated root cause analysis — review and edit as needed
+          </p>
         </div>
         {isOverrideEditing && (
           <Badge className="ml-auto bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
@@ -299,6 +353,38 @@ export function RootCause() {
       </div>
 
       <div className="space-y-6">
+        {/* Overall confidence score */}
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-blue-600" />
+              Overall AI Confidence Score
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600">
+                Based on root cause analysis
+              </span>
+              <span className="text-sm font-semibold text-gray-900">
+                {rcaParsed.confidence_score}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className={`h-2 rounded-full ${
+                  rcaParsed.confidence_score >= 80
+                    ? "bg-green-500"
+                    : rcaParsed.confidence_score >= 60
+                      ? "bg-yellow-500"
+                      : "bg-red-500"
+                }`}
+                style={{ width: `${rcaParsed.confidence_score}%` }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -315,7 +401,9 @@ export function RootCause() {
                 value={primaryRootCause}
                 onChange={(e) => setPrimaryRootCause(e.target.value)}
                 readOnly={!isOverrideEditing}
-                className={!isOverrideEditing ? "bg-gray-100 cursor-default" : ""}
+                className={
+                  !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
+                }
               />
             </div>
 
@@ -329,7 +417,9 @@ export function RootCause() {
                 value={immediateCause}
                 onChange={(e) => setImmediateCause(e.target.value)}
                 readOnly={!isOverrideEditing}
-                className={!isOverrideEditing ? "bg-gray-100 cursor-default" : ""}
+                className={
+                  !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
+                }
               />
             </div>
           </CardContent>
@@ -351,7 +441,9 @@ export function RootCause() {
                 value={contributingFactors}
                 onChange={(e) => setContributingFactors(e.target.value)}
                 readOnly={!isOverrideEditing}
-                className={!isOverrideEditing ? "bg-gray-100 cursor-default" : ""}
+                className={
+                  !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
+                }
               />
             </div>
           </CardContent>
@@ -373,7 +465,9 @@ export function RootCause() {
                 value={evidence}
                 onChange={(e) => setEvidence(e.target.value)}
                 readOnly={!isOverrideEditing}
-                className={!isOverrideEditing ? "bg-gray-100 cursor-default" : ""}
+                className={
+                  !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
+                }
               />
             </div>
           </CardContent>
@@ -443,8 +537,6 @@ export function RootCause() {
             </p>
           </CardContent>
         </Card>
-
-
       </div>
 
       {/* Override Dialog — shown after Save Changes */}

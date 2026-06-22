@@ -15,14 +15,7 @@ export function Header() {
   return (
     <header className="h-16 border-b bg-white flex items-center justify-between px-6 sticky top-0 z-10">
       <div className="flex items-center flex-1 max-w-xl">
-        <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            type="search"
-            placeholder="Search deviations, changes, records..."
-            className="pl-10 bg-gray-50 border-gray-200"
-          />
-        </div>
+        
       </div>
 
       <div className="flex items-center gap-4">

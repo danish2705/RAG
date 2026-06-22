@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-import { Pencil, Save, AlertTriangle, Sparkles, Loader2 } from "lucide-react";
+import { AlertTriangle, Sparkles, Loader2, Save } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -49,9 +49,6 @@ interface ClassificationStage {
   gate: unknown;
 }
 
-// Populated by a separate LLM call (POST /api/deviations/impact-assessment)
-// that only runs after the classification stage was accepted/overridden —
-// see AIRecommendation.tsx's handleAccept/handleOverride.
 interface ImpactAssessmentParsed {
   impact_assessment: {
     product_impact: ImpactParameter;
@@ -69,8 +66,6 @@ interface ImpactAssessmentStage {
   gate: unknown;
 }
 
-// Populated by POST /api/deviations/rca, fired only after the user
-// accepts/overrides the impact assessment below.
 interface RCAResult {
   sequence_of_events: string[];
   immediate_cause: string;
@@ -101,7 +96,6 @@ interface PipelineResult {
   routing?: unknown;
 }
 
-// Shape returned by POST /api/deviations/rca
 interface RCAApiResponse {
   status: "halted_for_human_review" | "completed_pending_human_review";
   haltedAt: StageName | "impact_assessment" | null;
@@ -112,21 +106,13 @@ interface RCAApiResponse {
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
-// Maps backend severity (None/Minor/Major/Critical) to display level
-function severityToLevel(severity: string): string {
-  if (severity === "Critical") return "High";
-  if (severity === "Major") return "Medium";
-  if (severity === "Minor") return "Low";
-  return "None";
-}
-
-function getLevelBadgeClass(level: string): string {
-  switch (level.toLowerCase()) {
-    case "high":
+function getSeverityBadgeClass(severity: string): string {
+  switch (severity.toLowerCase()) {
+    case "critical":
       return "bg-red-100 text-red-700 border border-red-200";
-    case "medium":
+    case "major":
       return "bg-yellow-100 text-yellow-700 border border-yellow-200";
-    case "low":
+    case "minor":
       return "bg-green-100 text-green-700 border border-green-200";
     default:
       return "bg-gray-100 text-gray-600 border border-gray-200";
@@ -150,35 +136,32 @@ export function ImpactAssessment() {
   const classificationParsed = result?.stages?.classification?.parsed ?? null;
   const impactParsed = result?.stages?.impactAssessment?.parsed ?? null;
 
-  // Build assessment rows from the impact-assessment stage's real backend
-  // data — NOT from the classification stage (that stage no longer carries
-  // impact_assessment at all; it's routing-only).
   const initialAssessments = impactParsed
     ? Object.entries(impactParsed.impact_assessment).map(([key, val]) => ({
         key,
         category: PARAMETER_LABELS[key] ?? key,
-        severity: val.severity, // None/Minor/Major/Critical
-        level: severityToLevel(val.severity), // High/Medium/Low/None
+        severity: val.severity,
         description: val.rationale,
       }))
     : [];
 
-  const [isEditing, setIsEditing] = useState(false);
+  // Override editing state — fields locked by default, unlocked on Override click
+  const [isOverrideEditing, setIsOverrideEditing] = useState(false);
   const [assessments, setAssessments] = useState(initialAssessments);
+
+  // Tracks whether the user confirmed an override so the header badge and
+  // downstream stages reflect that this assessment was human-modified.
+  const [overrideConfirmed, setOverrideConfirmed] = useState(false);
 
   const [showOverrideDialog, setShowOverrideDialog] = useState(false);
   const [overrideJustification, setOverrideJustification] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectJustification, setRejectJustification] = useState("");
 
-  // RCA call only fires once the user approves the impact assessment
-  // (Accept or Override below) — never automatically.
   const [isGeneratingRCA, setIsGeneratingRCA] = useState(false);
   const [rcaError, setRcaError] = useState<string | null>(null);
 
   // ── Guard ──────────────────────────────────────────────────────────────
-  // Guard on impactParsed (not classificationParsed) — this page renders
-  // severity data, which only exists once Stage 2 has actually run.
   if (!impactParsed || !classificationParsed) {
     return (
       <div className="p-6 w-full">
@@ -206,15 +189,6 @@ export function ImpactAssessment() {
     setAssessments(updated);
   };
 
-  const handleSave = () => {
-    setIsEditing(false);
-    alert("Impact Assessment saved successfully");
-  };
-
-  // This is the fix: accepting/overriding the impact assessment now
-  // triggers the Stage 3 LLM call (POST /api/deviations/rca). That call
-  // only happens here, after the human approves — never automatically and
-  // never bundled into the impact-assessment response.
   const runRCA = async () => {
     setRcaError(null);
     setIsGeneratingRCA(true);
@@ -244,6 +218,18 @@ export function ImpactAssessment() {
             ...result,
             stages: {
               ...result!.stages,
+              impactAssessment: {
+                ...result!.stages.impactAssessment,
+                parsed: {
+                  ...impactParsed,
+                  impact_assessment: Object.fromEntries(
+                    assessments.map((a) => [
+                      a.key,
+                      { severity: a.severity, rationale: a.description },
+                    ])
+                  ),
+                },
+              },
               rca: rcaResult.stages.rca,
             },
           },
@@ -264,10 +250,24 @@ export function ImpactAssessment() {
     void runRCA();
   };
 
-  const handleOverride = () => {
+  // Step 1: clicking Override Assessment enters edit mode
+  const handleOverrideClick = () => {
+    setIsOverrideEditing(true);
+  };
+
+  // Step 2: Save Changes opens the justification dialog
+  const handleSaveChanges = () => {
+    setShowOverrideDialog(true);
+  };
+
+  // Step 3: Confirm closes dialog + returns to read-only with edited values.
+  // The user must still explicitly click Accept to proceed.
+  const handleOverrideConfirm = () => {
     if (!overrideJustification.trim()) return;
     setShowOverrideDialog(false);
-    void runRCA();
+    setIsOverrideEditing(false);
+    setOverrideConfirmed(true);
+    setOverrideJustification("");
   };
 
   const handleReject = () => {
@@ -277,25 +277,58 @@ export function ImpactAssessment() {
     }
   };
 
-  // Confidence from the impact-assessment stage itself, not classification
   const confidenceScore = impactParsed.confidence_score;
 
   return (
     <div className="p-6 w-full">
       {/* Header */}
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
-            Impact Assessment
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Evaluate the impact across critical quality areas
-          </p>
-        </div>
-        <Button variant="outline" onClick={() => setIsEditing(!isEditing)}>
-          <Pencil className="h-4 w-4 mr-2" />
-          {isEditing ? "Cancel Edit" : "Edit Assessment"}
+      <div className="mb-6 flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="flex items-center gap-1 text-gray-500 hover:text-gray-900 px-2"
+          onClick={() =>
+            navigate("/deviation/ai-recommendation", {
+              state: {
+                result: {
+                  ...result,
+                  stages: {
+                    ...result!.stages,
+                    impactAssessment: {
+                      ...result!.stages.impactAssessment,
+                      parsed: {
+                        ...impactParsed,
+                        impact_assessment: Object.fromEntries(
+                          assessments.map((a) => [
+                            a.key,
+                            { severity: a.severity, rationale: a.description },
+                          ])
+                        ),
+                      },
+                    },
+                  },
+                },
+              },
+            })
+          }
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          Back
         </Button>
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Impact Assessment</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Evaluate the impact across critical quality areas</p>
+        </div>
+        {isOverrideEditing && (
+          <Badge className="ml-auto bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
+            Editing
+          </Badge>
+        )}
+        {overrideConfirmed && !isOverrideEditing && (
+          <Badge className="ml-auto bg-blue-100 text-blue-700 border-blue-200 text-sm px-3 py-1">
+            Overridden
+          </Badge>
+        )}
       </div>
 
       <div className="space-y-6">
@@ -340,27 +373,27 @@ export function ImpactAssessment() {
               </CardHeader>
 
               <CardContent className="space-y-4">
-                {isEditing ? (
+                {isOverrideEditing ? (
                   <>
                     <div>
                       <label className="text-sm font-medium mb-2 block">
                         Impact Level
                       </label>
                       <Select
-                        value={assessment.level}
+                        value={assessment.severity}
                         onValueChange={(value) =>
-                          updateAssessment(index, "level", value)
+                          updateAssessment(index, "severity", value)
                         }
                       >
                         <SelectTrigger
-                          className={getLevelBadgeClass(assessment.level)}
+                          className={getSeverityBadgeClass(assessment.severity)}
                         >
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="High">🔴 High</SelectItem>
-                          <SelectItem value="Medium">🟡 Medium</SelectItem>
-                          <SelectItem value="Low">🟢 Low</SelectItem>
+                          <SelectItem value="Critical">🔴 Critical</SelectItem>
+                          <SelectItem value="Major">🟡 Major</SelectItem>
+                          <SelectItem value="Minor">🟢 Minor</SelectItem>
                           <SelectItem value="None">⚪ None</SelectItem>
                         </SelectContent>
                       </Select>
@@ -380,19 +413,12 @@ export function ImpactAssessment() {
                   </>
                 ) : (
                   <>
-                    {/* Severity from backend + mapped display level */}
                     <div className="flex items-center gap-2">
                       <div
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getLevelBadgeClass(assessment.level)}`}
-                      >
-                        {assessment.level}
-                      </div>
-                      <Badge
-                        variant="outline"
-                        className="text-xs text-gray-500"
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getSeverityBadgeClass(assessment.severity)}`}
                       >
                         {assessment.severity}
-                      </Badge>
+                      </div>
                     </div>
                     <p className="text-sm text-gray-600 leading-relaxed">
                       {assessment.description}
@@ -422,7 +448,7 @@ export function ImpactAssessment() {
             <div className="flex flex-col sm:flex-row gap-4">
               <Button
                 onClick={handleAccept}
-                disabled={isGeneratingRCA}
+                disabled={isGeneratingRCA || isOverrideEditing}
                 className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50"
               >
                 {isGeneratingRCA ? (
@@ -434,14 +460,25 @@ export function ImpactAssessment() {
                   "Accept & Continue to Root Cause Analysis"
                 )}
               </Button>
-              <Button
-                onClick={() => setShowOverrideDialog(true)}
-                variant="outline"
-                disabled={isGeneratingRCA}
-                className="flex-1"
-              >
-                Override Assessment
-              </Button>
+              {isOverrideEditing ? (
+                <Button
+                  onClick={handleSaveChanges}
+                  disabled={isGeneratingRCA}
+                  className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Changes
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleOverrideClick}
+                  variant="outline"
+                  disabled={isGeneratingRCA}
+                  className="flex-1"
+                >
+                  Override Assessment
+                </Button>
+              )}
               <Button
                 onClick={() => setShowRejectDialog(true)}
                 disabled={isGeneratingRCA}
@@ -458,26 +495,9 @@ export function ImpactAssessment() {
           </CardContent>
         </Card>
 
-        {/* Footer */}
-        <div className="flex justify-between items-center pt-2">
-          <Button
-            variant="outline"
-            onClick={() =>
-              navigate("/deviation/ai-recommendation", { state: { result } })
-            }
-          >
-            Back
-          </Button>
-          {isEditing && (
-            <Button onClick={handleSave} variant="outline">
-              <Save className="h-4 w-4 mr-2" />
-              Save Changes
-            </Button>
-          )}
-        </div>
       </div>
 
-      {/* Override Dialog */}
+      {/* Override Dialog — shown after Save Changes */}
       <Dialog open={showOverrideDialog} onOpenChange={setShowOverrideDialog}>
         <DialogContent>
           <DialogHeader>
@@ -507,7 +527,7 @@ export function ImpactAssessment() {
               Cancel
             </Button>
             <Button
-              onClick={handleOverride}
+              onClick={handleOverrideConfirm}
               disabled={!overrideJustification.trim() || isGeneratingRCA}
             >
               {isGeneratingRCA ? (

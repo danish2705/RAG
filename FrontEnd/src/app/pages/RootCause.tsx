@@ -7,10 +7,11 @@ import {
   CardTitle,
 } from "../components/ui/card";
 import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { AlertBanner } from "../components/qms/AlertBanner";
-import { AlertTriangle, Loader2, Sparkles } from "lucide-react";
+import { AlertTriangle, Loader2, Save, Sparkles } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -83,7 +84,6 @@ interface PipelineResult {
   routing?: unknown;
 }
 
-// Shape returned by POST /api/deviations/capa
 interface CAPAApiResponse {
   status: "halted_for_human_review" | "completed_pending_human_review";
   haltedAt: StageName | "impact_assessment" | null;
@@ -99,7 +99,12 @@ export function RootCause() {
   const { result } = (location.state ?? {}) as { result?: PipelineResult };
   const rcaParsed = result?.stages?.rca?.parsed ?? null;
 
-  // Editable fields, seeded from the real RCA stage — not mock data.
+  // Fields start read-only; unlocked when Override is clicked
+  const [isOverrideEditing, setIsOverrideEditing] = useState(false);
+
+  // Tracks whether the user confirmed an override so the header badge and
+  // downstream stages reflect that this analysis was human-modified.
+  const [overrideConfirmed, setOverrideConfirmed] = useState(false);
   const [primaryRootCause, setPrimaryRootCause] = useState(
     rcaParsed?.primary_root_cause ?? "",
   );
@@ -119,8 +124,6 @@ export function RootCause() {
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectJustification, setRejectJustification] = useState("");
 
-  // CAPA call only fires once the user approves the RCA (Accept or Override
-  // below) — never automatically.
   const [isGeneratingCAPA, setIsGeneratingCAPA] = useState(false);
   const [capaError, setCapaError] = useState<string | null>(null);
 
@@ -146,16 +149,10 @@ export function RootCause() {
     );
   }
 
-  // The actual fix: accepting/overriding the RCA now triggers the Stage 4
-  // LLM call (POST /api/deviations/capa). That call only happens here,
-  // after the human approves — never automatically.
   const runCAPA = async () => {
     setCapaError(null);
     setIsGeneratingCAPA(true);
 
-    // Forward the (possibly human-edited) RCA fields as the "approved RCA"
-    // context for CAPA generation, rather than the original unedited
-    // parsed object — so edits made on this page actually flow downstream.
     const approvedRCA: RCAResult = {
       ...rcaParsed,
       primary_root_cause: primaryRootCause,
@@ -219,10 +216,24 @@ export function RootCause() {
     void runCAPA();
   };
 
-  const handleOverride = () => {
+  // Step 1: clicking Override Root Cause enters edit mode
+  const handleOverrideClick = () => {
+    setIsOverrideEditing(true);
+  };
+
+  // Step 2: Save Changes opens the justification dialog
+  const handleSaveChanges = () => {
+    setShowOverrideDialog(true);
+  };
+
+  // Step 3: Confirm closes dialog + returns to read-only with edited values.
+  // The user must still explicitly click Accept to proceed.
+  const handleOverrideConfirm = () => {
     if (!overrideJustification.trim()) return;
     setShowOverrideDialog(false);
-    void runCAPA();
+    setIsOverrideEditing(false);
+    setOverrideConfirmed(true);
+    setOverrideJustification("");
   };
 
   const handleReject = () => {
@@ -233,23 +244,61 @@ export function RootCause() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">
-          Root Cause Analysis
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">
-          AI-generated root cause analysis — review and edit as needed
-        </p>
+    <div className="p-6 w-full">
+      <div className="mb-6 flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="flex items-center gap-1 text-gray-500 hover:text-gray-900 px-2"
+          onClick={() =>
+            navigate("/deviation/impact-assessment", {
+              state: {
+                result: {
+                  ...result,
+                  stages: {
+                    ...result.stages,
+                    rca: {
+                      ...result.stages.rca,
+                      parsed: {
+                        ...rcaParsed,
+                        primary_root_cause: primaryRootCause,
+                        immediate_cause: immediateCause,
+                        contributing_factors: contributingFactors
+                          .split("\n")
+                          .map((s) => s.trim())
+                          .filter(Boolean),
+                        evidence: evidence
+                          .split("\n")
+                          .map((s) => s.trim())
+                          .filter(Boolean),
+                      },
+                    },
+                  },
+                },
+              },
+            })
+          }
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          Back
+        </Button>
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Root Cause Analysis</h1>
+          <p className="text-sm text-gray-500 mt-0.5">AI-generated root cause analysis — review and edit as needed</p>
+        </div>
+        {isOverrideEditing && (
+          <Badge className="ml-auto bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
+            Editing
+          </Badge>
+        )}
+        {overrideConfirmed && !isOverrideEditing && (
+          <Badge className="ml-auto bg-blue-100 text-blue-700 border-blue-200 text-sm px-3 py-1">
+            Overridden
+          </Badge>
+        )}
       </div>
 
       <div className="space-y-6">
-        <AlertBanner
-          type="info"
-          title="AI Suggested – Please review and edit if required"
-          message="Fields below have been automatically populated by AI based on the deviation details and historical patterns. Review each section and make any necessary adjustments before proceeding."
-        />
-
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -265,11 +314,9 @@ export function RootCause() {
                 rows={3}
                 value={primaryRootCause}
                 onChange={(e) => setPrimaryRootCause(e.target.value)}
+                readOnly={!isOverrideEditing}
+                className={!isOverrideEditing ? "bg-gray-100 cursor-default" : ""}
               />
-              <p className="text-xs text-gray-500 flex items-center gap-1">
-                <Sparkles className="h-3 w-3 text-blue-600" />
-                AI-generated root cause — edit as needed
-              </p>
             </div>
 
             <div className="space-y-2">
@@ -281,6 +328,8 @@ export function RootCause() {
                 rows={2}
                 value={immediateCause}
                 onChange={(e) => setImmediateCause(e.target.value)}
+                readOnly={!isOverrideEditing}
+                className={!isOverrideEditing ? "bg-gray-100 cursor-default" : ""}
               />
             </div>
           </CardContent>
@@ -301,6 +350,8 @@ export function RootCause() {
                 rows={4}
                 value={contributingFactors}
                 onChange={(e) => setContributingFactors(e.target.value)}
+                readOnly={!isOverrideEditing}
+                className={!isOverrideEditing ? "bg-gray-100 cursor-default" : ""}
               />
             </div>
           </CardContent>
@@ -321,6 +372,8 @@ export function RootCause() {
                 rows={4}
                 value={evidence}
                 onChange={(e) => setEvidence(e.target.value)}
+                readOnly={!isOverrideEditing}
+                className={!isOverrideEditing ? "bg-gray-100 cursor-default" : ""}
               />
             </div>
           </CardContent>
@@ -344,7 +397,7 @@ export function RootCause() {
             <div className="flex gap-4">
               <Button
                 onClick={handleAccept}
-                disabled={isGeneratingCAPA}
+                disabled={isGeneratingCAPA || isOverrideEditing}
                 className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50"
               >
                 {isGeneratingCAPA ? (
@@ -353,17 +406,28 @@ export function RootCause() {
                     Generating CAPA...
                   </>
                 ) : (
-                  "Accept Root Cause"
+                  "Accept & Continue to CAPA"
                 )}
               </Button>
-              <Button
-                onClick={() => setShowOverrideDialog(true)}
-                variant="outline"
-                disabled={isGeneratingCAPA}
-                className="flex-1"
-              >
-                Override Root Cause
-              </Button>
+              {isOverrideEditing ? (
+                <Button
+                  onClick={handleSaveChanges}
+                  disabled={isGeneratingCAPA}
+                  className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Changes
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleOverrideClick}
+                  variant="outline"
+                  disabled={isGeneratingCAPA}
+                  className="flex-1"
+                >
+                  Override Root Cause
+                </Button>
+              )}
               <Button
                 onClick={() => setShowRejectDialog(true)}
                 disabled={isGeneratingCAPA}
@@ -380,19 +444,10 @@ export function RootCause() {
           </CardContent>
         </Card>
 
-        <div className="flex justify-between">
-          <Button
-            variant="outline"
-            onClick={() =>
-              navigate("/deviation/impact-assessment", { state: { result } })
-            }
-          >
-            Back
-          </Button>
-        </div>
+
       </div>
 
-      {/* Override Dialog */}
+      {/* Override Dialog — shown after Save Changes */}
       <Dialog open={showOverrideDialog} onOpenChange={setShowOverrideDialog}>
         <DialogContent>
           <DialogHeader>
@@ -422,7 +477,7 @@ export function RootCause() {
               Cancel
             </Button>
             <Button
-              onClick={handleOverride}
+              onClick={handleOverrideConfirm}
               disabled={!overrideJustification.trim() || isGeneratingCAPA}
             >
               {isGeneratingCAPA ? (

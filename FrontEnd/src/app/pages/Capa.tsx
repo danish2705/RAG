@@ -7,10 +7,11 @@ import {
   CardTitle,
 } from "../components/ui/card";
 import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { AlertBanner } from "../components/qms/AlertBanner";
-import { AlertTriangle, Sparkles } from "lucide-react";
+import { AlertTriangle, Save, Sparkles } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -59,11 +60,13 @@ export function Capa() {
   const { result } = (location.state ?? {}) as { result?: PipelineResult };
   const capaParsed = result?.stages?.capa?.parsed ?? null;
 
-  // Editable fields, seeded from the real CAPA stage — not mock data.
-  // NOTE: the backend's CAPASchema has no separate "immediate correction"
-  // field (only corrective_actions / preventive_actions / effectiveness_check
-  // / due_date) — so "Correction" here starts blank rather than pretending
-  // to be AI-generated. Fill it in manually based on what was actually done.
+  // Fields: Correction is always editable (not AI-generated).
+  // All AI fields start read-only; unlocked only when Override is clicked.
+  const [isOverrideEditing, setIsOverrideEditing] = useState(false);
+
+  // Tracks whether the user confirmed an override so the header badge
+  // reflects that this CAPA was human-modified.
+  const [overrideConfirmed, setOverrideConfirmed] = useState(false);
   const [correction, setCorrection] = useState("");
   const [correctiveAction, setCorrectiveAction] = useState(
     (capaParsed?.corrective_actions ?? []).join("\n"),
@@ -105,15 +108,11 @@ export function Capa() {
 
   const handleCorrectiveActionChange = (value: string) => {
     setCorrectiveAction(value);
-    setShowWeakCapaWarning(value.length > 0 && value.length < 50);
+    if (isOverrideEditing) {
+      setShowWeakCapaWarning(value.length > 0 && value.length < 50);
+    }
   };
 
-  // This is the final stage in the current pipeline — there is no further
-  // LLM call after CAPA, so Accept/Override just carry the (possibly
-  // human-edited) CAPA fields forward. If a future stage is added (e.g.
-  // effectiveness-check generation), give it the same treatment as
-  // RootCause.tsx/ImpactAssessment.tsx: a real fetch with a loading state,
-  // not a bare navigate.
   const buildApprovedCAPA = (): CAPAResult => ({
     ...capaParsed,
     corrective_actions: correctiveAction
@@ -150,10 +149,24 @@ export function Capa() {
     proceed();
   };
 
-  const handleOverride = () => {
+  // Step 1: clicking Override CAPA enters edit mode
+  const handleOverrideClick = () => {
+    setIsOverrideEditing(true);
+  };
+
+  // Step 2: Save Changes opens the justification dialog
+  const handleSaveChanges = () => {
+    setShowOverrideDialog(true);
+  };
+
+  // Step 3: Confirm closes dialog + returns to read-only with edited values.
+  // The user must still explicitly click Accept CAPA to proceed.
+  const handleOverrideConfirm = () => {
     if (!overrideJustification.trim()) return;
     setShowOverrideDialog(false);
-    proceed();
+    setIsOverrideEditing(false);
+    setOverrideConfirmed(true);
+    setOverrideJustification("");
   };
 
   const handleReject = () => {
@@ -164,21 +177,63 @@ export function Capa() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">CAPA</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Corrective and Preventive Actions — review and edit as needed
-        </p>
+    <div className="p-6 w-full">
+      <div className="mb-6 flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="flex items-center gap-1 text-gray-500 hover:text-gray-900 px-2"
+          onClick={() =>
+            navigate("/deviation/root-cause", {
+              state: {
+                result: {
+                  ...result,
+                  stages: {
+                    ...result.stages,
+                    capa: {
+                      ...result.stages.capa,
+                      parsed: {
+                        ...capaParsed,
+                        corrective_actions: correctiveAction
+                          .split("\n")
+                          .map((s) => s.trim())
+                          .filter(Boolean),
+                        preventive_actions: preventiveAction
+                          .split("\n")
+                          .map((s) => s.trim())
+                          .filter(Boolean),
+                        effectiveness_check: effectivenessCheck,
+                        due_date: dueDate,
+                      },
+                    },
+                  },
+                },
+              },
+            })
+          }
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          Back
+        </Button>
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">CAPA</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Corrective and Preventive Actions — review and edit as needed</p>
+        </div>
+        {isOverrideEditing && (
+          <Badge className="ml-auto bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
+            Editing
+          </Badge>
+        )}
+        {overrideConfirmed && !isOverrideEditing && (
+          <Badge className="ml-auto bg-blue-100 text-blue-700 border-blue-200 text-sm px-3 py-1">
+            Overridden
+          </Badge>
+        )}
       </div>
 
       <div className="space-y-6">
-        <AlertBanner
-          type="info"
-          title="AI Suggested – Please review and edit if required"
-          message="Corrective and preventive actions below have been automatically populated by AI based on the root cause findings. The immediate correction field is not AI-generated — please fill it in based on what was actually done."
-        />
 
+        {/* Correction — always editable (not AI-generated) */}
         <Card>
           <CardHeader>
             <CardTitle>Correction</CardTitle>
@@ -200,6 +255,7 @@ export function Capa() {
           </CardContent>
         </Card>
 
+        {/* Corrective Action — AI-generated, read-only until Override */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -219,11 +275,9 @@ export function Capa() {
                 rows={5}
                 value={correctiveAction}
                 onChange={(e) => handleCorrectiveActionChange(e.target.value)}
+                readOnly={!isOverrideEditing}
+                className={!isOverrideEditing ? "bg-gray-100 cursor-default" : ""}
               />
-              <p className="text-xs text-gray-500 flex items-center gap-1">
-                <Sparkles className="h-3 w-3 text-blue-600" />
-                AI-generated corrective actions — edit as needed
-              </p>
             </div>
           </CardContent>
         </Card>
@@ -236,6 +290,7 @@ export function Capa() {
           />
         )}
 
+        {/* Preventive Action — AI-generated, read-only until Override */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -255,15 +310,14 @@ export function Capa() {
                 rows={5}
                 value={preventiveAction}
                 onChange={(e) => setPreventiveAction(e.target.value)}
+                readOnly={!isOverrideEditing}
+                className={!isOverrideEditing ? "bg-gray-100 cursor-default" : ""}
               />
-              <p className="text-xs text-gray-500 flex items-center gap-1">
-                <Sparkles className="h-3 w-3 text-blue-600" />
-                AI-generated preventive actions — edit as needed
-              </p>
             </div>
           </CardContent>
         </Card>
 
+        {/* Effectiveness Check & Due Date — AI-generated, read-only until Override */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -279,6 +333,8 @@ export function Capa() {
                 rows={3}
                 value={effectivenessCheck}
                 onChange={(e) => setEffectivenessCheck(e.target.value)}
+                readOnly={!isOverrideEditing}
+                className={!isOverrideEditing ? "bg-gray-100 cursor-default" : ""}
               />
             </div>
             <div className="space-y-2">
@@ -288,6 +344,8 @@ export function Capa() {
                 rows={1}
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
+                readOnly={!isOverrideEditing}
+                className={!isOverrideEditing ? "bg-gray-100 cursor-default" : ""}
               />
             </div>
           </CardContent>
@@ -302,17 +360,28 @@ export function Capa() {
             <div className="flex gap-4">
               <Button
                 onClick={handleAccept}
-                className="flex-1 bg-green-600 hover:bg-green-700"
+                disabled={isOverrideEditing}
+                className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50"
               >
                 Accept CAPA
               </Button>
-              <Button
-                onClick={() => setShowOverrideDialog(true)}
-                variant="outline"
-                className="flex-1"
-              >
-                Override CAPA
-              </Button>
+              {isOverrideEditing ? (
+                <Button
+                  onClick={handleSaveChanges}
+                  className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Changes
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleOverrideClick}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Override CAPA
+                </Button>
+              )}
               <Button
                 onClick={() => setShowRejectDialog(true)}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white"
@@ -326,22 +395,14 @@ export function Capa() {
           </CardContent>
         </Card>
 
-        <div className="flex justify-between">
-          <Button
-            variant="outline"
-            onClick={() =>
-              navigate("/deviation/root-cause", { state: { result } })
-            }
-          >
-            Back
-          </Button>
+        <div className="flex justify-end">
           <Button onClick={proceed} className="bg-blue-600 hover:bg-blue-700">
             Complete Analysis
           </Button>
         </div>
       </div>
 
-      {/* Override Dialog */}
+      {/* Override Dialog — shown after Save Changes */}
       <Dialog open={showOverrideDialog} onOpenChange={setShowOverrideDialog}>
         <DialogContent>
           <DialogHeader>
@@ -371,7 +432,7 @@ export function Capa() {
               Cancel
             </Button>
             <Button
-              onClick={handleOverride}
+              onClick={handleOverrideConfirm}
               disabled={!overrideJustification.trim()}
             >
               Confirm Override

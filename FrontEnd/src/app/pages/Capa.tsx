@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router";
+import { StepProgressBar } from "../components/qms/StepProgressBar";
 import {
   Card,
   CardContent,
@@ -25,6 +26,19 @@ import {
 
 type StageName = "classification" | "rca" | "capa";
 
+interface ClassificationParsed {
+  classification: "Deviation" | "Change Control" | "Hybrid";
+  rationale: string[];
+  confidence_score: number;
+}
+
+interface ClassificationStage {
+  rawText: string;
+  parsed: ClassificationParsed | null;
+  error: unknown;
+  gate: unknown;
+}
+
 interface CAPAResult {
   capa_required: boolean;
   corrective_actions: string[];
@@ -45,8 +59,8 @@ interface PipelineResult {
   status: "halted_for_human_review" | "completed_pending_human_review";
   haltedAt: StageName | "impact_assessment" | null;
   stages: {
+    classification?: ClassificationStage;
     capa?: CAPAStage;
-    [key: string]: unknown;
   };
   auditTrail: unknown[];
   query: string;
@@ -185,69 +199,18 @@ export function Capa() {
 
   return (
     <div className="p-6 w-full">
-      <div className="mb-6 flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="flex items-center gap-1 text-gray-500 hover:text-gray-900 px-2"
-          onClick={() =>
-            navigate("/deviation/root-cause", {
-              state: {
-                result: {
-                  ...result,
-                  stages: {
-                    ...result.stages,
-                    capa: {
-                      ...result.stages.capa,
-                      parsed: {
-                        ...capaParsed,
-                        corrective_actions: correctiveAction
-                          .split("\n")
-                          .map((s) => s.trim())
-                          .filter(Boolean),
-                        preventive_actions: preventiveAction
-                          .split("\n")
-                          .map((s) => s.trim())
-                          .filter(Boolean),
-                        effectiveness_check: effectivenessCheck,
-                        due_date: dueDate,
-                      },
-                    },
-                  },
-                },
-              },
-            })
-          }
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-          Back
-        </Button>
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">CAPA</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Corrective and Preventive Actions — review and edit as needed
-          </p>
-        </div>
+      <StepProgressBar
+        classification={result?.stages?.classification?.parsed?.classification}
+        capaAccepted={capaAccepted}
+      />
+      <div className="mb-6 flex items-center justify-end gap-3">
         {isOverrideEditing && (
-          <Badge className="ml-auto bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
+          <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
             Editing
           </Badge>
         )}
         {overrideConfirmed && !isOverrideEditing && (
-          <Badge className="ml-auto bg-blue-100 text-blue-700 border-blue-200 text-sm px-3 py-1">
+          <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-sm px-3 py-1">
             Overridden
           </Badge>
         )}
@@ -421,7 +384,7 @@ export function Capa() {
             <div className="flex gap-4">
               <Button
                 onClick={handleAccept}
-                disabled={isOverrideEditing}
+                disabled={isOverrideEditing || capaAccepted}
                 className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50"
               >
                 Accept CAPA
@@ -429,7 +392,8 @@ export function Capa() {
               {isOverrideEditing ? (
                 <Button
                   onClick={handleSaveChanges}
-                  className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
+                  disabled={capaAccepted}
+                  className="flex-1 bg-orange-600 hover:bg-orange-700 text-white disabled:opacity-50"
                 >
                   <Save className="h-4 w-4 mr-2" />
                   Save Changes
@@ -438,14 +402,16 @@ export function Capa() {
                 <Button
                   onClick={handleOverrideClick}
                   variant="outline"
-                  className="flex-1"
+                  disabled={capaAccepted}
+                  className="flex-1 disabled:opacity-50"
                 >
                   Override CAPA
                 </Button>
               )}
               <Button
                 onClick={() => setShowRejectDialog(true)}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                disabled={capaAccepted}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
               >
                 Reject CAPA
               </Button>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router";
+import { StepProgressBar } from "../components/qms/StepProgressBar";
 import {
   Card,
   CardContent,
@@ -285,6 +286,9 @@ export function Summary() {
 
   return (
     <div className="p-6 w-full">
+      <StepProgressBar
+        classification={result?.stages?.classification?.parsed?.classification}
+      />
       {/* "Saved By" Dialog */}
       <Dialog open={showSavedByDialog} onOpenChange={setShowSavedByDialog}>
         <DialogContent className="sm:max-w-md">

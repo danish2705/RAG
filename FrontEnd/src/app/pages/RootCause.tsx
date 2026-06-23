@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router";
+import { StepProgressBar } from "../components/qms/StepProgressBar";
 import {
   Card,
   CardContent,
@@ -282,71 +283,17 @@ export function RootCause() {
 
   return (
     <div className="p-6 w-full">
-      <div className="mb-6 flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="flex items-center gap-1 text-gray-500 hover:text-gray-900 px-2"
-          onClick={() =>
-            navigate("/deviation/impact-assessment", {
-              state: {
-                result: {
-                  ...result,
-                  stages: {
-                    ...result.stages,
-                    rca: {
-                      ...result.stages.rca,
-                      parsed: {
-                        ...rcaParsed,
-                        primary_root_cause: primaryRootCause,
-                        immediate_cause: immediateCause,
-                        contributing_factors: contributingFactors
-                          .split("\n")
-                          .map((s) => s.trim())
-                          .filter(Boolean),
-                        evidence: evidence
-                          .split("\n")
-                          .map((s) => s.trim())
-                          .filter(Boolean),
-                      },
-                    },
-                  },
-                },
-              },
-            })
-          }
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-          Back
-        </Button>
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
-            Root Cause Analysis
-          </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            AI-generated root cause analysis — review and edit as needed
-          </p>
-        </div>
+      <StepProgressBar
+        classification={result?.stages?.classification?.parsed?.classification}
+      />
+      <div className="mb-6 flex items-center justify-end gap-3">
         {isOverrideEditing && (
-          <Badge className="ml-auto bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
+          <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
             Editing
           </Badge>
         )}
         {overrideConfirmed && !isOverrideEditing && (
-          <Badge className="ml-auto bg-blue-100 text-blue-700 border-blue-200 text-sm px-3 py-1">
+          <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-sm px-3 py-1">
             Overridden
           </Badge>
         )}

@@ -5,8 +5,10 @@ import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { auditTrailData } from '../lib/mockData';
 import { Bot, User } from 'lucide-react';
-
+import { AIAssistant } from '../components/chat/ai-assistant'; 
+import { useState } from 'react';
 export function AuditTrail() {
+  const [chatOpen, setChatOpen] = useState(false);
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -111,6 +113,7 @@ export function AuditTrail() {
           </CardContent>
         </Card>
       </div>
+      <AIAssistant isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
     </div>
   );
 }

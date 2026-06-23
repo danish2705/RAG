@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "../components/ui/table";
 import { AlertTriangle, Eye, Loader2, Sparkles, Database } from "lucide-react";
+import { AIAssistant } from "../components/chat/ai-assistant";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -432,6 +433,7 @@ export function DbLog() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCase, setSelectedCase] = useState<DeviationCase | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -573,6 +575,7 @@ export function DbLog() {
           )}
         </CardContent>
       </Card>
+      <AIAssistant isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
     </div>
   );
 }

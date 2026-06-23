@@ -1,12 +1,16 @@
-import { AlertTriangle, CheckCircle, TrendingUp, FileText } from 'lucide-react';
+import { useState } from 'react'; 
+import { AlertTriangle, CheckCircle, TrendingUp, FileText } from 'lucide-react'; 
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { kpiData, criticalIssues } from '../lib/mockData';
 import { StatusBadge } from '../components/qms/StatusBadge';
 import { Badge } from '../components/ui/badge';
+import { AIAssistant } from '../components/chat/ai-assistant';
 
 export function Dashboard() {
+  const [chatOpen, setChatOpen] = useState(false);
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 relative min-h-screen">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
@@ -17,7 +21,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* KPI Cards - Simple version */}
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="pb-3">
@@ -98,6 +102,9 @@ export function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* AI Assistant Chatbot */}
+      <AIAssistant isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
     </div>
   );
 }

@@ -3,10 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { BarChart3, FileText, Download, Search } from 'lucide-react';
+import { AIAssistant } from '../components/chat/ai-assistant';
 
 export function Reports() {
   const [searchQuery, setSearchQuery] = useState('');
-
+  const [chatOpen, setChatOpen] = useState(false);
   const reports = [
     {
       name: 'Root Cause Analysis Report',
@@ -105,6 +106,8 @@ export function Reports() {
           </CardContent>
         </Card>
       </div>
+      <AIAssistant isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
     </div>
+    
   );
 }

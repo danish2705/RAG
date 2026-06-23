@@ -14,9 +14,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-
+import { AIAssistant } from "../components/chat/ai-assistant";
+import { useState } from "react";
 export function Settings() {
-  return (
+      const [chatOpen, setChatOpen] = useState(false);
+      return (
     <div className="p-6 w-full">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-900">Settings</h1>
@@ -203,6 +205,7 @@ export function Settings() {
           </Button>
         </div>
       </div>
+      <AIAssistant isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
     </div>
   );
 }

@@ -32,6 +32,10 @@ export interface EmbeddingsConfig {
   model: string;
 }
 
+export interface DatabaseConfig {
+  url: string;
+}
+
 export interface KbConfig {
   source: "local" | "s3";
   localPath: string;
@@ -48,9 +52,13 @@ export interface Config {
   kb: KbConfig;
   gate: GateConfig;
   port: number;
+  databaseUrl: DatabaseConfig;
 }
 
 export const config: Config = {
+  databaseUrl: {
+    url: process.env.DATABASE_URL!,
+  },
   aws: {
     region: "us-east-1",
     accessKeyId: process.env.AWS_ACCESS_KEY,
@@ -79,3 +87,4 @@ export const config: Config = {
   },
   port: Number(process.env.PORT ?? 3000),
 };
+

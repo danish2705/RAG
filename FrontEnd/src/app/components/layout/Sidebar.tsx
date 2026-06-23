@@ -6,11 +6,13 @@ import {
   FileText,
   BarChart3,
   Settings,
+  Database,
 } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Quality Event Intake", href: "/deviation", icon: AlertTriangle },
+  { name: "DB Log", href: "/db-log", icon: Database },
   { name: "Audit Trail", href: "/audit-trail", icon: FileText },
   { name: "Reports", href: "/reports", icon: BarChart3 },
   { name: "Settings", href: "/settings", icon: Settings },
@@ -58,9 +60,7 @@ export function Sidebar() {
                 title={collapsed ? item.name : undefined}
                 className={({ isActive }) =>
                   `flex items-center rounded-lg transition-colors ${
-                    collapsed
-                      ? "justify-center px-2 py-3"
-                      : "gap-3 px-4 py-2.5"
+                    collapsed ? "justify-center px-2 py-3" : "gap-3 px-4 py-2.5"
                   } ${
                     isActive
                       ? "bg-blue-600 text-white"

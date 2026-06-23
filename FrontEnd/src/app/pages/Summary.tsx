@@ -8,7 +8,22 @@ import {
 } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
-import { AlertTriangle, CheckCircle2, Loader2, Sparkles } from "lucide-react";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "../components/ui/dialog";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Loader2,
+  Sparkles,
+  User,
+} from "lucide-react";
 
 // ── Types (mirrors backend src/llm/schemas.ts) ──────────────────────────────
 
@@ -170,6 +185,11 @@ export function Summary() {
   const [isSaved, setIsSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  // "Saved By" dialog state
+  const [showSavedByDialog, setShowSavedByDialog] = useState(false);
+  const [savedByName, setSavedByName] = useState("");
+  const [savedByError, setSavedByError] = useState("");
+
   // ── Guard ──────────────────────────────────────────────────────────────
   if (
     !result ||
@@ -205,15 +225,39 @@ export function Summary() {
     }),
   );
 
-  const handleSave = async () => {
+  // Opens the "Saved By" dialog
+  const handleSaveClick = () => {
+    setSavedByName("");
+    setSavedByError("");
+    setShowSavedByDialog(true);
+  };
+
+  // Actual save after name is confirmed
+  const handleConfirmSave = async () => {
+    if (!savedByName.trim()) {
+      setSavedByError("Please enter your name before saving.");
+      return;
+    }
+
+    setSavedByError("");
+    setShowSavedByDialog(false);
     setSaveError(null);
     setIsSaving(true);
 
     try {
-      const response = await fetch("/api/deviations/save", {
+      const response = await fetch("/api/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ result }),
+        body: JSON.stringify({
+          query: result.query,
+          classification: result.stages?.classification?.parsed ?? null,
+          impact_assessment: result.stages?.impactAssessment?.parsed ?? null,
+          rca: result.stages?.rca?.parsed ?? null,
+          capa: result.stages?.capa?.parsed ?? null,
+          status: result.status,
+          halted_at: result.haltedAt,
+          saved_by: savedByName.trim(),
+        }),
       });
 
       if (!response.ok) {
@@ -224,6 +268,10 @@ export function Summary() {
       }
 
       setIsSaved(true);
+      // Navigate to the DB log page after a short delay
+      setTimeout(() => {
+        navigate("/db-log");
+      }, 800);
     } catch (err) {
       setSaveError(
         err instanceof Error
@@ -237,6 +285,57 @@ export function Summary() {
 
   return (
     <div className="p-6 w-full">
+      {/* "Saved By" Dialog */}
+      <Dialog open={showSavedByDialog} onOpenChange={setShowSavedByDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="h-5 w-5 text-blue-600" />
+              Save Record
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-3">
+            <p className="text-sm text-gray-600">
+              Please enter your name to record who is saving this deviation
+              case.
+            </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="saved-by">Saved By</Label>
+              <Input
+                id="saved-by"
+                placeholder="Enter your full name"
+                value={savedByName}
+                onChange={(e) => {
+                  setSavedByName(e.target.value);
+                  if (savedByError) setSavedByError("");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleConfirmSave();
+                }}
+                autoFocus
+              />
+              {savedByError && (
+                <p className="text-xs text-red-600">{savedByError}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowSavedByDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={handleConfirmSave}
+            >
+              Confirm & Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="mb-6 flex items-center gap-3">
         <Button
           variant="ghost"
@@ -269,7 +368,7 @@ export function Summary() {
         {isSaved && (
           <Badge className="ml-auto bg-green-100 text-green-700 border-green-200 text-sm px-3 py-1">
             <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-            Saved
+            Saved — redirecting…
           </Badge>
         )}
       </div>
@@ -546,8 +645,8 @@ export function Summary() {
             )}
             <div className="flex justify-end">
               <Button
-                onClick={handleSave}
-                disabled={isSaving}
+                onClick={handleSaveClick}
+                disabled={isSaving || isSaved}
                 className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
               >
                 {isSaving ? (
@@ -561,7 +660,7 @@ export function Summary() {
               </Button>
             </div>
             <p className="text-xs text-gray-500 mt-3 text-right">
-              This record will be logged in the audit trail
+              This record will be logged in the DB log
             </p>
           </CardContent>
         </Card>

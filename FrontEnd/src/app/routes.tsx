@@ -9,6 +9,7 @@ import { HistoricalMatches } from "./pages/HistoricalMatches";
 import { RootCause } from "./pages/RootCause";
 import { Capa } from "./pages/Capa";
 import { Summary } from "./pages/Summary";
+import { DbLog } from "./pages/DbLog";
 import { ChangeControl } from "./pages/ChangeControl";
 import { ChangeDecision } from "./pages/ChangeDecision";
 import { ActionPlan } from "./pages/ActionPlan";
@@ -34,6 +35,7 @@ export const router = createBrowserRouter([
       { path: "deviation/root-cause", Component: RootCause },
       { path: "deviation/capa", Component: Capa },
       { path: "deviation/summary", Component: Summary },
+      { path: "db-log", Component: DbLog },
       { path: "change-control", Component: ChangeControl },
       { path: "change-control/decision", Component: ChangeDecision },
       { path: "change-control/action-plan", Component: ActionPlan },

@@ -124,6 +124,10 @@ export function Capa() {
     );
   }
 
+  // True once the user has either accepted the CAPA, or started/confirmed an
+  // override. Used to lock the three decision buttons and unlock Get Summary.
+  const decisionMade = capaAccepted || isOverrideEditing || overrideConfirmed;
+
   const handleCorrectiveActionChange = (value: string) => {
     setCorrectiveAction(value);
     if (isOverrideEditing) {
@@ -384,8 +388,12 @@ export function Capa() {
             <div className="flex gap-4">
               <Button
                 onClick={handleAccept}
-                disabled={isOverrideEditing || capaAccepted}
-                className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50"
+                disabled={decisionMade}
+                className={`flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 ${
+                  capaAccepted
+                    ? "ring-2 ring-offset-2 ring-green-500"
+                    : ""
+                }`}
               >
                 Accept CAPA
               </Button>
@@ -402,15 +410,19 @@ export function Capa() {
                 <Button
                   onClick={handleOverrideClick}
                   variant="outline"
-                  disabled={capaAccepted}
-                  className="flex-1 disabled:opacity-50"
+                  disabled={decisionMade}
+                  className={`flex-1 disabled:opacity-50 ${
+                    overrideConfirmed
+                      ? "ring-2 ring-offset-2 ring-orange-500"
+                      : ""
+                  }`}
                 >
                   Override CAPA
                 </Button>
               )}
               <Button
                 onClick={() => setShowRejectDialog(true)}
-                disabled={capaAccepted}
+                disabled={decisionMade}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
               >
                 Reject CAPA
@@ -425,7 +437,7 @@ export function Capa() {
         <div className="flex justify-end">
           <Button
             onClick={proceed}
-            disabled={!capaAccepted}
+            disabled={!decisionMade}
             className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Get Summary

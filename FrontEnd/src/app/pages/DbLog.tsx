@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router";
 import {
   Card,
@@ -22,8 +22,24 @@ import {
   TableHeader,
   TableRow,
 } from "../components/ui/table";
-import { AlertTriangle, Eye, Loader2, Sparkles, Database } from "lucide-react";
+import {
+  AlertTriangle,
+  Eye,
+  Loader2,
+  Sparkles,
+  Database,
+  ArrowUpDown,
+  Search,
+} from "lucide-react";
 import { AIAssistant } from "../components/chat/ai-assistant";
+import { Input } from "../components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -435,6 +451,15 @@ export function DbLog() {
   const [selectedCase, setSelectedCase] = useState<DeviationCase | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
 
+const [sortField, setSortField] = useState<
+  "saved_by" | "classification" | "created_at"
+>("created_at");
+
+const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+
+const [submittedByFilter, setSubmittedByFilter] = useState("");
+const [classificationFilter, setClassificationFilter] = useState("all");
+
   useEffect(() => {
     (async () => {
       try {
@@ -449,7 +474,78 @@ export function DbLog() {
       }
     })();
   }, []);
+  const handleSort = (
+  field: "saved_by" | "classification" | "created_at"
+) => {
+  if (sortField === field) {
+    setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+  } else {
+    setSortField(field);
+    setSortDirection("asc");
+  }
+};
+const filteredCases = useMemo(() => {
+  let data = [...cases];
 
+  data = data.filter((c) => {
+
+
+
+    const matchesSubmittedBy =
+      !submittedByFilter ||
+      (c.saved_by || "")
+        .toLowerCase()
+        .includes(submittedByFilter.toLowerCase());
+
+
+    const matchesClassification =
+      classificationFilter === "all" ||
+      c.classification?.classification === classificationFilter;
+
+
+
+    return (
+      matchesSubmittedBy &&
+      matchesClassification
+    );
+  });
+
+  data.sort((a, b) => {
+    let valueA = "";
+    let valueB = "";
+
+    switch (sortField) {
+      case "saved_by":
+        valueA = a.saved_by || "";
+        valueB = b.saved_by || "";
+        break;
+
+      case "classification":
+        valueA = a.classification?.classification || "";
+        valueB = b.classification?.classification || "";
+        break;
+
+      case "created_at":
+        return sortDirection === "asc"
+          ? new Date(a.created_at).getTime() -
+              new Date(b.created_at).getTime()
+          : new Date(b.created_at).getTime() -
+              new Date(a.created_at).getTime();
+    }
+
+    return sortDirection === "asc"
+      ? valueA.localeCompare(valueB)
+      : valueB.localeCompare(valueA);
+  });
+
+  return data;
+}, [
+  cases,
+  submittedByFilter,
+  classificationFilter,
+  sortField,
+  sortDirection,
+]);
   return (
     <div className="p-6 w-full">
       {selectedCase && (
@@ -461,12 +557,8 @@ export function DbLog() {
 
       <div className="mb-6 flex items-center gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
-            <Database className="h-6 w-6 text-blue-600" />
-            DB Log
-          </h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            All saved deviation cases
+            {filteredCases.length} case{filteredCases.length === 1 ? "" : "s"}
           </p>
         </div>
         <Button
@@ -479,8 +571,41 @@ export function DbLog() {
         </Button>
       </div>
 
+      {/* Filter bar */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Search submitted by, query…"
+            value={submittedByFilter}
+            onChange={(e) => setSubmittedByFilter(e.target.value)}
+            className="pl-9 h-10 bg-gray-50 border-gray-200"
+          />
+        </div>
+
+        <Select
+          value={classificationFilter}
+          onValueChange={setClassificationFilter}
+        >
+          <SelectTrigger className="h-10 w-[180px] bg-gray-50 border-gray-200">
+            <SelectValue placeholder="All Types" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="Deviation">Deviation</SelectItem>
+            <SelectItem value="Change Control">Change Control</SelectItem>
+            <SelectItem value="Hybrid">Hybrid</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <span className="text-sm text-gray-400 whitespace-nowrap pl-1">
+          {filteredCases.length} result{filteredCases.length === 1 ? "" : "s"}
+        </span>
+      </div>
+
       <Card>
         <CardContent className="p-0">
+          
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="h-6 w-6 animate-spin text-blue-500 mr-2" />
@@ -503,29 +628,52 @@ export function DbLog() {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead className="w-20 font-semibold text-gray-700">
-                    UI ID
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-700">
-                    Submitted By
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-700">
-                    Query
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-700">
-                    Classification
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-700">
-                    Saved On
-                  </TableHead>
-                  <TableHead className="w-24 text-center font-semibold text-gray-700">
-                    View
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
+  <TableRow className="bg-gray-50 border-b">
+    <TableHead className="w-20 font-semibold text-gray-700">
+      UI ID
+    </TableHead>
+
+    <TableHead className="font-semibold text-gray-700">
+      <button
+        onClick={() => handleSort("saved_by")}
+        className="flex items-center gap-2"
+      >
+        Submitted By
+        <ArrowUpDown className="h-4 w-4" />
+      </button>
+    </TableHead>
+
+    <TableHead className="font-semibold text-gray-700">
+      Query
+    </TableHead>
+
+    <TableHead className="font-semibold text-gray-700">
+      <button
+        onClick={() => handleSort("classification")}
+        className="flex items-center gap-2"
+      >
+        Classification
+        <ArrowUpDown className="h-4 w-4" />
+      </button>
+    </TableHead>
+
+    <TableHead className="font-semibold text-gray-700">
+      <button
+        onClick={() => handleSort("created_at")}
+        className="flex items-center gap-2"
+      >
+        Saved On
+        <ArrowUpDown className="h-4 w-4" />
+      </button>
+    </TableHead>
+
+    <TableHead className="w-24 text-center font-semibold text-gray-700">
+      View
+    </TableHead>
+  </TableRow>
+</TableHeader>
               <TableBody>
-                {cases.map((c) => (
+                {filteredCases.map((c) => (
                   <TableRow
                     key={c.id}
                     className="hover:bg-gray-50 transition-colors"

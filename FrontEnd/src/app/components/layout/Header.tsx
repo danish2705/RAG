@@ -55,12 +55,43 @@ const PAGE_META: Record<
     subtitle: "Review and save the complete quality event record",
     back: "/deviation/capa",
   },
+  "/": {
+    title: "Dashboard",
+    subtitle: "Overview of quality events and metrics",
+  },
+  "/db-log": {
+    title: "DB Log",
+    subtitle: "All saved deviation and change control cases",
+  },
+  "/audit-trail": {
+    title: "Audit Trail",
+    subtitle: "Track changes and activity across the system",
+  },
+  "/reports": {
+    title: "Reports",
+    subtitle: "Generate and review quality reports",
+  },
+  "/settings": {
+    title: "Settings",
+    subtitle: "Manage your application preferences",
+  },
 };
 
 export function Header() {
   const location = useLocation() as Location<unknown>;
   const navigate = useNavigate();
   const meta = PAGE_META[location.pathname];
+
+  // Fallback for routes not yet in PAGE_META: derive a readable title
+  // from the path segment (e.g. "/new-feature" -> "New Feature").
+  const fallbackTitle = (() => {
+    const segment = location.pathname.split("/").filter(Boolean).pop();
+    if (!segment) return "QMS";
+    return segment
+      .split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  })();
 
   // Build back-navigation state: the previous page needs the same `result`
   // object that was passed to the current page so it can restore its data.
@@ -93,7 +124,9 @@ export function Header() {
             </p>
           </div>
         ) : (
-          <span className="text-base font-semibold text-gray-900">QMS</span>
+          <span className="text-base font-semibold text-gray-900">
+            {fallbackTitle}
+          </span>
         )}
       </div>
 

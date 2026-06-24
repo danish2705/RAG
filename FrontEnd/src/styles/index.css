@@ -1,3 +1,23 @@
 @import './fonts.css';
 @import './tailwind.css';
 @import './theme.css';
+
+/* Ensure all interactive elements show a pointer cursor, including
+   custom clickable elements (divs/spans with onClick or role="button")
+   that don't get it by default. */
+button:not(:disabled),
+a,
+[role="button"]:not([aria-disabled="true"]),
+[onclick],
+.cursor-pointer,
+select,
+summary,
+label[for] {
+  cursor: pointer;
+}
+
+button:disabled,
+[aria-disabled="true"],
+[disabled] {
+  cursor: not-allowed;
+}

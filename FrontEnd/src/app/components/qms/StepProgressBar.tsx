@@ -8,7 +8,6 @@ interface StepProgressBarProps {
   capaAccepted?: boolean;
 }
 
-// Step 2 label is dynamic based on classification
 function getSteps(classification?: Classification) {
   const step2 = classification ?? "Classification";
   return [
@@ -20,7 +19,6 @@ function getSteps(classification?: Classification) {
   ];
 }
 
-// Maps each route to its step index (0-based)
 const STEP_ROUTES: Record<string, number> = {
   "/deviation": 0,
   "/deviation/ai-recommendation": 1,
@@ -32,7 +30,6 @@ const STEP_ROUTES: Record<string, number> = {
   "/deviation/summary": 4,
 };
 
-// The CAPA step index (0-based)
 const CAPA_STEP_INDEX = 4;
 
 export function StepProgressBar({
@@ -45,13 +42,11 @@ export function StepProgressBar({
 
   return (
     <div
-      className="bg-white border border-gray-200 rounded-xl px-6 py-4 mb-6 w-full"
+      className="bg-card border border-border rounded-xl px-6 py-4 mb-6 w-full"
       style={{ fontFamily: "'Inter', sans-serif" }}
     >
       <div className="flex items-center w-full">
         {steps.map((step, index) => {
-          // A step is completed if it's before the current step,
-          // OR if it's the CAPA step and the user has accepted CAPA.
           const isCompleted =
             index < currentStep || (capaAccepted && index === CAPA_STEP_INDEX);
           const isActive = index === currentStep && !isCompleted;
@@ -71,7 +66,7 @@ export function StepProgressBar({
                         ? "bg-green-500 text-white"
                         : isActive
                           ? "bg-blue-600 text-white"
-                          : "bg-gray-100 text-gray-400 border border-gray-200"
+                          : "bg-muted text-muted-foreground border border-border"
                     }
                   `}
                 >
@@ -85,10 +80,10 @@ export function StepProgressBar({
                 <span
                   className={`text-sm font-medium whitespace-nowrap ${
                     isActive
-                      ? "text-gray-900"
+                      ? "text-foreground"
                       : isCompleted
-                        ? "text-gray-500"
-                        : "text-gray-400"
+                        ? "text-muted-foreground"
+                        : "text-muted-foreground/60"
                   }`}
                 >
                   {step.label}
@@ -99,7 +94,7 @@ export function StepProgressBar({
               {index < steps.length - 1 && (
                 <div
                   className={`mx-3 h-0.5 flex-1 rounded-full transition-all ${
-                    index < currentStep ? "bg-green-400" : "bg-gray-200"
+                    index < currentStep ? "bg-green-400" : "bg-border"
                   }`}
                 />
               )}

@@ -62,7 +62,7 @@ export function AuditTrail() {
               </TableHeader>
               <TableBody>
                 {auditTrailData.map((entry, index) => (
-                  <TableRow key={index} className={entry.type === 'ai' ? 'bg-blue-50' : ''}>
+                  <TableRow key={index} className={entry.type === 'ai' ? 'bg-blue-500/10 dark:bg-blue-500/20' : ''}>
                     <TableCell className="text-sm font-mono">{entry.timestamp}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -78,7 +78,7 @@ export function AuditTrail() {
                     <TableCell>
                       <Badge 
                         variant="outline"
-                        className={entry.type === 'ai' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}
+                        className={entry.type === 'ai' ? 'border-blue-500 text-blue-500 dark:border-blue-400 dark:text-blue-400' : 'border-green-500 text-green-600 dark:border-green-400 dark:text-green-400'}
                       >
                         {entry.type === 'ai' ? 'AI' : 'Human'}
                       </Badge>
@@ -98,7 +98,7 @@ export function AuditTrail() {
           <CardContent>
             <div className="flex flex-wrap gap-6 text-sm">
               <div className="flex items-center gap-2">
-                <div className="h-4 w-4 bg-blue-50 border border-blue-200"></div>
+                <div className="h-4 w-4 rounded bg-blue-500/20 border border-blue-500/40"></div>
                 <span className="text-gray-600">AI-generated action (requires human review)</span>
               </div>
               <div className="flex items-center gap-2">

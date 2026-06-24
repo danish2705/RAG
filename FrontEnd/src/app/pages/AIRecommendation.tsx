@@ -10,7 +10,6 @@ import {
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Textarea } from "../components/ui/textarea";
-import { Input } from "../components/ui/input";
 import { Sparkles, Info, AlertTriangle, Loader2, Save } from "lucide-react";
 import {
   Dialog,
@@ -34,6 +33,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../components/ui/tooltip";
+import {
+  aiField,
+  markModified,
+  type ClassificationProvenance,
+  type DataField,
+} from "../types/dataProvenance";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -79,6 +84,10 @@ interface PipelineResult {
   auditTrail: unknown[];
   query: string;
   routing?: unknown;
+  /** Provenance data accumulated across pipeline stages */
+  provenance?: {
+    classification?: ClassificationProvenance;
+  };
 }
 
 interface ImpactAssessmentParsed {
@@ -168,8 +177,36 @@ export function AIRecommendation() {
     );
   }
 
+  // ── Build provenance for classification ───────────────────────────────
+
+  /** Build a ClassificationProvenance reflecting the current edit state */
+  const buildClassificationProvenance = (
+    isOverride: boolean,
+  ): ClassificationProvenance => {
+    if (isOverride) {
+      const newRationale = editedRationale
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      return {
+        classification: markModified(
+          aiField(parsed.classification),
+          editedClassification,
+        ) as DataField<"Deviation" | "Change Control" | "Hybrid">,
+        rationale: markModified(aiField(parsed.rationale), newRationale),
+        confidence_score: parsed.confidence_score,
+      };
+    }
+    return {
+      classification: aiField(parsed.classification),
+      rationale: aiField(parsed.rationale),
+      confidence_score: parsed.confidence_score,
+    };
+  };
+
   const runImpactAssessment = async (
     approvedClassification: ClassificationParsed,
+    classificationProvenance: ClassificationProvenance,
   ) => {
     setAssessError(null);
     setIsAssessing(true);
@@ -201,9 +238,13 @@ export function AIRecommendation() {
               ...result.stages,
               classification: {
                 ...result.stages.classification,
-                parsed: currentClassification,
+                parsed: approvedClassification,
               },
               impactAssessment: impactResult.stages.impactAssessment,
+            },
+            provenance: {
+              ...result.provenance,
+              classification: classificationProvenance,
             },
           },
         },
@@ -220,21 +261,24 @@ export function AIRecommendation() {
   };
 
   const handleAccept = () => {
-    const overriddenParsed: ClassificationParsed | null = overrideConfirmed
+    const isOverride = overrideConfirmed;
+    const newRationale = editedRationale
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const approvedClassification: ClassificationParsed = isOverride
       ? {
           ...parsed,
           classification: editedClassification,
-          rationale: editedRationale
-            .split("\n")
-            .map((s) => s.trim())
-            .filter(Boolean),
+          rationale: newRationale,
         }
-      : null;
+      : parsed;
 
-    const approvedClassification = overriddenParsed ?? parsed;
+    const classificationProvenance = buildClassificationProvenance(isOverride);
 
     const existingImpactAssessment = result.stages?.impactAssessment;
-    if (!overrideConfirmed && existingImpactAssessment?.parsed) {
+    if (!isOverride && existingImpactAssessment?.parsed) {
       navigate("/deviation/impact-assessment", {
         state: {
           result: {
@@ -247,13 +291,17 @@ export function AIRecommendation() {
               },
               impactAssessment: existingImpactAssessment,
             },
+            provenance: {
+              ...result.provenance,
+              classification: classificationProvenance,
+            },
           },
         },
       });
       return;
     }
 
-    void runImpactAssessment(approvedClassification);
+    void runImpactAssessment(approvedClassification, classificationProvenance);
   };
 
   const handleOverrideClick = () => setIsOverrideEditing(true);
@@ -275,15 +323,8 @@ export function AIRecommendation() {
   };
 
   const currentClassification = overrideConfirmed
-    ? {
-        ...parsed,
-        classification: editedClassification,
-        rationale: editedRationale
-          .split("\n")
-          .map((s) => s.trim())
-          .filter(Boolean),
-      }
-    : parsed;
+    ? editedClassification
+    : parsed.classification;
 
   // ── Render ─────────────────────────────────────────────────────────────
   return (
@@ -298,8 +339,8 @@ export function AIRecommendation() {
           </Badge>
         )}
         {overrideConfirmed && !isOverrideEditing && (
-          <Badge className="ml-auto bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800 text-sm px-3 py-1">
-            Overridden
+          <Badge className="ml-auto bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800 text-sm px-3 py-1">
+            Modified
           </Badge>
         )}
       </div>
@@ -316,7 +357,7 @@ export function AIRecommendation() {
 
           <CardContent className="space-y-6">
             {/* Classification type */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-medium text-muted-foreground">
                 Classification:
               </span>
@@ -334,14 +375,40 @@ export function AIRecommendation() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Deviation">Deviation</SelectItem>
-                    <SelectItem value="Change Control">Change Control</SelectItem>
+                    <SelectItem value="Change Control">
+                      Change Control
+                    </SelectItem>
                     <SelectItem value="Hybrid">Hybrid</SelectItem>
                   </SelectContent>
                 </Select>
               ) : (
-                <Badge className={getClassificationBadgeClass(editedClassification)}>
-                  {editedClassification}
-                </Badge>
+                <>
+                  <Badge
+                    className={getClassificationBadgeClass(
+                      currentClassification,
+                    )}
+                  >
+                    {currentClassification}
+                  </Badge>
+                  {overrideConfirmed &&
+                    parsed.classification !== editedClassification && (
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <span className="line-through text-red-500/70">
+                          {parsed.classification}
+                        </span>
+                        <span className="text-muted-foreground/50">→</span>
+                        <span className="text-green-700 dark:text-green-400 font-medium">
+                          {editedClassification}
+                        </span>
+                      </span>
+                    )}
+                  {overrideConfirmed ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border select-none bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800">
+                      <Sparkles className="h-3 w-3" />
+                      Modified
+                    </span>
+                  ) : null}
+                </>
               )}
             </div>
 
@@ -371,7 +438,6 @@ export function AIRecommendation() {
                   {parsed.confidence_score}%
                 </span>
               </div>
-              {/* Progress bar track uses bg-muted so it adapts to dark mode */}
               <div className="w-full bg-muted rounded-full h-2">
                 <div
                   className={`h-2 rounded-full ${
@@ -388,9 +454,17 @@ export function AIRecommendation() {
 
             {/* AI Rationale */}
             <div className="border-t border-border pt-4">
-              <p className="text-sm font-medium text-foreground mb-3">
-                AI Rationale
-              </p>
+              <div className="flex items-center gap-2 mb-3">
+                <p className="text-sm font-medium text-foreground">
+                  AI Rationale
+                </p>
+                {!isOverrideEditing && overrideConfirmed ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border select-none bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800">
+                    <Sparkles className="h-3 w-3" />
+                    Modified
+                  </span>
+                ) : null}
+              </div>
               {isOverrideEditing ? (
                 <div className="space-y-1">
                   <Textarea
@@ -399,7 +473,9 @@ export function AIRecommendation() {
                     onChange={(e) => setEditedRationale(e.target.value)}
                     placeholder="One rationale point per line..."
                   />
-                  <p className="text-xs text-muted-foreground">One point per line</p>
+                  <p className="text-xs text-muted-foreground">
+                    One point per line
+                  </p>
                 </div>
               ) : (
                 <ul className="space-y-2">

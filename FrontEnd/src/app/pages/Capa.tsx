@@ -12,7 +12,7 @@ import { Badge } from "../components/ui/badge";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { AlertBanner } from "../components/qms/AlertBanner";
-import { AlertTriangle, Save, Sparkles } from "lucide-react";
+import { AlertTriangle, Save, Sparkles, PenLine } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,8 +21,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
+import {
+  aiField,
+  markModified,
+  type CAPAProvenance,
+  type ClassificationProvenance,
+  type ImpactAssessmentProvenance,
+  type RCAProvenance,
+} from "../types/dataProvenance";
 
-// ── Types (mirrors backend src/llm/schemas.ts) ──────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────
 
 type StageName = "classification" | "rca" | "capa";
 
@@ -65,6 +73,12 @@ interface PipelineResult {
   auditTrail: unknown[];
   query: string;
   routing?: unknown;
+  provenance?: {
+    classification?: ClassificationProvenance;
+    impactAssessment?: ImpactAssessmentProvenance;
+    rca?: RCAProvenance;
+    capa?: CAPAProvenance;
+  };
 }
 
 export function Capa() {
@@ -74,16 +88,8 @@ export function Capa() {
   const { result } = (location.state ?? {}) as { result?: PipelineResult };
   const capaParsed = result?.stages?.capa?.parsed ?? null;
 
-  // Fields: Correction is always editable (not AI-generated).
-  // All AI fields start read-only; unlocked only when Override is clicked.
   const [isOverrideEditing, setIsOverrideEditing] = useState(false);
-
-  // Tracks whether the user confirmed an override so the header badge
-  // reflects that this CAPA was human-modified.
   const [overrideConfirmed, setOverrideConfirmed] = useState(false);
-
-  // Tracks whether the user has clicked Accept CAPA — gates the
-  // "Get Summary" button until a decision has been made.
   const [capaAccepted, setCapaAccepted] = useState(false);
   const [correction, setCorrection] = useState("");
   const [correctiveAction, setCorrectiveAction] = useState(
@@ -98,7 +104,6 @@ export function Capa() {
   const [dueDate, setDueDate] = useState(capaParsed?.due_date ?? "");
   const [showWeakCapaWarning, setShowWeakCapaWarning] = useState(false);
 
-  // Decision Required state
   const [showOverrideDialog, setShowOverrideDialog] = useState(false);
   const [overrideJustification, setOverrideJustification] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
@@ -124,8 +129,6 @@ export function Capa() {
     );
   }
 
-  // True once the user has either accepted the CAPA, or started/confirmed an
-  // override. Used to lock the three decision buttons and unlock Get Summary.
   const decisionMade = capaAccepted || isOverrideEditing || overrideConfirmed;
 
   const handleCorrectiveActionChange = (value: string) => {
@@ -133,6 +136,52 @@ export function Capa() {
     if (isOverrideEditing) {
       setShowWeakCapaWarning(value.length > 0 && value.length < 50);
     }
+  };
+
+  /** Build CAPAProvenance from current state */
+  const buildCAPAProvenance = (confirmed: boolean): CAPAProvenance => {
+    const curCorrectiveActions = correctiveAction
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const curPreventiveActions = preventiveAction
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    return {
+      capa_required: capaParsed.capa_required,
+      confidence_score: capaParsed.confidence_score,
+      corrective_actions:
+        confirmed &&
+        JSON.stringify(curCorrectiveActions) !==
+          JSON.stringify(capaParsed.corrective_actions)
+          ? markModified(
+              aiField(capaParsed.corrective_actions),
+              curCorrectiveActions,
+            )
+          : aiField(capaParsed.corrective_actions),
+      preventive_actions:
+        confirmed &&
+        JSON.stringify(curPreventiveActions) !==
+          JSON.stringify(capaParsed.preventive_actions)
+          ? markModified(
+              aiField(capaParsed.preventive_actions),
+              curPreventiveActions,
+            )
+          : aiField(capaParsed.preventive_actions),
+      effectiveness_check:
+        confirmed && effectivenessCheck !== capaParsed.effectiveness_check
+          ? markModified(
+              aiField(capaParsed.effectiveness_check),
+              effectivenessCheck,
+            )
+          : aiField(capaParsed.effectiveness_check),
+      due_date:
+        confirmed && dueDate !== capaParsed.due_date
+          ? markModified(aiField(capaParsed.due_date), dueDate)
+          : aiField(capaParsed.due_date),
+    };
   };
 
   const buildApprovedCAPA = (): CAPAResult => ({
@@ -150,6 +199,7 @@ export function Capa() {
   });
 
   const proceed = () => {
+    const capaProvenance = buildCAPAProvenance(overrideConfirmed);
     navigate("/deviation/summary", {
       state: {
         result: {
@@ -162,30 +212,19 @@ export function Capa() {
             },
           },
           correction,
+          provenance: {
+            ...result.provenance,
+            capa: capaProvenance,
+          },
         },
       },
     });
   };
 
-  // Accepting CAPA no longer navigates away immediately — it just records
-  // the decision so the "Get Summary" button becomes available. The user
-  // explicitly clicks Get Summary to move on.
-  const handleAccept = () => {
-    setCapaAccepted(true);
-  };
+  const handleAccept = () => setCapaAccepted(true);
+  const handleOverrideClick = () => setIsOverrideEditing(true);
+  const handleSaveChanges = () => setShowOverrideDialog(true);
 
-  // Step 1: clicking Override CAPA enters edit mode
-  const handleOverrideClick = () => {
-    setIsOverrideEditing(true);
-  };
-
-  // Step 2: Save Changes opens the justification dialog
-  const handleSaveChanges = () => {
-    setShowOverrideDialog(true);
-  };
-
-  // Step 3: Confirm closes dialog + returns to read-only with edited values.
-  // The user must still explicitly click Accept CAPA to proceed.
   const handleOverrideConfirm = () => {
     if (!overrideJustification.trim()) return;
     setShowOverrideDialog(false);
@@ -201,6 +240,23 @@ export function Capa() {
     }
   };
 
+  /** Field-level badge helper */
+  const FieldBadge = ({
+    original,
+    current,
+  }: {
+    original: string;
+    current: string;
+  }) => {
+    const isModified = overrideConfirmed && current !== original;
+    if (!isModified) return null;
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border select-none bg-orange-50 text-orange-700 border-orange-200">
+        <PenLine className="h-3 w-3" /> Modified
+      </span>
+    );
+  };
+
   return (
     <div className="p-6 w-full">
       <StepProgressBar
@@ -214,14 +270,14 @@ export function Capa() {
           </Badge>
         )}
         {overrideConfirmed && !isOverrideEditing && (
-          <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-sm px-3 py-1">
-            Overridden
+          <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
+            Modified
           </Badge>
         )}
       </div>
 
       <div className="space-y-6">
-        {/* Overall confidence score */}
+        {/* Confidence */}
         <Card className="shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -253,7 +309,7 @@ export function Capa() {
           </CardContent>
         </Card>
 
-        {/* Correction — always editable (not AI-generated) */}
+        {/* Correction — always editable */}
         <Card>
           <CardHeader>
             <CardTitle>Correction</CardTitle>
@@ -275,7 +331,7 @@ export function Capa() {
           </CardContent>
         </Card>
 
-        {/* Corrective Action — AI-generated, read-only until Override */}
+        {/* Corrective Action */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -285,10 +341,18 @@ export function Capa() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <Label htmlFor="correctiveAction">
-                Corrective Action (What will prevent THIS deviation from
-                recurring?) — one action per line
-              </Label>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Label htmlFor="correctiveAction">
+                  Corrective Action (What will prevent THIS deviation from
+                  recurring?) — one action per line
+                </Label>
+                {!isOverrideEditing && (
+                  <FieldBadge
+                    original={capaParsed.corrective_actions.join("\n")}
+                    current={correctiveAction}
+                  />
+                )}
+              </div>
               <Textarea
                 id="correctiveAction"
                 placeholder="Define specific actions to eliminate the root cause and prevent recurrence..."
@@ -300,6 +364,18 @@ export function Capa() {
                   !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
                 }
               />
+              {overrideConfirmed &&
+                correctiveAction !== capaParsed.corrective_actions.join("\n") &&
+                !isOverrideEditing && (
+                  <div className="text-xs text-muted-foreground">
+                    <span className="font-medium text-orange-600">
+                      Previous AI value:{" "}
+                    </span>
+                    <span className="line-through text-red-500/70">
+                      {capaParsed.corrective_actions.join("; ")}
+                    </span>
+                  </div>
+                )}
             </div>
           </CardContent>
         </Card>
@@ -312,7 +388,7 @@ export function Capa() {
           />
         )}
 
-        {/* Preventive Action — AI-generated, read-only until Override */}
+        {/* Preventive Action */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -322,10 +398,18 @@ export function Capa() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <Label htmlFor="preventiveAction">
-                Preventive Action (What will prevent SIMILAR deviations?) — one
-                action per line
-              </Label>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Label htmlFor="preventiveAction">
+                  Preventive Action (What will prevent SIMILAR deviations?) —
+                  one action per line
+                </Label>
+                {!isOverrideEditing && (
+                  <FieldBadge
+                    original={capaParsed.preventive_actions.join("\n")}
+                    current={preventiveAction}
+                  />
+                )}
+              </div>
               <Textarea
                 id="preventiveAction"
                 placeholder="Define actions to prevent similar issues in other areas or systems..."
@@ -337,11 +421,23 @@ export function Capa() {
                   !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
                 }
               />
+              {overrideConfirmed &&
+                preventiveAction !== capaParsed.preventive_actions.join("\n") &&
+                !isOverrideEditing && (
+                  <div className="text-xs text-muted-foreground">
+                    <span className="font-medium text-orange-600">
+                      Previous AI value:{" "}
+                    </span>
+                    <span className="line-through text-red-500/70">
+                      {capaParsed.preventive_actions.join("; ")}
+                    </span>
+                  </div>
+                )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Effectiveness Check & Due Date — AI-generated, read-only until Override */}
+        {/* Effectiveness Check & Due Date */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -351,7 +447,15 @@ export function Capa() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="effectivenessCheck">Effectiveness Check</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="effectivenessCheck">Effectiveness Check</Label>
+                {!isOverrideEditing && (
+                  <FieldBadge
+                    original={capaParsed.effectiveness_check}
+                    current={effectivenessCheck}
+                  />
+                )}
+              </div>
               <Textarea
                 id="effectivenessCheck"
                 rows={3}
@@ -362,9 +466,29 @@ export function Capa() {
                   !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
                 }
               />
+              {overrideConfirmed &&
+                effectivenessCheck !== capaParsed.effectiveness_check &&
+                !isOverrideEditing && (
+                  <div className="text-xs text-muted-foreground">
+                    <span className="font-medium text-orange-600">
+                      Previous AI value:{" "}
+                    </span>
+                    <span className="line-through text-red-500/70">
+                      {capaParsed.effectiveness_check}
+                    </span>
+                  </div>
+                )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="dueDate">Due Date</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="dueDate">Due Date</Label>
+                {!isOverrideEditing && (
+                  <FieldBadge
+                    original={capaParsed.due_date}
+                    current={dueDate}
+                  />
+                )}
+              </div>
               <Textarea
                 id="dueDate"
                 rows={1}
@@ -375,6 +499,18 @@ export function Capa() {
                   !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
                 }
               />
+              {overrideConfirmed &&
+                dueDate !== capaParsed.due_date &&
+                !isOverrideEditing && (
+                  <div className="text-xs text-muted-foreground">
+                    <span className="font-medium text-orange-600">
+                      Previous AI value:{" "}
+                    </span>
+                    <span className="line-through text-red-500/70">
+                      {capaParsed.due_date}
+                    </span>
+                  </div>
+                )}
             </div>
           </CardContent>
         </Card>
@@ -390,9 +526,7 @@ export function Capa() {
                 onClick={handleAccept}
                 disabled={decisionMade}
                 className={`flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 ${
-                  capaAccepted
-                    ? "ring-2 ring-offset-2 ring-green-500"
-                    : ""
+                  capaAccepted ? "ring-2 ring-offset-2 ring-green-500" : ""
                 }`}
               >
                 Accept CAPA
@@ -445,7 +579,7 @@ export function Capa() {
         </div>
       </div>
 
-      {/* Override Dialog — shown after Save Changes */}
+      {/* Override Dialog */}
       <Dialog open={showOverrideDialog} onOpenChange={setShowOverrideDialog}>
         <DialogContent>
           <DialogHeader>

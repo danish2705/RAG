@@ -12,7 +12,7 @@ import { Badge } from "../components/ui/badge";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { AlertBanner } from "../components/qms/AlertBanner";
-import { AlertTriangle, Loader2, Save, Sparkles } from "lucide-react";
+import { AlertTriangle, Loader2, Save, Sparkles, PenLine } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,8 +21,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
+import {
+  aiField,
+  markModified,
+  type RCAProvenance,
+  type ClassificationProvenance,
+  type ImpactAssessmentProvenance,
+} from "../types/dataProvenance";
 
-// ── Types (mirrors backend src/llm/schemas.ts) ──────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────
 
 type StageName = "classification" | "rca" | "capa";
 
@@ -83,6 +90,11 @@ interface PipelineResult {
   auditTrail: unknown[];
   query: string;
   routing?: unknown;
+  provenance?: {
+    classification?: ClassificationProvenance;
+    impactAssessment?: ImpactAssessmentProvenance;
+    rca?: RCAProvenance;
+  };
 }
 
 interface CAPAApiResponse {
@@ -100,11 +112,7 @@ export function RootCause() {
   const { result } = (location.state ?? {}) as { result?: PipelineResult };
   const rcaParsed = result?.stages?.rca?.parsed ?? null;
 
-  // Fields start read-only; unlocked when Override is clicked
   const [isOverrideEditing, setIsOverrideEditing] = useState(false);
-
-  // Tracks whether the user confirmed an override so the header badge and
-  // downstream stages reflect that this analysis was human-modified.
   const [overrideConfirmed, setOverrideConfirmed] = useState(false);
   const [primaryRootCause, setPrimaryRootCause] = useState(
     rcaParsed?.primary_root_cause ?? "",
@@ -119,7 +127,6 @@ export function RootCause() {
     (rcaParsed?.evidence ?? []).join("\n"),
   );
 
-  // Decision Required state
   const [showOverrideDialog, setShowOverrideDialog] = useState(false);
   const [overrideJustification, setOverrideJustification] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
@@ -150,7 +157,47 @@ export function RootCause() {
     );
   }
 
-  const runCAPA = async () => {
+  /** Build RCAProvenance based on whether fields were overridden */
+  const buildRCAProvenance = (confirmed: boolean): RCAProvenance => {
+    const curFactors = contributingFactors
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const curEvidence = evidence
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    return {
+      primary_root_cause:
+        confirmed && primaryRootCause !== rcaParsed.primary_root_cause
+          ? markModified(
+              aiField(rcaParsed.primary_root_cause),
+              primaryRootCause,
+            )
+          : aiField(rcaParsed.primary_root_cause),
+      immediate_cause:
+        confirmed && immediateCause !== rcaParsed.immediate_cause
+          ? markModified(aiField(rcaParsed.immediate_cause), immediateCause)
+          : aiField(rcaParsed.immediate_cause),
+      contributing_factors:
+        confirmed &&
+        JSON.stringify(curFactors) !==
+          JSON.stringify(rcaParsed.contributing_factors)
+          ? markModified(aiField(rcaParsed.contributing_factors), curFactors)
+          : aiField(rcaParsed.contributing_factors),
+      evidence:
+        confirmed &&
+        JSON.stringify(curEvidence) !== JSON.stringify(rcaParsed.evidence)
+          ? markModified(aiField(rcaParsed.evidence), curEvidence)
+          : aiField(rcaParsed.evidence),
+      sequence_of_events: rcaParsed.sequence_of_events,
+      impact_assessment: rcaParsed.impact_assessment,
+      confidence_score: rcaParsed.confidence_score,
+    };
+  };
+
+  const runCAPA = async (rcaProvenance: RCAProvenance) => {
     setCapaError(null);
     setIsGeneratingCAPA(true);
 
@@ -199,6 +246,10 @@ export function RootCause() {
               },
               capa: capaResult.stages.capa,
             },
+            provenance: {
+              ...result.provenance,
+              rca: rcaProvenance,
+            },
           },
         },
       });
@@ -214,9 +265,7 @@ export function RootCause() {
   };
 
   const handleAccept = () => {
-    // If CAPA was already generated for this deviation (e.g. the user went
-    // Back from the CAPA step) and nothing was overridden on this visit,
-    // reuse it instead of calling the AI again.
+    const rcaProvenance = buildRCAProvenance(overrideConfirmed);
     const existingCAPA = result.stages?.capa;
     if (!overrideConfirmed && existingCAPA?.parsed) {
       const approvedRCA: RCAResult = {
@@ -239,11 +288,12 @@ export function RootCause() {
             ...result,
             stages: {
               ...result.stages,
-              rca: {
-                ...result.stages.rca,
-                parsed: approvedRCA,
-              },
+              rca: { ...result.stages.rca, parsed: approvedRCA },
               capa: existingCAPA,
+            },
+            provenance: {
+              ...result.provenance,
+              rca: rcaProvenance,
             },
           },
         },
@@ -251,21 +301,12 @@ export function RootCause() {
       return;
     }
 
-    void runCAPA();
+    void runCAPA(rcaProvenance);
   };
 
-  // Step 1: clicking Override Root Cause enters edit mode
-  const handleOverrideClick = () => {
-    setIsOverrideEditing(true);
-  };
+  const handleOverrideClick = () => setIsOverrideEditing(true);
+  const handleSaveChanges = () => setShowOverrideDialog(true);
 
-  // Step 2: Save Changes opens the justification dialog
-  const handleSaveChanges = () => {
-    setShowOverrideDialog(true);
-  };
-
-  // Step 3: Confirm closes dialog + returns to read-only with edited values.
-  // The user must still explicitly click Accept to proceed.
   const handleOverrideConfirm = () => {
     if (!overrideJustification.trim()) return;
     setShowOverrideDialog(false);
@@ -281,6 +322,23 @@ export function RootCause() {
     }
   };
 
+  /** Renders a field label with AI Generated / Modified pill */
+  const FieldBadge = ({
+    original,
+    current,
+  }: {
+    original: string;
+    current: string;
+  }) => {
+    const isModified = overrideConfirmed && current !== original;
+    if (!isModified) return null;
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border select-none bg-orange-50 text-orange-700 border-orange-200">
+        <PenLine className="h-3 w-3" /> Modified
+      </span>
+    );
+  };
+
   return (
     <div className="p-6 w-full">
       <StepProgressBar
@@ -293,8 +351,8 @@ export function RootCause() {
           </Badge>
         )}
         {overrideConfirmed && !isOverrideEditing && (
-          <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-sm px-3 py-1">
-            Overridden
+          <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
+            Modified
           </Badge>
         )}
       </div>
@@ -341,7 +399,15 @@ export function RootCause() {
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="primaryRootCause">Underlying Root Cause</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="primaryRootCause">Underlying Root Cause</Label>
+                {!isOverrideEditing && (
+                  <FieldBadge
+                    original={rcaParsed.primary_root_cause}
+                    current={primaryRootCause}
+                  />
+                )}
+              </div>
               <Textarea
                 id="primaryRootCause"
                 rows={3}
@@ -352,12 +418,32 @@ export function RootCause() {
                   !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
                 }
               />
+              {overrideConfirmed &&
+                primaryRootCause !== rcaParsed.primary_root_cause &&
+                !isOverrideEditing && (
+                  <div className="text-xs text-muted-foreground">
+                    <span className="font-medium text-orange-600">
+                      Previous AI value:{" "}
+                    </span>
+                    <span className="line-through text-red-500/70">
+                      {rcaParsed.primary_root_cause}
+                    </span>
+                  </div>
+                )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="immediateCause">
-                Immediate Cause (direct trigger)
-              </Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="immediateCause">
+                  Immediate Cause (direct trigger)
+                </Label>
+                {!isOverrideEditing && (
+                  <FieldBadge
+                    original={rcaParsed.immediate_cause}
+                    current={immediateCause}
+                  />
+                )}
+              </div>
               <Textarea
                 id="immediateCause"
                 rows={2}
@@ -368,6 +454,18 @@ export function RootCause() {
                   !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
                 }
               />
+              {overrideConfirmed &&
+                immediateCause !== rcaParsed.immediate_cause &&
+                !isOverrideEditing && (
+                  <div className="text-xs text-muted-foreground">
+                    <span className="font-medium text-orange-600">
+                      Previous AI value:{" "}
+                    </span>
+                    <span className="line-through text-red-500/70">
+                      {rcaParsed.immediate_cause}
+                    </span>
+                  </div>
+                )}
             </div>
           </CardContent>
         </Card>
@@ -381,7 +479,15 @@ export function RootCause() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <Label htmlFor="contributingFactors">One factor per line</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="contributingFactors">One factor per line</Label>
+                {!isOverrideEditing && (
+                  <FieldBadge
+                    original={(rcaParsed.contributing_factors ?? []).join("\n")}
+                    current={contributingFactors}
+                  />
+                )}
+              </div>
               <Textarea
                 id="contributingFactors"
                 rows={4}
@@ -405,7 +511,15 @@ export function RootCause() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <Label htmlFor="evidence">One item per line</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="evidence">One item per line</Label>
+                {!isOverrideEditing && (
+                  <FieldBadge
+                    original={(rcaParsed.evidence ?? []).join("\n")}
+                    current={evidence}
+                  />
+                )}
+              </div>
               <Textarea
                 id="evidence"
                 rows={4}
@@ -486,7 +600,7 @@ export function RootCause() {
         </Card>
       </div>
 
-      {/* Override Dialog — shown after Save Changes */}
+      {/* Override Dialog */}
       <Dialog open={showOverrideDialog} onOpenChange={setShowOverrideDialog}>
         <DialogContent>
           <DialogHeader>

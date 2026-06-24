@@ -38,6 +38,7 @@ export function StepProgressBar({
 }: StepProgressBarProps) {
   const { pathname } = useLocation();
   const currentStep = STEP_ROUTES[pathname] ?? 0;
+  const isOnSummary = pathname === "/deviation/summary";
   const steps = getSteps(classification);
 
   return (
@@ -48,7 +49,8 @@ export function StepProgressBar({
       <div className="flex items-center w-full">
         {steps.map((step, index) => {
           const isCompleted =
-            index < currentStep || (capaAccepted && index === CAPA_STEP_INDEX);
+            index < currentStep ||
+            (index === CAPA_STEP_INDEX && (capaAccepted || isOnSummary));
           const isActive = index === currentStep && !isCompleted;
 
           return (

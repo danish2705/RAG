@@ -25,22 +25,12 @@ import {
   sourceSystemOptions,
 } from "../lib/mockData";
 
-// Backend contract (see src/server.ts on the API side):
-//   POST /api/deviations/analyze
-//   body: { query: string }   <-- JSON, not multipart/form-data
-//   response: PipelineResult  <-- see types below
-// The API has no file-upload handling today, so attachments are kept
-// client-side only and are NOT sent yet. See the comment near handleSubmit.
-
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 const ALLOWED_FILE_TYPES = ["application/pdf", "image/png", "image/jpeg"];
 
-// ── Backend response types (mirrors src/pipeline/orchestrator.ts) ──────────
+// ── Backend response types ────────────────────────────────────────────────────
 
 type StageName = "classification" | "rca" | "capa";
-// Includes "impact_assessment" because the orchestrator's HaltedStage union
-// is wider than StageName (impact assessment has its own halt reason but
-// reuses the rca-shaped gate — see orchestrator.ts's runImpactAssessmentOnly).
 type HaltedStage = StageName | "impact_assessment";
 type GateReasonCode =
   | "invalid_output"
@@ -66,18 +56,12 @@ interface ImpactParameter {
   rationale: string;
 }
 
-// Stage 1: routing decision ONLY. No severity/impact data here — that's a
-// separate stage (ImpactAssessmentResult below) that only runs after a
-// human accepts/overrides this classification on the AIRecommendation page.
 interface ClassificationResult {
   classification: string;
   rationale: string[];
   confidence_score: number;
 }
 
-// Stage 2: populated only after POST /api/deviations/impact-assessment.
-// This is the stage InputQuery.tsx itself never calls — it's triggered
-// later, from AIRecommendation.tsx, after human approval.
 interface ImpactAssessmentResult {
   impact_assessment: {
     product_impact: ImpactParameter;
@@ -125,7 +109,7 @@ export interface PipelineResult {
   routing?: unknown;
 }
 
-// ── Form types ───────────────────────────────────────────────────────────────
+// ── Form types ────────────────────────────────────────────────────────────────
 
 interface FormState {
   site: string;
@@ -160,7 +144,7 @@ function buildQueryFromForm(formData: FormState): string {
   return lines.filter((line) => line !== null).join("\n");
 }
 
-// ── Component ────────────────────────────────────────────────────────────────
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export function NewDeviation() {
   const navigate = useNavigate();
@@ -183,9 +167,6 @@ export function NewDeviation() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // ── Derived: all required fields filled ─────────────────────────────────
-  // Required: site, eventType, sourceSystem, description, dateTimeDetected
-  // dateTimeDetected is pre-filled to "now" so it's always truthy on load.
   const isFormReady =
     !!formData.site &&
     !!formData.eventType &&
@@ -193,7 +174,7 @@ export function NewDeviation() {
     !!formData.description.trim() &&
     !!formData.dateTimeDetected;
 
-  // ── File handling ────────────────────────────────────────────────────────
+  // ── File handling ─────────────────────────────────────────────────────────
 
   const validateAndAddFiles = (incoming: File[]) => {
     const accepted: File[] = [];
@@ -238,7 +219,7 @@ export function NewDeviation() {
     setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // ── Field updates ────────────────────────────────────────────────────────
+  // ── Field updates ─────────────────────────────────────────────────────────
 
   const updateField = (field: keyof FormState, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -250,7 +231,7 @@ export function NewDeviation() {
     });
   };
 
-  // ── Validation (runs on submit to surface inline errors) ─────────────────
+  // ── Validation ────────────────────────────────────────────────────────────
 
   const validate = (): boolean => {
     const nextErrors: FormErrors = {};
@@ -268,7 +249,7 @@ export function NewDeviation() {
     return Object.keys(nextErrors).length === 0;
   };
 
-  // ── Submit ───────────────────────────────────────────────────────────────
+  // ── Submit ────────────────────────────────────────────────────────────────
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -279,10 +260,6 @@ export function NewDeviation() {
     setIsSubmitting(true);
 
     try {
-      // NOTE: attachments are intentionally NOT sent here. The backend
-      // (POST /api/deviations/analyze) only accepts { query: string } JSON
-      // and has no multipart/file handling. Once the backend supports
-      // attachments, switch this to a FormData request and append them.
       const query = buildQueryFromForm(formData);
 
       const response = await fetch("/api/inputQuery", {
@@ -298,8 +275,6 @@ export function NewDeviation() {
         );
       }
 
-      // Backend returns PipelineResult (status, haltedAt, stages, auditTrail)
-      // spread with { query, routing } added by server.ts
       const result: PipelineResult = await response.json();
 
       navigate("/deviation/ai-recommendation", {
@@ -316,14 +291,14 @@ export function NewDeviation() {
     }
   };
 
-  // ── Render ───────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="p-6 w-full">
       <StepProgressBar />
 
       {submitError && (
-        <div className="mb-6 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+        <div className="mb-6 flex items-start gap-2 rounded-lg border border-red-200 bg-red-500/10 dark:border-red-800 p-4 text-sm text-red-700 dark:text-red-400">
           <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
           <div>
             <p className="font-medium">Couldn&apos;t submit this event</p>
@@ -364,7 +339,7 @@ export function NewDeviation() {
                     </SelectContent>
                   </Select>
                   {errors.site && (
-                    <p className="text-xs text-red-600">{errors.site}</p>
+                    <p className="text-xs text-red-500">{errors.site}</p>
                   )}
                 </div>
 
@@ -383,7 +358,7 @@ export function NewDeviation() {
                     aria-invalid={!!errors.dateTimeDetected}
                   />
                   {errors.dateTimeDetected && (
-                    <p className="text-xs text-red-600">
+                    <p className="text-xs text-red-500">
                       {errors.dateTimeDetected}
                     </p>
                   )}
@@ -416,7 +391,7 @@ export function NewDeviation() {
                     </SelectContent>
                   </Select>
                   {errors.sourceSystem && (
-                    <p className="text-xs text-red-600">
+                    <p className="text-xs text-red-500">
                       {errors.sourceSystem}
                     </p>
                   )}
@@ -447,7 +422,7 @@ export function NewDeviation() {
                     </SelectContent>
                   </Select>
                   {errors.eventType && (
-                    <p className="text-xs text-red-600">{errors.eventType}</p>
+                    <p className="text-xs text-red-500">{errors.eventType}</p>
                   )}
                 </div>
               </div>
@@ -475,7 +450,7 @@ export function NewDeviation() {
                   aria-invalid={!!errors.description}
                 />
                 {errors.description && (
-                  <p className="text-xs text-red-600">{errors.description}</p>
+                  <p className="text-xs text-red-500">{errors.description}</p>
                 )}
               </div>
 
@@ -545,28 +520,29 @@ export function NewDeviation() {
                   onChange={handleFileUpload}
                 />
 
+                {/* Drop zone — uses border-border so it adapts to dark mode */}
                 <div
                   onClick={() => fileInputRef.current?.click()}
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
-                  className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors cursor-pointer"
+                  className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-muted-foreground transition-colors cursor-pointer"
                 >
-                  <Upload className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+                  <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
 
-                  <p className="text-sm text-gray-600 mb-1">
-                    <span className="text-blue-600 font-medium">
+                  <p className="text-sm text-muted-foreground mb-1">
+                    <span className="text-blue-500 font-medium">
                       Click to upload
                     </span>{" "}
                     or drag and drop
                   </p>
 
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     PDF, PNG, JPG up to 10MB
                   </p>
                 </div>
 
                 {rejectedFiles.length > 0 && (
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                  <div className="rounded-lg border border-amber-300 bg-amber-500/10 dark:border-amber-700 p-3 text-xs text-amber-700 dark:text-amber-400">
                     <p className="font-medium mb-1">
                       The following file(s) were not added:
                     </p>
@@ -580,19 +556,21 @@ export function NewDeviation() {
 
                 {attachments.length > 0 && (
                   <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-gray-700">
+                    <h4 className="text-sm font-medium text-foreground">
                       Uploaded Files ({attachments.length})
                     </h4>
 
                     {attachments.map((file, index) => (
                       <div
                         key={`${file.name}-${index}`}
-                        className="flex items-center justify-between p-3 border rounded-lg bg-gray-50"
+                        className="flex items-center justify-between p-3 border border-border rounded-lg bg-muted/50"
                       >
                         <div>
-                          <p className="text-sm font-medium">{file.name}</p>
+                          <p className="text-sm font-medium text-foreground">
+                            {file.name}
+                          </p>
 
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-muted-foreground">
                             {(file.size / 1024).toFixed(2)} KB
                           </p>
                         </div>
@@ -613,20 +591,22 @@ export function NewDeviation() {
             </CardContent>
           </Card>
 
-          {/* Submit */}
+          {/* Submit buttons */}
           <div className="flex justify-end gap-4">
+            {/* Cancel — explicit classes so it's always visible in dark mode */}
             <Button
               type="button"
               variant="outline"
               onClick={() => navigate("/")}
               disabled={isSubmitting}
+              className="border-border text-foreground hover:bg-muted"
             >
               Cancel
             </Button>
 
             <Button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isSubmitting || !isFormReady}
             >
               {isSubmitting ? (

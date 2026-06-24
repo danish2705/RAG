@@ -23,7 +23,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`bg-gray-900 text-white flex flex-col transition-all duration-300 ${
+      className={`bg-gray-900 dark:bg-gray-950 text-white flex flex-col transition-all duration-300 ${
         collapsed ? "w-20" : "w-64"
       }`}
     >
@@ -40,7 +40,6 @@ export function Sidebar() {
           <div className="h-8 w-8 bg-blue-500 rounded flex items-center justify-center shrink-0">
             <span className="font-bold text-white">D</span>
           </div>
-
           {!collapsed && (
             <span className="font-semibold text-sm whitespace-nowrap">
               Deviation & Change Control
@@ -69,7 +68,6 @@ export function Sidebar() {
                 }
               >
                 <item.icon className="h-5 w-5 shrink-0" />
-
                 {!collapsed && (
                   <span className="whitespace-nowrap">{item.name}</span>
                 )}

@@ -109,12 +109,13 @@ interface ImpactAssessmentApiResponse {
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 function getClassificationBadgeClass(type: string): string {
-  if (type === "Deviation") return "bg-red-100 text-red-800 border-red-200";
+  if (type === "Deviation")
+    return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
   if (type === "Change Control")
-    return "bg-blue-100 text-blue-800 border-blue-200";
+    return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
   if (type === "Hybrid")
-    return "bg-purple-100 text-purple-800 border-purple-200";
-  return "bg-gray-100 text-gray-600 border-gray-200";
+    return "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800";
+  return "bg-muted text-muted-foreground border-border";
 }
 
 // ── Component ─────────────────────────────────────────────────────────────
@@ -128,7 +129,6 @@ export function AIRecommendation() {
   const classificationStage = result?.stages?.classification;
   const parsed = classificationStage?.parsed;
 
-  // Override editing state
   const [isOverrideEditing, setIsOverrideEditing] = useState(false);
   const [editedClassification, setEditedClassification] = useState<
     "Deviation" | "Change Control" | "Hybrid"
@@ -137,7 +137,6 @@ export function AIRecommendation() {
     (parsed?.rationale ?? []).join("\n"),
   );
 
-  // Dialog state
   const [showOverrideDialog, setShowOverrideDialog] = useState(false);
   const [overrideJustification, setOverrideJustification] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
@@ -145,6 +144,7 @@ export function AIRecommendation() {
 
   const [isAssessing, setIsAssessing] = useState(false);
   const [assessError, setAssessError] = useState<string | null>(null);
+  const [overrideConfirmed, setOverrideConfirmed] = useState(false);
 
   // ── Guard ──────────────────────────────────────────────────────────────
   if (!result || !parsed) {
@@ -153,10 +153,10 @@ export function AIRecommendation() {
         <Card>
           <CardContent className="py-12 text-center">
             <AlertTriangle className="h-10 w-10 text-yellow-500 mx-auto mb-3" />
-            <p className="text-gray-600 font-medium">
+            <p className="text-muted-foreground font-medium">
               No analysis result found.
             </p>
-            <p className="text-sm text-gray-400 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Please go back and submit a quality event first.
             </p>
             <Button className="mt-4" onClick={() => navigate("/deviation")}>
@@ -199,8 +199,6 @@ export function AIRecommendation() {
             ...result,
             stages: {
               ...result.stages,
-              // Bake the (possibly overridden) classification into result so
-              // that when ImpactAssessment navigates back, it carries it forward.
               classification: {
                 ...result.stages.classification,
                 parsed: currentClassification,
@@ -235,9 +233,6 @@ export function AIRecommendation() {
 
     const approvedClassification = overriddenParsed ?? parsed;
 
-    // If an impact assessment was already generated for this deviation (e.g.
-    // the user went Back from a later step) and nothing was overridden on
-    // this visit, reuse it instead of calling the AI again.
     const existingImpactAssessment = result.stages?.impactAssessment;
     if (!overrideConfirmed && existingImpactAssessment?.parsed) {
       navigate("/deviation/impact-assessment", {
@@ -261,22 +256,9 @@ export function AIRecommendation() {
     void runImpactAssessment(approvedClassification);
   };
 
-  // Step 1: clicking Override Classification enters edit mode
-  const handleOverrideClick = () => {
-    setIsOverrideEditing(true);
-  };
+  const handleOverrideClick = () => setIsOverrideEditing(true);
+  const handleSaveChanges = () => setShowOverrideDialog(true);
 
-  // Step 2: Save Changes opens the justification dialog
-  const handleSaveChanges = () => {
-    setShowOverrideDialog(true);
-  };
-
-  // Tracks whether the user confirmed an override so Accept sends
-  // the edited values to the pipeline instead of the original.
-  const [overrideConfirmed, setOverrideConfirmed] = useState(false);
-
-  // Step 3: Confirm closes dialog + returns to read-only with edited values.
-  // The user must still explicitly click Accept to proceed.
   const handleOverrideConfirm = () => {
     if (!overrideJustification.trim()) return;
     setShowOverrideDialog(false);
@@ -292,7 +274,6 @@ export function AIRecommendation() {
     }
   };
 
-  // Build current classification (override if confirmed, else original)
   const currentClassification = overrideConfirmed
     ? {
         ...parsed,
@@ -312,12 +293,12 @@ export function AIRecommendation() {
       />
       <div className="mb-6 flex items-center gap-3 justify-end">
         {isOverrideEditing && (
-          <Badge className="ml-auto bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
+          <Badge className="ml-auto bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800 text-sm px-3 py-1">
             Editing
           </Badge>
         )}
         {overrideConfirmed && !isOverrideEditing && (
-          <Badge className="ml-auto bg-blue-100 text-blue-700 border-blue-200 text-sm px-3 py-1">
+          <Badge className="ml-auto bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800 text-sm px-3 py-1">
             Overridden
           </Badge>
         )}
@@ -336,7 +317,7 @@ export function AIRecommendation() {
           <CardContent className="space-y-6">
             {/* Classification type */}
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-600">
+              <span className="text-sm font-medium text-muted-foreground">
                 Classification:
               </span>
               {isOverrideEditing ? (
@@ -353,16 +334,12 @@ export function AIRecommendation() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Deviation">Deviation</SelectItem>
-                    <SelectItem value="Change Control">
-                      Change Control
-                    </SelectItem>
+                    <SelectItem value="Change Control">Change Control</SelectItem>
                     <SelectItem value="Hybrid">Hybrid</SelectItem>
                   </SelectContent>
                 </Select>
               ) : (
-                <Badge
-                  className={getClassificationBadgeClass(editedClassification)}
-                >
+                <Badge className={getClassificationBadgeClass(editedClassification)}>
                   {editedClassification}
                 </Badge>
               )}
@@ -372,13 +349,13 @@ export function AIRecommendation() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1">
-                  <span className="text-sm font-medium text-gray-600">
+                  <span className="text-sm font-medium text-muted-foreground">
                     AI Confidence Score
                   </span>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Info className="h-3.5 w-3.5 text-gray-400 cursor-help" />
+                        <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
                         <p className="text-xs">
@@ -390,11 +367,12 @@ export function AIRecommendation() {
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <span className="text-sm font-semibold text-gray-900">
+                <span className="text-sm font-semibold text-foreground">
                   {parsed.confidence_score}%
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              {/* Progress bar track uses bg-muted so it adapts to dark mode */}
+              <div className="w-full bg-muted rounded-full h-2">
                 <div
                   className={`h-2 rounded-full ${
                     parsed.confidence_score >= 80
@@ -409,8 +387,8 @@ export function AIRecommendation() {
             </div>
 
             {/* AI Rationale */}
-            <div className="border-t pt-4">
-              <p className="text-sm font-medium text-gray-900 mb-3">
+            <div className="border-t border-border pt-4">
+              <p className="text-sm font-medium text-foreground mb-3">
                 AI Rationale
               </p>
               {isOverrideEditing ? (
@@ -421,7 +399,7 @@ export function AIRecommendation() {
                     onChange={(e) => setEditedRationale(e.target.value)}
                     placeholder="One rationale point per line..."
                   />
-                  <p className="text-xs text-gray-400">One point per line</p>
+                  <p className="text-xs text-muted-foreground">One point per line</p>
                 </div>
               ) : (
                 <ul className="space-y-2">
@@ -432,7 +410,7 @@ export function AIRecommendation() {
                     .map((point, i) => (
                       <li
                         key={i}
-                        className="flex items-start gap-2 text-sm text-gray-600"
+                        className="flex items-start gap-2 text-sm text-muted-foreground"
                       >
                         <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
                         {point}
@@ -451,7 +429,7 @@ export function AIRecommendation() {
           </CardHeader>
           <CardContent>
             {assessError && (
-              <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+              <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-500/10 dark:border-red-800 p-3 text-sm text-red-700 dark:text-red-400">
                 <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
                 <div>
                   <p className="font-medium">Impact assessment failed</p>
@@ -463,7 +441,7 @@ export function AIRecommendation() {
               <Button
                 onClick={handleAccept}
                 disabled={isAssessing || isOverrideEditing}
-                className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50"
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
               >
                 {isAssessing ? (
                   <>
@@ -488,7 +466,7 @@ export function AIRecommendation() {
                   onClick={handleOverrideClick}
                   variant="outline"
                   disabled={isAssessing}
-                  className="flex-1"
+                  className="flex-1 border-border text-foreground hover:bg-muted"
                 >
                   Override Classification
                 </Button>
@@ -501,7 +479,7 @@ export function AIRecommendation() {
                 Reject Classification
               </Button>
             </div>
-            <p className="text-xs text-gray-500 mt-3 text-center">
+            <p className="text-xs text-muted-foreground mt-3 text-center">
               Your decision will be logged in the audit trail. Accepting or
               overriding runs a fresh impact assessment — it only starts now,
               not before you decide.
@@ -510,7 +488,7 @@ export function AIRecommendation() {
         </Card>
       </div>
 
-      {/* Override dialog — shown after Save Changes */}
+      {/* Override dialog */}
       <Dialog open={showOverrideDialog} onOpenChange={setShowOverrideDialog}>
         <DialogContent>
           <DialogHeader>

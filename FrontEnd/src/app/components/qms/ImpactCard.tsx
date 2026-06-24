@@ -19,7 +19,7 @@ export function ImpactCard({ category, status, description }: ImpactCardProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-gray-600">{description}</p>
+        <p className="text-sm text-muted-foreground">{description}</p>
       </CardContent>
     </Card>
   );

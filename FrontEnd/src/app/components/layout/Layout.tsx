@@ -4,7 +4,7 @@ import { Sidebar } from './Sidebar';
 
 export function Layout() {
   return (
-    <div className="h-screen flex overflow-hidden bg-gray-50">
+    <div className="h-screen flex overflow-hidden bg-muted/30">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />

@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-import { AlertTriangle, Sparkles, Loader2, Save } from "lucide-react";
+import { AlertTriangle, Sparkles, Loader2, Save, PenLine } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -27,8 +27,14 @@ import {
 } from "../components/ui/dialog";
 import { Label } from "../components/ui/label";
 import { Badge } from "../components/ui/badge";
+import {
+  aiField,
+  markModified,
+  type ImpactAssessmentProvenance,
+  type ClassificationProvenance,
+} from "../types/dataProvenance";
 
-// ── Types (from backend) ──────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────
 
 type StageName = "classification" | "rca" | "capa";
 
@@ -95,6 +101,10 @@ interface PipelineResult {
   auditTrail: unknown[];
   query: string;
   routing?: unknown;
+  provenance?: {
+    classification?: ClassificationProvenance;
+    impactAssessment?: ImpactAssessmentProvenance;
+  };
 }
 
 interface RCAApiResponse {
@@ -141,23 +151,32 @@ export function ImpactAssessment() {
     ? Object.entries(impactParsed.impact_assessment).map(([key, val]) => ({
         key,
         category: PARAMETER_LABELS[key] ?? key,
-        severity: val.severity,
+        severity: val.severity as "None" | "Minor" | "Major" | "Critical",
         description: val.rationale,
+        originalSeverity: val.severity as
+          | "None"
+          | "Minor"
+          | "Major"
+          | "Critical",
+        originalDescription: val.rationale,
+        // true when the dropdown value was changed but description not yet updated
+        severityChangedWithoutDescription: false,
       }))
     : [];
 
-  // Override editing state — fields locked by default, unlocked on Override click
   const [isOverrideEditing, setIsOverrideEditing] = useState(false);
   const [assessments, setAssessments] = useState(initialAssessments);
-
-  // Tracks whether the user confirmed an override so the header badge and
-  // downstream stages reflect that this assessment was human-modified.
   const [overrideConfirmed, setOverrideConfirmed] = useState(false);
 
   const [showOverrideDialog, setShowOverrideDialog] = useState(false);
   const [overrideJustification, setOverrideJustification] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectJustification, setRejectJustification] = useState("");
+
+  // Warning dialog: shown when user tries to Save Changes but some cards have
+  // a changed dropdown with the description still unchanged.
+  const [showDescriptionWarning, setShowDescriptionWarning] = useState(false);
+  const [warningCards, setWarningCards] = useState<string[]>([]);
 
   const [isGeneratingRCA, setIsGeneratingRCA] = useState(false);
   const [rcaError, setRcaError] = useState<string | null>(null);
@@ -184,16 +203,114 @@ export function ImpactAssessment() {
     );
   }
 
-  const updateAssessment = (index: number, field: string, value: string) => {
-    const updated = [...assessments];
-    updated[index] = { ...updated[index], [field]: value };
-    setAssessments(updated);
+  // ── Field update helpers ───────────────────────────────────────────────
+
+  const updateSeverity = (index: number, value: string) => {
+    setAssessments((prev) => {
+      const updated = [...prev];
+      const item = {
+        ...updated[index],
+        severity: value as "None" | "Minor" | "Major" | "Critical",
+      };
+      // Flag that the dropdown changed — user must update the description too
+      item.severityChangedWithoutDescription = value !== item.originalSeverity;
+      updated[index] = item;
+      return updated;
+    });
   };
 
-  const runRCA = async () => {
+  const updateDescription = (index: number, value: string) => {
+    setAssessments((prev) => {
+      const updated = [...prev];
+      const item = { ...updated[index], description: value };
+      // Once they've typed something different, clear the "needs description" flag
+      if (value !== item.originalDescription) {
+        item.severityChangedWithoutDescription = false;
+      }
+      updated[index] = item;
+      return updated;
+    });
+  };
+
+  // ── Provenance builder ─────────────────────────────────────────────────
+
+  const buildImpactProvenance = (
+    confirmed: boolean,
+  ): ImpactAssessmentProvenance => {
+    const keys = [
+      "product_impact",
+      "patient_impact",
+      "data_integrity_impact",
+      "compliance_impact",
+    ] as const;
+
+    const entries = Object.fromEntries(
+      keys.map((key, i) => {
+        const a = assessments[i];
+        const modified =
+          confirmed &&
+          (a?.severity !== a?.originalSeverity ||
+            a?.description !== a?.originalDescription);
+
+        return [
+          key,
+          {
+            severity: modified
+              ? markModified(aiField(a.originalSeverity), a.severity)
+              : aiField(a.originalSeverity),
+            rationale: modified
+              ? markModified(aiField(a.originalDescription), a.description)
+              : aiField(a.originalDescription),
+          },
+        ];
+      }),
+    );
+
+    return {
+      impact_assessment:
+        entries as ImpactAssessmentProvenance["impact_assessment"],
+      confidence_score: impactParsed.confidence_score,
+    };
+  };
+
+  // ── Navigation helpers ─────────────────────────────────────────────────
+
+  const navigateToRCA = (
+    rcaStage: RCAStage | undefined,
+    impactProvenance: ImpactAssessmentProvenance,
+  ) => {
+    navigate("/deviation/root-cause", {
+      state: {
+        result: {
+          ...result,
+          stages: {
+            ...result!.stages,
+            impactAssessment: {
+              ...result!.stages.impactAssessment,
+              parsed: {
+                ...impactParsed,
+                impact_assessment: Object.fromEntries(
+                  assessments.map((a) => [
+                    a.key,
+                    { severity: a.severity, rationale: a.description },
+                  ]),
+                ),
+              },
+            },
+            rca: rcaStage,
+          },
+          provenance: {
+            ...result!.provenance,
+            impactAssessment: impactProvenance,
+          },
+        },
+      },
+    });
+  };
+
+  const runRCA = async (impactProvenance: ImpactAssessmentProvenance) => {
     setRcaError(null);
     setIsGeneratingRCA(true);
-
     try {
       const response = await fetch("/api/deviations/rca", {
         method: "POST",
@@ -203,39 +320,14 @@ export function ImpactAssessment() {
           classification: classificationParsed,
         }),
       });
-
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
         throw new Error(
           body?.error || `Request failed with status ${response.status}`,
         );
       }
-
       const rcaResult: RCAApiResponse = await response.json();
-
-      navigate("/deviation/root-cause", {
-        state: {
-          result: {
-            ...result,
-            stages: {
-              ...result!.stages,
-              impactAssessment: {
-                ...result!.stages.impactAssessment,
-                parsed: {
-                  ...impactParsed,
-                  impact_assessment: Object.fromEntries(
-                    assessments.map((a) => [
-                      a.key,
-                      { severity: a.severity, rationale: a.description },
-                    ]),
-                  ),
-                },
-              },
-              rca: rcaResult.stages.rca,
-            },
-          },
-        },
-      });
+      navigateToRCA(rcaResult.stages.rca, impactProvenance);
     } catch (err) {
       setRcaError(
         err instanceof Error
@@ -248,52 +340,31 @@ export function ImpactAssessment() {
   };
 
   const handleAccept = () => {
-    // If RCA was already generated for this deviation (e.g. the user went
-    // Back from a later step) and nothing was overridden on this visit,
-    // reuse it instead of calling the AI again.
+    const impactProvenance = buildImpactProvenance(overrideConfirmed);
     const existingRCA = result!.stages?.rca;
     if (!overrideConfirmed && existingRCA?.parsed) {
-      navigate("/deviation/root-cause", {
-        state: {
-          result: {
-            ...result,
-            stages: {
-              ...result!.stages,
-              impactAssessment: {
-                ...result!.stages.impactAssessment,
-                parsed: {
-                  ...impactParsed,
-                  impact_assessment: Object.fromEntries(
-                    assessments.map((a) => [
-                      a.key,
-                      { severity: a.severity, rationale: a.description },
-                    ]),
-                  ),
-                },
-              },
-              rca: existingRCA,
-            },
-          },
-        },
-      });
+      navigateToRCA(existingRCA, impactProvenance);
       return;
     }
-
-    void runRCA();
+    void runRCA(impactProvenance);
   };
 
-  // Step 1: clicking Override Assessment enters edit mode
-  const handleOverrideClick = () => {
-    setIsOverrideEditing(true);
-  };
+  const handleOverrideClick = () => setIsOverrideEditing(true);
 
-  // Step 2: Save Changes opens the justification dialog
+  // ── Save Changes: check all cards have updated descriptions ───────────
   const handleSaveChanges = () => {
+    const needsDescription = assessments
+      .filter((a) => a.severityChangedWithoutDescription)
+      .map((a) => a.category);
+
+    if (needsDescription.length > 0) {
+      setWarningCards(needsDescription);
+      setShowDescriptionWarning(true);
+      return;
+    }
     setShowOverrideDialog(true);
   };
 
-  // Step 3: Confirm closes dialog + returns to read-only with edited values.
-  // The user must still explicitly click Accept to proceed.
   const handleOverrideConfirm = () => {
     if (!overrideJustification.trim()) return;
     setShowOverrideDialog(false);
@@ -311,11 +382,13 @@ export function ImpactAssessment() {
 
   const confidenceScore = impactParsed.confidence_score;
 
+  // ── Render ─────────────────────────────────────────────────────────────
   return (
     <div className="p-6 w-full">
       <StepProgressBar
         classification={result?.stages?.classification?.parsed?.classification}
       />
+
       <div className="mb-6 flex items-center justify-end gap-3">
         {isOverrideEditing && (
           <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
@@ -323,61 +396,71 @@ export function ImpactAssessment() {
           </Badge>
         )}
         {overrideConfirmed && !isOverrideEditing && (
-          <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-sm px-3 py-1">
-            Overridden
+          <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
+            <PenLine className="h-3 w-3 mr-1" /> Modified
           </Badge>
         )}
       </div>
 
       <div className="space-y-6">
-        {/* Overall confidence score */}
+        {/* Confidence */}
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-blue-600" />
+              Overall AI Confidence Score
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600">
+                Based on {classificationParsed.classification} classification
+              </span>
+              <span className="text-sm font-semibold text-gray-900">
+                {confidenceScore}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className={`h-2 rounded-full ${confidenceScore >= 80 ? "bg-green-500" : confidenceScore >= 60 ? "bg-yellow-500" : "bg-red-500"}`}
+                style={{ width: `${confidenceScore}%` }}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="space-y-6">
-          {/* Overall confidence score */}
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-blue-600" />
-                Overall AI Confidence Score
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600">
-                  Based on {classificationParsed.classification} classification
-                </span>
-                <span className="text-sm font-semibold text-gray-900">
-                  {confidenceScore}%
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className={`h-2 rounded-full ${
-                    confidenceScore >= 80
-                      ? "bg-green-500"
-                      : confidenceScore >= 60
-                        ? "bg-yellow-500"
-                        : "bg-red-500"
-                  }`}
-                  style={{ width: `${confidenceScore}%` }}
-                />
-              </div>
-            </CardContent>
-          </Card>
+        {/* 4 Impact cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {assessments.map((assessment, index) => {
+            const isSeverityModified =
+              overrideConfirmed &&
+              assessment.severity !== assessment.originalSeverity;
+            const isDescriptionModified =
+              overrideConfirmed &&
+              assessment.description !== assessment.originalDescription;
+            const isAnyModified = isSeverityModified || isDescriptionModified;
 
-          {/* 4 Impact parameter cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {assessments.map((assessment, index) => (
-              <Card key={assessment.key} className="shadow-sm">
+            return (
+              <Card
+                key={assessment.key}
+                className={`shadow-sm ${assessment.severityChangedWithoutDescription && isOverrideEditing ? "ring-2 ring-orange-400" : ""}`}
+              >
                 <CardHeader>
-                  <CardTitle className="text-lg">
+                  <CardTitle className="flex items-center justify-between text-lg">
                     {assessment.category}
+                    {/* Only show "Modified" badge — no "AI Generated" label */}
+                    {!isOverrideEditing && isAnyModified && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200 select-none">
+                        <PenLine className="h-3 w-3" /> Modified
+                      </span>
+                    )}
                   </CardTitle>
                 </CardHeader>
 
                 <CardContent className="space-y-4">
                   {isOverrideEditing ? (
                     <>
+                      {/* Severity dropdown */}
                       <div>
                         <label className="text-sm font-medium mb-2 block">
                           Impact Level
@@ -385,7 +468,7 @@ export function ImpactAssessment() {
                         <Select
                           value={assessment.severity}
                           onValueChange={(value) =>
-                            updateAssessment(index, "severity", value)
+                            updateSeverity(index, value)
                           }
                         >
                           <SelectTrigger
@@ -404,197 +487,281 @@ export function ImpactAssessment() {
                             <SelectItem value="None">⚪ None</SelectItem>
                           </SelectContent>
                         </Select>
+                        {/* Inline nudge if severity changed but description not yet updated */}
+                        {assessment.severityChangedWithoutDescription && (
+                          <p className="text-xs text-orange-600 mt-1 flex items-center gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            Please update the description below to explain this
+                            change.
+                          </p>
+                        )}
                       </div>
+
+                      {/* Description */}
                       <div>
                         <label className="text-sm font-medium mb-2 block">
                           Description
+                          {assessment.severityChangedWithoutDescription && (
+                            <span className="text-orange-600 ml-1">*</span>
+                          )}
                         </label>
                         <Textarea
                           rows={4}
                           value={assessment.description}
                           onChange={(e) =>
-                            updateAssessment(
-                              index,
-                              "description",
-                              e.target.value,
-                            )
+                            updateDescription(index, e.target.value)
+                          }
+                          placeholder="Explain the reason for this change..."
+                          className={
+                            assessment.severityChangedWithoutDescription
+                              ? "border-orange-400 focus:ring-orange-400"
+                              : ""
                           }
                         />
                       </div>
                     </>
                   ) : (
                     <>
-                      <div className="flex items-center gap-2">
+                      {/* Read-only view */}
+                      <div className="flex items-center gap-2 flex-wrap">
                         <div
                           className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getSeverityBadgeClass(assessment.severity)}`}
                         >
                           {assessment.severity}
                         </div>
+                        {/* Show old → new diff only for severity */}
+                        {isSeverityModified && (
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <span className="line-through text-red-500/70">
+                              {assessment.originalSeverity}
+                            </span>
+                            <span className="text-muted-foreground/40">→</span>
+                            <span className="text-green-700 font-medium">
+                              {assessment.severity}
+                            </span>
+                          </span>
+                        )}
                       </div>
+
                       <p className="text-sm text-gray-600 leading-relaxed">
                         {assessment.description}
                       </p>
+
+                      {/* Show original AI description if it was changed */}
+                      {isDescriptionModified && (
+                        <div className="text-xs border-t pt-2 mt-1 space-y-0.5">
+                          <p className="font-medium text-orange-600">
+                            Previous AI description:
+                          </p>
+                          <p className="text-red-500/70 line-through leading-relaxed">
+                            {assessment.originalDescription}
+                          </p>
+                        </div>
+                      )}
                     </>
                   )}
                 </CardContent>
               </Card>
-            ))}
-          </div>
-
-          {/* Decision Required */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Decision Required</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {rcaError && (
-                <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-                  <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="font-medium">Root cause analysis failed</p>
-                    <p className="mt-1">{rcaError}</p>
-                  </div>
-                </div>
-              )}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button
-                  onClick={handleAccept}
-                  disabled={isGeneratingRCA || isOverrideEditing}
-                  className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50"
-                >
-                  {isGeneratingRCA ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Generating Root Cause Analysis...
-                    </>
-                  ) : (
-                    "Accept & Continue to Root Cause Analysis"
-                  )}
-                </Button>
-                {isOverrideEditing ? (
-                  <Button
-                    onClick={handleSaveChanges}
-                    disabled={isGeneratingRCA}
-                    className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Changes
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleOverrideClick}
-                    variant="outline"
-                    disabled={isGeneratingRCA}
-                    className="flex-1"
-                  >
-                    Override Assessment
-                  </Button>
-                )}
-                <Button
-                  onClick={() => setShowRejectDialog(true)}
-                  disabled={isGeneratingRCA}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                >
-                  Reject Assessment
-                </Button>
-              </div>
-              <p className="text-xs text-gray-500 mt-3 text-center">
-                Your decision will be logged in the audit trail. Accepting or
-                overriding runs root cause analysis — it only starts now, not
-                before you decide.
-              </p>
-            </CardContent>
-          </Card>
+            );
+          })}
         </div>
 
-        {/* Override Dialog — shown after Save Changes */}
-        <Dialog open={showOverrideDialog} onOpenChange={setShowOverrideDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Override Impact Assessment</DialogTitle>
-              <DialogDescription>
-                Please provide a justification for overriding the assessment.
-                This will be recorded in the audit trail.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="overrideJustification">Justification *</Label>
-                <Textarea
-                  id="overrideJustification"
-                  placeholder="Explain why you are overriding the impact assessment..."
-                  rows={4}
-                  value={overrideJustification}
-                  onChange={(e) => setOverrideJustification(e.target.value)}
-                />
+        {/* Decision Required */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Decision Required</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {rcaError && (
+              <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-medium">Root cause analysis failed</p>
+                  <p className="mt-1">{rcaError}</p>
+                </div>
               </div>
-            </div>
-            <DialogFooter>
+            )}
+            <div className="flex flex-col sm:flex-row gap-4">
               <Button
-                variant="outline"
-                onClick={() => setShowOverrideDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleOverrideConfirm}
-                disabled={!overrideJustification.trim() || isGeneratingRCA}
+                onClick={handleAccept}
+                disabled={isGeneratingRCA || isOverrideEditing}
+                className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50"
               >
                 {isGeneratingRCA ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Running...
+                    Generating Root Cause Analysis...
                   </>
                 ) : (
-                  "Confirm Override"
+                  "Accept & Continue to Root Cause Analysis"
                 )}
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Reject Dialog */}
-        <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Reject Impact Assessment</DialogTitle>
-              <DialogDescription>
-                Please provide a reason for rejecting this assessment. This will
-                be recorded in the audit trail.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="rejectJustification">
-                  Reason for Rejection *
-                </Label>
-                <Textarea
-                  id="rejectJustification"
-                  placeholder="Explain why you are rejecting the impact assessment..."
-                  rows={4}
-                  value={rejectJustification}
-                  onChange={(e) => setRejectJustification(e.target.value)}
-                />
-              </div>
+              {isOverrideEditing ? (
+                <Button
+                  onClick={handleSaveChanges}
+                  disabled={isGeneratingRCA}
+                  className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Changes
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleOverrideClick}
+                  variant="outline"
+                  disabled={isGeneratingRCA}
+                  className="flex-1"
+                >
+                  Override Assessment
+                </Button>
+              )}
+              <Button
+                onClick={() => setShowRejectDialog(true)}
+                disabled={isGeneratingRCA}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              >
+                Reject Assessment
+              </Button>
             </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowRejectDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleReject}
-                disabled={!rejectJustification.trim()}
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                Confirm Rejection
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            <p className="text-xs text-gray-500 mt-3 text-center">
+              Your decision will be logged in the audit trail. Accepting or
+              overriding runs root cause analysis — it only starts now, not
+              before you decide.
+            </p>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* ── Description required warning dialog ─────────────────────────── */}
+      <Dialog
+        open={showDescriptionWarning}
+        onOpenChange={setShowDescriptionWarning}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-orange-600">
+              <AlertTriangle className="h-5 w-5" />
+              Description Update Required
+            </DialogTitle>
+            <DialogDescription>
+              You changed the impact level for the following{" "}
+              {warningCards.length === 1 ? "category" : "categories"} but have
+              not updated the description to explain the change:
+            </DialogDescription>
+          </DialogHeader>
+          <ul className="mt-2 space-y-1">
+            {warningCards.map((c) => (
+              <li
+                key={c}
+                className="flex items-center gap-2 text-sm font-medium text-foreground"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-orange-500 shrink-0" />
+                {c}
+              </li>
+            ))}
+          </ul>
+          <p className="text-sm text-muted-foreground mt-3">
+            Please update the description for each changed category with the
+            reason for the new impact level before saving.
+          </p>
+          <DialogFooter>
+            <Button
+              onClick={() => setShowDescriptionWarning(false)}
+              className="bg-orange-600 hover:bg-orange-700 text-white"
+            >
+              Go Back & Update
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Override justification dialog ────────────────────────────────── */}
+      <Dialog open={showOverrideDialog} onOpenChange={setShowOverrideDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Override Impact Assessment</DialogTitle>
+            <DialogDescription>
+              Please provide a justification for overriding the assessment. This
+              will be recorded in the audit trail.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="overrideJustification">Justification *</Label>
+              <Textarea
+                id="overrideJustification"
+                placeholder="Explain why you are overriding the impact assessment..."
+                rows={4}
+                value={overrideJustification}
+                onChange={(e) => setOverrideJustification(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowOverrideDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleOverrideConfirm}
+              disabled={!overrideJustification.trim() || isGeneratingRCA}
+            >
+              {isGeneratingRCA ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Running...
+                </>
+              ) : (
+                "Confirm Override"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Reject dialog ───────────────────────────────────────────────── */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Impact Assessment</DialogTitle>
+            <DialogDescription>
+              Please provide a reason for rejecting this assessment. This will
+              be recorded in the audit trail.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="rejectJustification">
+                Reason for Rejection *
+              </Label>
+              <Textarea
+                id="rejectJustification"
+                placeholder="Explain why you are rejecting the impact assessment..."
+                rows={4}
+                value={rejectJustification}
+                onChange={(e) => setRejectJustification(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowRejectDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleReject}
+              disabled={!rejectJustification.trim()}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Confirm Rejection
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

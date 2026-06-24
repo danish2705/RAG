@@ -98,25 +98,24 @@ interface DeviationCase {
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 function getClassificationBadgeClass(type: string): string {
-  if (type === "Deviation")
-    return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
+  if (type === "Deviation") return "bg-red-100 text-red-800 border-red-200";
   if (type === "Change Control")
-    return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
+    return "bg-blue-100 text-blue-800 border-blue-200";
   if (type === "Hybrid")
-    return "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800";
-  return "bg-muted text-muted-foreground border-border";
+    return "bg-purple-100 text-purple-800 border-purple-200";
+  return "bg-gray-100 text-gray-600 border-gray-200";
 }
 
 function getSeverityBadgeClass(severity: string): string {
   switch (severity.toLowerCase()) {
     case "critical":
-      return "bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
+      return "bg-red-100 text-red-700 border border-red-200";
     case "major":
-      return "bg-yellow-100 text-yellow-700 border border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800";
+      return "bg-yellow-100 text-yellow-700 border border-yellow-200";
     case "minor":
-      return "bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800";
+      return "bg-green-100 text-green-700 border border-green-200";
     default:
-      return "bg-muted text-muted-foreground border border-border";
+      return "bg-gray-100 text-gray-600 border border-gray-200";
   }
 }
 
@@ -124,12 +123,12 @@ function ConfidenceBar({ score }: { score: number }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-muted-foreground">
+        <span className="text-sm font-medium text-gray-600">
           AI Confidence Score
         </span>
-        <span className="text-sm font-semibold text-foreground">{score}%</span>
+        <span className="text-sm font-semibold text-gray-900">{score}%</span>
       </div>
-      <div className="w-full bg-muted rounded-full h-2">
+      <div className="w-full bg-gray-200 rounded-full h-2">
         <div
           className={`h-2 rounded-full ${score >= 80 ? "bg-green-500" : score >= 60 ? "bg-yellow-500" : "bg-red-500"}`}
           style={{ width: `${score}%` }}
@@ -177,9 +176,9 @@ function CaseViewModal({
             <Database className="h-5 w-5 text-blue-600" />
             Case #{record.id} — Full Summary
           </DialogTitle>
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-xs text-gray-400 mt-1">
             Saved by{" "}
-            <span className="font-medium text-foreground">{record.saved_by}</span>
+            <span className="font-medium text-gray-600">{record.saved_by}</span>
             {" · "}
             {new Date(record.created_at).toLocaleString()}
           </p>
@@ -192,7 +191,7 @@ function CaseViewModal({
               <CardTitle className="text-base">Original Query</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground leading-relaxed bg-muted rounded-md p-3">
+              <p className="text-sm text-gray-600 leading-relaxed bg-gray-50 rounded-md p-3">
                 {record.query}
               </p>
             </CardContent>
@@ -209,7 +208,7 @@ function CaseViewModal({
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-muted-foreground">
+                  <span className="text-sm font-medium text-gray-600">
                     Type:
                   </span>
                   <Badge
@@ -219,15 +218,15 @@ function CaseViewModal({
                   </Badge>
                 </div>
                 <ConfidenceBar score={cls.confidence_score} />
-                <div className="border-t border-border pt-3">
-                  <p className="text-sm font-medium text-foreground mb-2">
+                <div className="border-t pt-3">
+                  <p className="text-sm font-medium text-gray-900 mb-2">
                     AI Rationale
                   </p>
                   <ul className="space-y-1.5">
                     {cls.rationale.map((point, i) => (
                       <li
                         key={i}
-                        className="flex items-start gap-2 text-sm text-muted-foreground"
+                        className="flex items-start gap-2 text-sm text-gray-600"
                       >
                         <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
                         {point}
@@ -267,7 +266,7 @@ function CaseViewModal({
                       >
                         {entry.severity}
                       </div>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-gray-600">
                         {entry.description}
                       </p>
                     </CardContent>
@@ -300,30 +299,30 @@ function CaseViewModal({
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-1">
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-gray-900">
                       Underlying Root Cause
                     </p>
-                    <p className="text-sm text-muted-foreground bg-muted rounded-md p-3">
+                    <p className="text-sm text-gray-600 bg-gray-50 rounded-md p-3">
                       {rca.primary_root_cause}
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-gray-900">
                       Immediate Cause
                     </p>
-                    <p className="text-sm text-muted-foreground bg-muted rounded-md p-3">
+                    <p className="text-sm text-gray-600 bg-gray-50 rounded-md p-3">
                       {rca.immediate_cause}
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-gray-900">
                       Contributing Factors
                     </p>
                     <ul className="space-y-1.5">
                       {rca.contributing_factors.map((p, i) => (
                         <li
                           key={i}
-                          className="flex items-start gap-2 text-sm text-muted-foreground"
+                          className="flex items-start gap-2 text-sm text-gray-600"
                         >
                           <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
                           {p}
@@ -332,14 +331,14 @@ function CaseViewModal({
                     </ul>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-gray-900">
                       Supporting Evidence
                     </p>
                     <ul className="space-y-1.5">
                       {rca.evidence.map((p, i) => (
                         <li
                           key={i}
-                          className="flex items-start gap-2 text-sm text-muted-foreground"
+                          className="flex items-start gap-2 text-sm text-gray-600"
                         >
                           <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
                           {p}
@@ -378,7 +377,7 @@ function CaseViewModal({
                     {capa.corrective_actions.map((p, i) => (
                       <li
                         key={i}
-                        className="flex items-start gap-2 text-sm text-muted-foreground"
+                        className="flex items-start gap-2 text-sm text-gray-600"
                       >
                         <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
                         {p}
@@ -399,7 +398,7 @@ function CaseViewModal({
                     {capa.preventive_actions.map((p, i) => (
                       <li
                         key={i}
-                        className="flex items-start gap-2 text-sm text-muted-foreground"
+                        className="flex items-start gap-2 text-sm text-gray-600"
                       >
                         <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
                         {p}
@@ -417,18 +416,18 @@ function CaseViewModal({
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="space-y-1">
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-gray-900">
                       Effectiveness Check
                     </p>
-                    <p className="text-sm text-muted-foreground bg-muted rounded-md p-3">
+                    <p className="text-sm text-gray-600 bg-gray-50 rounded-md p-3">
                       {capa.effectiveness_check}
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-gray-900">
                       Due Date
                     </p>
-                    <p className="text-sm text-muted-foreground bg-muted rounded-md p-3">
+                    <p className="text-sm text-gray-600 bg-gray-50 rounded-md p-3">
                       {capa.due_date}
                     </p>
                   </div>
@@ -452,14 +451,14 @@ export function DbLog() {
   const [selectedCase, setSelectedCase] = useState<DeviationCase | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
 
-  const [sortField, setSortField] = useState<
-    "saved_by" | "classification" | "created_at"
-  >("created_at");
+const [sortField, setSortField] = useState<
+  "saved_by" | "classification" | "created_at"
+>("created_at");
 
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
-  const [submittedByFilter, setSubmittedByFilter] = useState("");
-  const [classificationFilter, setClassificationFilter] = useState("all");
+const [submittedByFilter, setSubmittedByFilter] = useState("");
+const [classificationFilter, setClassificationFilter] = useState("all");
 
   useEffect(() => {
     (async () => {
@@ -475,64 +474,81 @@ export function DbLog() {
       }
     })();
   }, []);
+  const handleSort = (
+  field: "saved_by" | "classification" | "created_at"
+) => {
+  if (sortField === field) {
+    setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+  } else {
+    setSortField(field);
+    setSortDirection("asc");
+  }
+};
+const filteredCases = useMemo(() => {
+  let data = [...cases];
 
-  const handleSort = (field: "saved_by" | "classification" | "created_at") => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortDirection("asc");
+  data = data.filter((c) => {
+
+
+
+    const matchesSubmittedBy =
+      !submittedByFilter ||
+      (c.saved_by || "")
+        .toLowerCase()
+        .includes(submittedByFilter.toLowerCase());
+
+
+    const matchesClassification =
+      classificationFilter === "all" ||
+      c.classification?.classification === classificationFilter;
+
+
+
+    return (
+      matchesSubmittedBy &&
+      matchesClassification
+    );
+  });
+
+  data.sort((a, b) => {
+    let valueA = "";
+    let valueB = "";
+
+    switch (sortField) {
+      case "saved_by":
+        valueA = a.saved_by || "";
+        valueB = b.saved_by || "";
+        break;
+
+      case "classification":
+        valueA = a.classification?.classification || "";
+        valueB = b.classification?.classification || "";
+        break;
+
+      case "created_at":
+        return sortDirection === "asc"
+          ? new Date(a.created_at).getTime() -
+              new Date(b.created_at).getTime()
+          : new Date(b.created_at).getTime() -
+              new Date(a.created_at).getTime();
     }
-  };
 
-  const filteredCases = useMemo(() => {
-    let data = [...cases];
+    return sortDirection === "asc"
+      ? valueA.localeCompare(valueB)
+      : valueB.localeCompare(valueA);
+  });
 
-    data = data.filter((c) => {
-      const matchesSubmittedBy =
-        !submittedByFilter ||
-        (c.saved_by || "")
-          .toLowerCase()
-          .includes(submittedByFilter.toLowerCase());
-
-      const matchesClassification =
-        classificationFilter === "all" ||
-        c.classification?.classification === classificationFilter;
-
-      return matchesSubmittedBy && matchesClassification;
-    });
-
-    data.sort((a, b) => {
-      let valueA = "";
-      let valueB = "";
-
-      switch (sortField) {
-        case "saved_by":
-          valueA = a.saved_by || "";
-          valueB = b.saved_by || "";
-          break;
-
-        case "classification":
-          valueA = a.classification?.classification || "";
-          valueB = b.classification?.classification || "";
-          break;
-
-        case "created_at":
-          return sortDirection === "asc"
-            ? new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-            : new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      }
-
-      return sortDirection === "asc"
-        ? valueA.localeCompare(valueB)
-        : valueB.localeCompare(valueA);
-    });
-
-    return data;
-  }, [cases, submittedByFilter, classificationFilter, sortField, sortDirection]);
-
+  return data;
+}, [
+  cases,
+  submittedByFilter,
+  classificationFilter,
+  sortField,
+  sortDirection,
+]);
   return (
-    <div className="p-6 w-full">
+    <div className="relative h-full w-full">
+      <div className={`h-full p-6 overflow-y-auto transition-[margin] duration-200 ${chatOpen ? 'mr-80' : ''}`}>
       {selectedCase && (
         <CaseViewModal
           record={selectedCase}
@@ -542,7 +558,7 @@ export function DbLog() {
 
       <div className="mb-6 flex items-center gap-3">
         <div>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <p className="text-sm text-gray-500 mt-0.5">
             {filteredCases.length} case{filteredCases.length === 1 ? "" : "s"}
           </p>
         </div>
@@ -559,12 +575,12 @@ export function DbLog() {
       {/* Filter bar */}
       <div className="flex items-center gap-3 mb-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             placeholder="Search submitted by, query…"
             value={submittedByFilter}
             onChange={(e) => setSubmittedByFilter(e.target.value)}
-            className="pl-9 h-10"
+            className="pl-9 h-10 bg-gray-50 border-gray-200"
           />
         </div>
 
@@ -572,7 +588,7 @@ export function DbLog() {
           value={classificationFilter}
           onValueChange={setClassificationFilter}
         >
-          <SelectTrigger className="h-10 w-[180px]">
+          <SelectTrigger className="h-10 w-[180px] bg-gray-50 border-gray-200">
             <SelectValue placeholder="All Types" />
           </SelectTrigger>
           <SelectContent>
@@ -583,92 +599,93 @@ export function DbLog() {
           </SelectContent>
         </Select>
 
-        <span className="text-sm text-muted-foreground whitespace-nowrap pl-1">
+        <span className="text-sm text-gray-400 whitespace-nowrap pl-1">
           {filteredCases.length} result{filteredCases.length === 1 ? "" : "s"}
         </span>
       </div>
 
       <Card>
         <CardContent className="p-0">
+          
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="h-6 w-6 animate-spin text-blue-500 mr-2" />
-              <span className="text-muted-foreground text-sm">Loading records…</span>
+              <span className="text-gray-500 text-sm">Loading records…</span>
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <AlertTriangle className="h-8 w-8 text-red-400 mb-3" />
-              <p className="text-foreground font-medium">Could not load cases</p>
-              <p className="text-sm text-muted-foreground mt-1">{error}</p>
+              <p className="text-gray-700 font-medium">Could not load cases</p>
+              <p className="text-sm text-gray-400 mt-1">{error}</p>
             </div>
           ) : cases.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Database className="h-8 w-8 text-muted-foreground mb-3" />
-              <p className="text-muted-foreground font-medium">No records yet</p>
-              <p className="text-sm text-muted-foreground mt-1">
+              <Database className="h-8 w-8 text-gray-300 mb-3" />
+              <p className="text-gray-500 font-medium">No records yet</p>
+              <p className="text-sm text-gray-400 mt-1">
                 Saved cases will appear here.
               </p>
             </div>
           ) : (
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/50 border-b border-border">
-                  <TableHead className="w-20 font-semibold text-foreground">
-                    UI ID
-                  </TableHead>
+  <TableRow className="bg-gray-50 border-b">
+    <TableHead className="w-20 font-semibold text-gray-700">
+      UI ID
+    </TableHead>
 
-                  <TableHead className="font-semibold text-foreground">
-                    <button
-                      onClick={() => handleSort("saved_by")}
-                      className="flex items-center gap-2"
-                    >
-                      Submitted By
-                      <ArrowUpDown className="h-4 w-4" />
-                    </button>
-                  </TableHead>
+    <TableHead className="font-semibold text-gray-700">
+      <button
+        onClick={() => handleSort("saved_by")}
+        className="flex items-center gap-2"
+      >
+        Submitted By
+        <ArrowUpDown className="h-4 w-4" />
+      </button>
+    </TableHead>
 
-                  <TableHead className="font-semibold text-foreground">
-                    Query
-                  </TableHead>
+    <TableHead className="font-semibold text-gray-700">
+      Query
+    </TableHead>
 
-                  <TableHead className="font-semibold text-foreground">
-                    <button
-                      onClick={() => handleSort("classification")}
-                      className="flex items-center gap-2"
-                    >
-                      Classification
-                      <ArrowUpDown className="h-4 w-4" />
-                    </button>
-                  </TableHead>
+    <TableHead className="font-semibold text-gray-700">
+      <button
+        onClick={() => handleSort("classification")}
+        className="flex items-center gap-2"
+      >
+        Classification
+        <ArrowUpDown className="h-4 w-4" />
+      </button>
+    </TableHead>
 
-                  <TableHead className="font-semibold text-foreground">
-                    <button
-                      onClick={() => handleSort("created_at")}
-                      className="flex items-center gap-2"
-                    >
-                      Saved On
-                      <ArrowUpDown className="h-4 w-4" />
-                    </button>
-                  </TableHead>
+    <TableHead className="font-semibold text-gray-700">
+      <button
+        onClick={() => handleSort("created_at")}
+        className="flex items-center gap-2"
+      >
+        Saved On
+        <ArrowUpDown className="h-4 w-4" />
+      </button>
+    </TableHead>
 
-                  <TableHead className="w-24 text-center font-semibold text-foreground">
-                    View
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
+    <TableHead className="w-24 text-center font-semibold text-gray-700">
+      View
+    </TableHead>
+  </TableRow>
+</TableHeader>
               <TableBody>
                 {filteredCases.map((c) => (
                   <TableRow
                     key={c.id}
-                    className="hover:bg-muted/50 transition-colors"
+                    className="hover:bg-gray-50 transition-colors"
                   >
-                    <TableCell className="font-mono text-sm text-muted-foreground">
+                    <TableCell className="font-mono text-sm text-gray-500">
                       #{String(c.id).padStart(4, "0")}
                     </TableCell>
-                    <TableCell className="text-sm font-medium text-foreground">
+                    <TableCell className="text-sm font-medium text-gray-800">
                       {c.saved_by || "—"}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground max-w-xs">
+                    <TableCell className="text-sm text-gray-600 max-w-xs">
                       <span className="line-clamp-2">{c.query}</span>
                     </TableCell>
                     <TableCell>
@@ -679,10 +696,10 @@ export function DbLog() {
                           {c.classification.classification}
                         </Badge>
                       ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
+                        <span className="text-xs text-gray-400">—</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                    <TableCell className="text-sm text-gray-500 whitespace-nowrap">
                       {new Date(c.created_at).toLocaleDateString("en-GB", {
                         day: "2-digit",
                         month: "short",
@@ -693,7 +710,7 @@ export function DbLog() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-900/20"
+                        className="gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50"
                         onClick={() => setSelectedCase(c)}
                       >
                         <Eye className="h-3.5 w-3.5" />
@@ -707,7 +724,10 @@ export function DbLog() {
           )}
         </CardContent>
       </Card>
-      <AIAssistant isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
+      </div>
+      <div className="fixed top-16 right-0 bottom-0 z-40">
+        <AIAssistant isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
+      </div>
     </div>
   );
 }

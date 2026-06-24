@@ -23,13 +23,13 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`bg-gray-900 dark:bg-gray-950 text-white flex flex-col transition-all duration-300 ${
-        collapsed ? "w-20" : "w-64"
-      }`}
+      style={{ width: collapsed ? "5rem" : "16rem", transition: "width 300ms" }}
+      className="bg-gray-900 dark:bg-gray-950 text-white flex flex-col shrink-0 overflow-hidden"
     >
-      {/* Header */}
+      {/* Header / toggle */}
       <div
-        className={`h-16 border-b border-gray-800 flex items-center ${
+        style={{ height: "4rem" }}
+        className={`border-b border-gray-800 flex items-center ${
           collapsed ? "justify-center" : "px-4"
         }`}
       >

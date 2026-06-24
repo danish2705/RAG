@@ -83,7 +83,7 @@ export function StepProgressBar({
                       ? "text-foreground"
                       : isCompleted
                         ? "text-muted-foreground"
-                        : "text-muted-foreground/60"
+                        : "text-muted-foreground"
                   }`}
                 >
                   {step.label}
@@ -94,7 +94,7 @@ export function StepProgressBar({
               {index < steps.length - 1 && (
                 <div
                   className={`mx-3 h-0.5 flex-1 rounded-full transition-all ${
-                    index < currentStep ? "bg-green-400" : "bg-border"
+                    index < currentStep ? "bg-green-400" : "bg-muted"
                   }`}
                 />
               )}

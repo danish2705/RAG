@@ -1,5 +1,4 @@
-import { Bell, User, ArrowLeft, Moon, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
+import { Bell, User, ArrowLeft, Sun, Moon } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   DropdownMenu,
@@ -12,6 +11,7 @@ import {
 import { Badge } from "../ui/badge";
 import { useLocation, useNavigate } from "react-router";
 import type { Location } from "react-router";
+import { useTheme } from "../../context/ThemeContext";
 
 const PAGE_META: Record<
   string,
@@ -82,11 +82,8 @@ export function Header() {
   const location = useLocation() as Location<unknown>;
   const navigate = useNavigate();
   const meta = PAGE_META[location.pathname];
-  const { resolvedTheme, setTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
+  const { theme, toggleTheme } = useTheme();
 
-  // Fallback for routes not yet in PAGE_META: derive a readable title
-  // from the path segment (e.g. "/new-feature" -> "New Feature").
   const fallbackTitle = (() => {
     const segment = location.pathname.split("/").filter(Boolean).pop();
     if (!segment) return "QMS";
@@ -96,15 +93,13 @@ export function Header() {
       .join(" ");
   })();
 
-  // Build back-navigation state: the previous page needs the same `result`
-  // object that was passed to the current page so it can restore its data.
   const handleBack = () => {
     if (!meta?.back) return;
     navigate(meta.back, { state: location.state });
   };
 
   return (
-    <header className="h-16 border-b bg-card flex items-center justify-between px-6 sticky top-0 z-10">
+    <header className="h-16 border-b bg-background flex items-center justify-between px-6 sticky top-0 z-10">
       {/* Left: back button + page title + subtitle */}
       <div className="flex items-center gap-3">
         {meta?.back && (
@@ -174,11 +169,11 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
               <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <User className="h-5 w-5 text-blue-600 dark:text-blue-300" />
               </div>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="w-52">
             <DropdownMenuLabel>
               <div>John Smith</div>
               <div className="text-sm font-normal text-muted-foreground">
@@ -189,34 +184,37 @@ export function Header() {
             <DropdownMenuItem>Profile</DropdownMenuItem>
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuSeparator />
+
+            {/* Dark mode toggle row */}
             <DropdownMenuItem
               onSelect={(e) => {
-                e.preventDefault();
-                setTheme(isDark ? "light" : "dark");
+                e.preventDefault(); // keep dropdown open while toggling
+                toggleTheme();
               }}
               className="flex items-center justify-between cursor-pointer"
             >
               <div className="flex items-center gap-2">
-                {isDark ? (
-                  <Moon className="h-4 w-4 text-muted-foreground" />
+                {theme === "dark" ? (
+                  <Moon className="h-4 w-4" />
                 ) : (
-                  <Sun className="h-4 w-4 text-muted-foreground" />
+                  <Sun className="h-4 w-4" />
                 )}
                 <span>Dark Mode</span>
               </div>
+              {/* Visual toggle pill */}
               <div
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
-                  isDark ? "bg-foreground" : "bg-muted-foreground/30"
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                  theme === "dark" ? "bg-blue-600" : "bg-gray-300"
                 }`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${
-                    isDark ? "translate-x-6" : "translate-x-1"
+                  className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+                    theme === "dark" ? "translate-x-4" : "translate-x-1"
                   }`}
                 />
               </div>
             </DropdownMenuItem>
+
             <DropdownMenuSeparator />
             <DropdownMenuItem>Log out</DropdownMenuItem>
           </DropdownMenuContent>

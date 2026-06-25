@@ -17,7 +17,7 @@ import {
 import { AIAssistant } from "../components/chat/ai-assistant";
 import { useState } from "react";
 import { CheckCircle, X } from "lucide-react";
- 
+
 // Default values — used to detect changes
 const DEFAULTS = {
   aiEnabled: true,
@@ -31,7 +31,7 @@ const DEFAULTS = {
   detailedAudit: true,
   dataRetention: "7",
 };
- 
+
 const LABELS: Record<string, string> = {
   aiEnabled: "Enable AI Recommendations",
   aiAutoAccept: "Auto-Accept High Confidence AI Decisions",
@@ -44,7 +44,7 @@ const LABELS: Record<string, string> = {
   detailedAudit: "Detailed Audit Trail",
   dataRetention: "Data Retention Period",
 };
- 
+
 const OPTION_LABELS: Record<string, Record<string, string>> = {
   confidenceThreshold: { "75": "75%", "80": "80%", "85": "85%", "90": "90%", "95": "95%" },
   defaultSite: {
@@ -60,23 +60,23 @@ const OPTION_LABELS: Record<string, Record<string, string>> = {
     "permanent": "Permanent",
   },
 };
- 
+
 export function Settings() {
   const [chatOpen, setChatOpen] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [savedChanges, setSavedChanges] = useState<string[]>([]);
- 
+
   // Controlled state for all settings
   const [settings, setSettings] = useState({ ...DEFAULTS });
   // Snapshot of last saved state (to diff against)
   const [lastSaved, setLastSaved] = useState({ ...DEFAULTS });
- 
+
   const setSwitch = (key: keyof typeof DEFAULTS) => (val: boolean) =>
     setSettings((s) => ({ ...s, [key]: val }));
- 
+
   const setSelect = (key: keyof typeof DEFAULTS) => (val: string) =>
     setSettings((s) => ({ ...s, [key]: val }));
- 
+
   const handleSave = () => {
     // Collect human-readable list of changes
     const changes: string[] = [];
@@ -92,12 +92,12 @@ export function Settings() {
         }
       }
     });
- 
+
     setLastSaved({ ...settings });
     setSavedChanges(changes);
     setShowPopup(true);
   };
- 
+
   return (
     <div className="relative h-full w-full">
       {/* Success popup */}
@@ -118,7 +118,7 @@ export function Settings() {
                 <X className="h-5 w-5" />
               </button>
             </div>
- 
+
             {savedChanges.length > 0 ? (
               <>
                 <p className="text-sm text-muted-foreground">The following settings were updated:</p>
@@ -137,7 +137,7 @@ export function Settings() {
             ) : (
               <p className="text-sm text-muted-foreground">No changes were made.</p>
             )}
- 
+
             <div className="flex justify-end pt-2">
               <Button
                 className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -149,7 +149,7 @@ export function Settings() {
           </div>
         </div>
       )}
- 
+
       <div
         className={`h-full p-6 space-y-6 overflow-y-auto transition-[margin] duration-200 ${
           chatOpen ? "mr-80" : ""
@@ -177,7 +177,7 @@ export function Settings() {
                   onCheckedChange={setSwitch("aiEnabled")}
                 />
               </div>
- 
+
               <div className="flex items-center justify-between">
                 <div>
                   <Label htmlFor="aiAutoAccept" className="text-base">
@@ -193,7 +193,7 @@ export function Settings() {
                   onCheckedChange={setSwitch("aiAutoAccept")}
                 />
               </div>
- 
+
               <div className="space-y-2">
                 <Label htmlFor="confidenceThreshold">
                   Minimum Confidence Threshold
@@ -219,7 +219,7 @@ export function Settings() {
               </div>
             </CardContent>
           </Card>
- 
+
           {/* Notification Settings */}
           <Card>
             <CardHeader>
@@ -241,7 +241,7 @@ export function Settings() {
                   onCheckedChange={setSwitch("emailNotif")}
                 />
               </div>
- 
+
               <div className="flex items-center justify-between">
                 <div>
                   <Label htmlFor="systemNotif" className="text-base">
@@ -257,7 +257,7 @@ export function Settings() {
                   onCheckedChange={setSwitch("systemNotif")}
                 />
               </div>
- 
+
               <div className="flex items-center justify-between">
                 <div>
                   <Label htmlFor="capaReminders" className="text-base">
@@ -275,7 +275,7 @@ export function Settings() {
               </div>
             </CardContent>
           </Card>
- 
+
           {/* Workflow Settings */}
           <Card>
             <CardHeader>
@@ -299,7 +299,7 @@ export function Settings() {
                   </SelectContent>
                 </Select>
               </div>
- 
+
               <div className="flex items-center justify-between">
                 <div>
                   <Label htmlFor="crossTrigger" className="text-base">
@@ -317,7 +317,7 @@ export function Settings() {
               </div>
             </CardContent>
           </Card>
- 
+
           {/* Audit & Compliance */}
           <Card>
             <CardHeader>
@@ -339,7 +339,7 @@ export function Settings() {
                   onCheckedChange={setSwitch("detailedAudit")}
                 />
               </div>
- 
+
               <div className="space-y-2">
                 <Label htmlFor="dataRetention">Data Retention Period</Label>
                 <Select
@@ -362,11 +362,11 @@ export function Settings() {
               </div>
             </CardContent>
           </Card>
- 
+
           {/* Save Button */}
           <div className="flex justify-end">
             <Button
-              className="bg-blue-600 hover:bg-blue-700 text-black dark:text-white"
+              className="bg-blue-600 hover:bg-blue-700"
               onClick={handleSave}
             >
               Save Settings
@@ -374,7 +374,7 @@ export function Settings() {
           </div>
         </div>
       </div>
- 
+
       <div className="fixed top-16 right-0 bottom-0 z-40">
         <AIAssistant isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
       </div>

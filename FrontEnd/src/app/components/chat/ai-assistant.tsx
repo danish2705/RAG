@@ -1,26 +1,26 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Sparkles, X } from 'lucide-react';
 import { Button } from '../ui/button';
-
+ 
 interface Message {
   id: string;
   text: string;
   sender: 'user' | 'assistant';
   timestamp: Date;
 }
-
+ 
 interface AIAssistantPanelProps {
   isOpen: boolean;
   onToggle: () => void;
 }
-
+ 
 const WELCOME_MESSAGE: Message = {
   id: '1',
   text: "Welcome to the QMS Dashboard. I can help you understand your KPIs, identify trends in open cases, or guide you through creating a new quality event. What would you like to explore?",
   sender: 'assistant',
   timestamp: new Date(),
 };
-
+ 
 function generateResponse(userInput: string): string {
   const input = userInput.toLowerCase();
   if (input.includes('deviation') || input.includes('quality')) {
@@ -37,17 +37,17 @@ function generateResponse(userInput: string): string {
     return "I'm here to help you navigate the QMS. You can ask me about deviations, open cases, CAPA effectiveness, or any quality management topic.";
   }
 }
-
+ 
 export function AIAssistantPanel({ isOpen, onToggle }: AIAssistantPanelProps) {
   const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
+ 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
+ 
   const handleSendMessage = async () => {
     if (inputValue.trim() === '') return;
     const userMessage: Message = {
@@ -70,14 +70,14 @@ export function AIAssistantPanel({ isOpen, onToggle }: AIAssistantPanelProps) {
       setIsLoading(false);
     }, 600);
   };
-
+ 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
-
+ 
   return (
     <>
       {/* Inline right panel — shown when open */}
@@ -97,7 +97,7 @@ export function AIAssistantPanel({ isOpen, onToggle }: AIAssistantPanelProps) {
               <X className="w-4 h-4" />
             </button>
           </div>
-
+ 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
             {messages.map((message) => (
@@ -129,7 +129,7 @@ export function AIAssistantPanel({ isOpen, onToggle }: AIAssistantPanelProps) {
             )}
             <div ref={messagesEndRef} />
           </div>
-
+ 
           {/* Input */}
           <div className="px-4 py-3 border-t border-border">
             <div className="flex gap-2 items-center">
@@ -154,7 +154,7 @@ export function AIAssistantPanel({ isOpen, onToggle }: AIAssistantPanelProps) {
           </div>
         </div>
       )}
-
+ 
       {/* Floating button — only shown when panel is closed */}
       {!isOpen && (
         <button
@@ -169,6 +169,7 @@ export function AIAssistantPanel({ isOpen, onToggle }: AIAssistantPanelProps) {
     </>
   );
 }
-
+ 
 // Keep old export for backward compat
 export { AIAssistantPanel as AIAssistant };
+ 

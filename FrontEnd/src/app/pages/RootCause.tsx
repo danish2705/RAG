@@ -28,7 +28,7 @@ import {
   type ClassificationProvenance,
   type ImpactAssessmentProvenance,
 } from "../types/dataProvenance";
-
+import { AIAssistant } from "../components/chat/ai-assistant";
 // ── Types ─────────────────────────────────────────────────────────────────
 
 type StageName = "classification" | "rca" | "capa";
@@ -108,7 +108,7 @@ interface CAPAApiResponse {
 export function RootCause() {
   const navigate = useNavigate();
   const location = useLocation();
-
+ const [chatOpen, setChatOpen] = useState(false);
   const { result } = (location.state ?? {}) as { result?: PipelineResult };
   const rcaParsed = result?.stages?.rca?.parsed ?? null;
 
@@ -384,7 +384,7 @@ export function RootCause() {
   };
 
   return (
-    <div className="p-6 w-full">
+    <div className={`min-h-screen p-6 transition-[padding] duration-200 ${chatOpen ? 'pr-80' : 'pr-6'}`}>
       <StepProgressBar
         classification={result?.stages?.classification?.parsed?.classification}
       />
@@ -718,6 +718,9 @@ export function RootCause() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <div className="fixed top-16 right-0 bottom-0 z-40">
+      <AIAssistant isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
+       </div>
     </div>
   );
 }

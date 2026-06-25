@@ -1,26 +1,26 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Sparkles, X } from 'lucide-react';
 import { Button } from '../ui/button';
-
+ 
 interface Message {
   id: string;
   text: string;
   sender: 'user' | 'assistant';
   timestamp: Date;
 }
-
+ 
 interface AIAssistantPanelProps {
   isOpen: boolean;
   onToggle: () => void;
 }
-
+ 
 const WELCOME_MESSAGE: Message = {
   id: '1',
   text: "Welcome to the QMS Dashboard. I can help you understand your KPIs, identify trends in open cases, or guide you through creating a new quality event. What would you like to explore?",
   sender: 'assistant',
   timestamp: new Date(),
 };
-
+ 
 function generateResponse(userInput: string): string {
   const input = userInput.toLowerCase();
   if (input.includes('deviation') || input.includes('quality')) {
@@ -37,17 +37,17 @@ function generateResponse(userInput: string): string {
     return "I'm here to help you navigate the QMS. You can ask me about deviations, open cases, CAPA effectiveness, or any quality management topic.";
   }
 }
-
+ 
 export function AIAssistantPanel({ isOpen, onToggle }: AIAssistantPanelProps) {
   const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
+ 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
+ 
   const handleSendMessage = async () => {
     if (inputValue.trim() === '') return;
     const userMessage: Message = {
@@ -70,34 +70,34 @@ export function AIAssistantPanel({ isOpen, onToggle }: AIAssistantPanelProps) {
       setIsLoading(false);
     }, 600);
   };
-
+ 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
-
+ 
   return (
     <>
       {/* Inline right panel — shown when open */}
       {isOpen && (
-        <div className="w-80 border-l border-gray-200 bg-white flex flex-col h-full">
+        <div className="w-80 border-l border-border bg-background flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
+          <div className="flex items-center justify-between px-4 py-4 border-b border-border">
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-blue-500" />
-              <span className="font-semibold text-gray-900 text-sm">AI Assistant</span>
+              <span className="font-semibold text-foreground text-sm">AI Assistant</span>
             </div>
             <button
               onClick={onToggle}
-              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+              className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer"
               aria-label="Close AI Assistant"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
-
+ 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
             {messages.map((message) => (
@@ -109,7 +109,7 @@ export function AIAssistantPanel({ isOpen, onToggle }: AIAssistantPanelProps) {
                   className={`max-w-[90%] rounded-xl px-4 py-3 text-sm leading-relaxed whitespace-pre-line ${
                     message.sender === 'user'
                       ? 'bg-blue-600 text-white rounded-br-none'
-                      : 'bg-gray-50 text-gray-800 border border-gray-100 rounded-bl-none'
+                      : 'bg-muted text-foreground border border-border rounded-bl-none'
                   }`}
                 >
                   {message.text}
@@ -118,20 +118,20 @@ export function AIAssistantPanel({ isOpen, onToggle }: AIAssistantPanelProps) {
             ))}
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-gray-50 border border-gray-100 rounded-xl rounded-bl-none px-4 py-3">
+                <div className="bg-muted border border-border rounded-xl rounded-bl-none px-4 py-3">
                   <div className="flex gap-1.5">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:100ms]" />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:200ms]" />
+                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
+                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:100ms]" />
+                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:200ms]" />
                   </div>
                 </div>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
-
+ 
           {/* Input */}
-          <div className="px-4 py-3 border-t border-gray-100">
+          <div className="px-4 py-3 border-t border-border">
             <div className="flex gap-2 items-center">
               <input
                 type="text"
@@ -140,7 +140,7 @@ export function AIAssistantPanel({ isOpen, onToggle }: AIAssistantPanelProps) {
                 onKeyPress={handleKeyPress}
                 placeholder="Ask anything..."
                 disabled={isLoading}
-                className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+                className="flex-1 px-3 py-2 bg-muted border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
               />
               <button
                 onClick={handleSendMessage}
@@ -154,7 +154,7 @@ export function AIAssistantPanel({ isOpen, onToggle }: AIAssistantPanelProps) {
           </div>
         </div>
       )}
-
+ 
       {/* Floating button — only shown when panel is closed */}
       {!isOpen && (
         <button
@@ -169,6 +169,7 @@ export function AIAssistantPanel({ isOpen, onToggle }: AIAssistantPanelProps) {
     </>
   );
 }
-
+ 
 // Keep old export for backward compat
 export { AIAssistantPanel as AIAssistant };
+ 

@@ -33,7 +33,7 @@ import {
   type ImpactAssessmentProvenance,
   type ClassificationProvenance,
 } from "../types/dataProvenance";
-
+import {AIAssistant}from '../components/chat/ai-assistant';
 // ── Types ─────────────────────────────────────────────────────────────────
 
 type StageName = "classification" | "rca" | "capa";
@@ -142,7 +142,7 @@ const PARAMETER_LABELS: Record<string, string> = {
 export function ImpactAssessment() {
   const navigate = useNavigate();
   const location = useLocation();
-
+  const [chatOpen, setChatOpen] = useState(false);
   const { result } = (location.state ?? {}) as { result?: PipelineResult };
   const classificationParsed = result?.stages?.classification?.parsed ?? null;
   const impactParsed = result?.stages?.impactAssessment?.parsed ?? null;
@@ -384,7 +384,7 @@ export function ImpactAssessment() {
 
   // ── Render ─────────────────────────────────────────────────────────────
   return (
-    <div className="p-6 w-full">
+    <div className={`min-h-screen p-6 transition-[padding] duration-200 ${chatOpen ? 'pr-80' : 'pr-6'}`}>
       <StepProgressBar
         classification={result?.stages?.classification?.parsed?.classification}
       />
@@ -762,6 +762,9 @@ export function ImpactAssessment() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <div className="fixed top-16 right-0 bottom-0 z-40">
+            <AIAssistant isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
+            </div>
     </div>
   );
 }

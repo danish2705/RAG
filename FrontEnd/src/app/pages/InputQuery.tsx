@@ -24,6 +24,7 @@ import {
   eventTypeOptions,
   sourceSystemOptions,
 } from "../lib/mockData";
+import {AIAssistant}from '../components/chat/ai-assistant';
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 const ALLOWED_FILE_TYPES = ["application/pdf", "image/png", "image/jpeg"];
@@ -149,7 +150,7 @@ function buildQueryFromForm(formData: FormState): string {
 export function NewDeviation() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  const [chatOpen, setChatOpen] = useState(false);
   const [formData, setFormData] = useState<FormState>({
     site: "",
     eventType: "",
@@ -294,7 +295,8 @@ export function NewDeviation() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-6 w-full">
+    <div className="relative h-full w-full">
+    <div className={`h-full p-6 overflow-y-auto transition-[margin] duration-200 ${chatOpen ? 'mr-80' : ''}`}>
       <StepProgressBar />
 
       {submitError && (
@@ -624,6 +626,11 @@ export function NewDeviation() {
           </div>
         </div>
       </form>
+      </div>
+
+      <div className="fixed top-16 right-0 bottom-0 z-40">
+        <AIAssistant isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
+      </div>
     </div>
   );
 }

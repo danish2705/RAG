@@ -162,10 +162,10 @@ export function RootCause() {
         <Card>
           <CardContent className="py-12 text-center">
             <AlertTriangle className="h-10 w-10 text-yellow-500 mx-auto mb-3" />
-            <p className="text-gray-600 font-medium">
+            <p className="text-muted-foreground font-medium">
               No root cause analysis data found.
             </p>
-            <p className="text-sm text-gray-400 mt-1">
+            <p className="text-sm text-muted-foreground/70 mt-1">
               Please go back and complete the impact assessment first.
             </p>
             <Button className="mt-4" onClick={() => navigate("/deviation/new")}>
@@ -422,14 +422,14 @@ export function RootCause() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-muted-foreground">
                 Based on root cause analysis
               </span>
-              <span className="text-sm font-semibold text-gray-900">
+              <span className="text-sm font-semibold text-foreground">
                 {rcaParsed.confidence_score}%
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-muted rounded-full h-2">
               <div
                 className={`h-2 rounded-full ${
                   rcaParsed.confidence_score >= 80
@@ -469,7 +469,7 @@ export function RootCause() {
                 onChange={(e) => setPrimaryRootCause(e.target.value)}
                 readOnly={!isOverrideEditing}
                 className={
-                  !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
+                  !isOverrideEditing ? "bg-muted cursor-default" : ""
                 }
               />
             </div>
@@ -493,7 +493,7 @@ export function RootCause() {
                 onChange={(e) => setImmediateCause(e.target.value)}
                 readOnly={!isOverrideEditing}
                 className={
-                  !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
+                  !isOverrideEditing ? "bg-muted cursor-default" : ""
                 }
               />
             </div>
@@ -525,7 +525,7 @@ export function RootCause() {
                 onChange={(e) => setContributingFactors(e.target.value)}
                 readOnly={!isOverrideEditing}
                 className={
-                  !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
+                  !isOverrideEditing ? "bg-muted cursor-default" : ""
                 }
               />
             </div>
@@ -557,7 +557,7 @@ export function RootCause() {
                 onChange={(e) => setEvidence(e.target.value)}
                 readOnly={!isOverrideEditing}
                 className={
-                  !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
+                  !isOverrideEditing ? "bg-muted cursor-default" : ""
                 }
               />
             </div>
@@ -583,7 +583,7 @@ export function RootCause() {
               <Button
                 onClick={handleAccept}
                 disabled={isGeneratingCAPA || isOverrideEditing}
-                className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50"
+                className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-black dark:text-white"
               >
                 {isGeneratingCAPA ? (
                   <>
@@ -621,7 +621,7 @@ export function RootCause() {
                 Reject Root Cause
               </Button>
             </div>
-            <p className="text-xs text-gray-500 mt-3 text-center">
+            <p className="text-xs text-muted-foreground mt-3 text-center">
               Your decision will be logged in the audit trail. Accepting or
               overriding generates CAPA recommendations — it only starts now,
               not before you decide.

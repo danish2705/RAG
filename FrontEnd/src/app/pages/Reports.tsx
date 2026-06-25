@@ -40,7 +40,7 @@ export function Reports() {
         <Card>
           <CardContent className="pt-6">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
                 placeholder="Search for deviations or change control reports..."
@@ -67,8 +67,8 @@ export function Reports() {
                   <div className="flex items-start gap-3">
                     <FileText className="h-5 w-5 text-gray-400 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{report.name}</p>
-                      <p className="text-xs text-gray-500 mt-1">{report.description}</p>
+                      <p className="text-sm font-medium text-foreground">{report.name}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{report.description}</p>
                     </div>
                   </div>
                   <Button variant="outline" size="sm">
@@ -78,7 +78,7 @@ export function Reports() {
                 </div>
               ))}
               {filteredReports.length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-4">
+                <p className="text-sm text-muted-foreground text-center py-4">
                   No reports found matching your search
                 </p>
               )}
@@ -87,12 +87,12 @@ export function Reports() {
         </Card>
 
         {/* Custom Report Builder */}
-        <Card className="border-blue-200 bg-blue-50">
+        <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20">
           <CardHeader>
-            <CardTitle className="text-blue-900">Custom Build Report</CardTitle>
+            <CardTitle className="text-blue-900 dark:text-blue-300">Custom Build Report</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-blue-800 mb-4">
+            <p className="text-sm text-blue-800 dark:text-blue-300 mb-4">
               Create custom reports with specific date ranges, filters, and data points
             </p>
             <Button className="bg-blue-600 hover:bg-blue-700">

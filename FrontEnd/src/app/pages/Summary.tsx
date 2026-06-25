@@ -122,24 +122,24 @@ interface PipelineResult {
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 function getClassificationBadgeClass(type: string): string {
-  if (type === "Deviation") return "bg-red-100 text-red-800 border-red-200";
+  if (type === "Deviation") return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
   if (type === "Change Control")
-    return "bg-blue-100 text-blue-800 border-blue-200";
+    return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
   if (type === "Hybrid")
-    return "bg-purple-100 text-purple-800 border-purple-200";
-  return "bg-gray-100 text-gray-600 border-gray-200";
+    return "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800";
+  return "bg-muted text-muted-foreground border-border";
 }
 
 function getSeverityBadgeClass(severity: string): string {
   switch (severity.toLowerCase()) {
     case "critical":
-      return "bg-red-100 text-red-700 border border-red-200";
+      return "bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
     case "major":
-      return "bg-yellow-100 text-yellow-700 border border-yellow-200";
+      return "bg-yellow-100 text-yellow-700 border border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800";
     case "minor":
-      return "bg-green-100 text-green-700 border border-green-200";
+      return "bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800";
     default:
-      return "bg-gray-100 text-gray-600 border border-gray-200";
+      return "bg-muted text-muted-foreground border border-border";
   }
 }
 
@@ -147,12 +147,12 @@ function ConfidenceBar({ score }: { score: number }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-gray-600">
+        <span className="text-sm font-medium text-muted-foreground">
           AI Confidence Score
         </span>
-        <span className="text-sm font-semibold text-gray-900">{score}%</span>
+        <span className="text-sm font-semibold text-foreground">{score}%</span>
       </div>
-      <div className="w-full bg-gray-200 rounded-full h-2">
+      <div className="w-full bg-muted rounded-full h-2">
         <div
           className={`h-2 rounded-full ${score >= 80 ? "bg-green-500" : score >= 60 ? "bg-yellow-500" : "bg-red-500"}`}
           style={{ width: `${score}%` }}
@@ -249,8 +249,8 @@ export function Summary() {
         <Card>
           <CardContent className="py-12 text-center">
             <AlertTriangle className="h-10 w-10 text-yellow-500 mx-auto mb-3" />
-            <p className="text-gray-600 font-medium">No summary data found.</p>
-            <p className="text-sm text-gray-400 mt-1">
+            <p className="text-foreground font-medium">No summary data found.</p>
+            <p className="text-sm text-muted-foreground mt-1">
               Please go back and complete the CAPA step first.
             </p>
             <Button className="mt-4" onClick={() => navigate("/deviation")}>
@@ -337,7 +337,7 @@ export function Summary() {
             </DialogTitle>
           </DialogHeader>
           <div className="py-4 space-y-3">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Please enter your name to record who is saving this deviation
               case.
             </p>
@@ -402,8 +402,8 @@ export function Summary() {
           Back
         </Button>
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Summary</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h1 className="text-2xl font-semibold text-foreground">Summary</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
             Review the complete record before saving
           </p>
         </div>
@@ -424,7 +424,7 @@ export function Summary() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-medium text-gray-600">
+              <span className="text-sm font-medium text-muted-foreground">
                 Classification:
               </span>
               <Badge
@@ -444,7 +444,7 @@ export function Summary() {
 
             <div className="border-t pt-4">
               <div className="flex items-center gap-2 mb-3 flex-wrap">
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-foreground">
                   AI Rationale
                 </p>
                 <ModifiedBadge
@@ -525,7 +525,7 @@ export function Summary() {
                   </div>
 
                   {/* Description — show current value */}
-                  <p className="text-sm text-gray-600 leading-relaxed">
+                  <p className="text-sm text-muted-foreground leading-relaxed">
                     {entry.description}
                   </p>
 
@@ -569,23 +569,23 @@ export function Summary() {
           <CardContent className="space-y-5">
             <div className="space-y-2">
               <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-foreground">
                   Underlying Root Cause
                 </p>
                 <ModifiedBadge field={provenance?.rca?.primary_root_cause} />
               </div>
-              <p className="text-sm text-gray-600 leading-relaxed bg-gray-50 rounded-md p-3">
+              <p className="text-sm text-muted-foreground leading-relaxed bg-muted/50 rounded-md p-3">
                 {rcaParsed.primary_root_cause}
               </p>
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-foreground">
                   Immediate Cause (direct trigger)
                 </p>
                 <ModifiedBadge field={provenance?.rca?.immediate_cause} />
               </div>
-              <p className="text-sm text-gray-600 leading-relaxed bg-gray-50 rounded-md p-3">
+              <p className="text-sm text-muted-foreground leading-relaxed bg-muted/50 rounded-md p-3">
                 {rcaParsed.immediate_cause}
               </p>
             </div>
@@ -662,7 +662,7 @@ export function Summary() {
               <CardTitle>Correction</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-gray-600 leading-relaxed bg-gray-50 rounded-md p-3">
+              <p className="text-sm text-muted-foreground leading-relaxed bg-muted/50 rounded-md p-3">
                 {result.correction}
               </p>
             </CardContent>
@@ -729,21 +729,21 @@ export function Summary() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-foreground">
                   Effectiveness Check
                 </p>
                 <ModifiedBadge field={provenance?.capa?.effectiveness_check} />
               </div>
-              <p className="text-sm text-gray-600 leading-relaxed bg-gray-50 rounded-md p-3">
+              <p className="text-sm text-muted-foreground leading-relaxed bg-muted/50 rounded-md p-3">
                 {capaParsed.effectiveness_check}
               </p>
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-sm font-medium text-gray-900">Due Date</p>
+                <p className="text-sm font-medium text-foreground">Due Date</p>
                 <ModifiedBadge field={provenance?.capa?.due_date} />
               </div>
-              <p className="text-sm text-gray-600 leading-relaxed bg-gray-50 rounded-md p-3">
+              <p className="text-sm text-muted-foreground leading-relaxed bg-muted/50 rounded-md p-3">
                 {capaParsed.due_date}
               </p>
             </div>
@@ -766,7 +766,7 @@ export function Summary() {
               <Button
                 onClick={handleSaveClick}
                 disabled={isSaving || isSaved}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
               >
                 {isSaving ? (
                   <>
@@ -778,7 +778,7 @@ export function Summary() {
                 )}
               </Button>
             </div>
-            <p className="text-xs text-gray-500 mt-3 text-right">
+            <p className="text-xs text-muted-foreground mt-3 text-right">
               This record will be logged in the DB log
             </p>
           </CardContent>

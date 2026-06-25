@@ -33,7 +33,7 @@ export function Settings() {
                 <Label htmlFor="aiEnabled" className="text-base">
                   Enable AI Recommendations
                 </Label>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Turn on AI-powered classification and suggestions
                 </p>
               </div>
@@ -45,7 +45,7 @@ export function Settings() {
                 <Label htmlFor="aiAutoAccept" className="text-base">
                   Auto-Accept High Confidence AI Decisions
                 </Label>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Automatically accept AI suggestions above confidence threshold
                 </p>
               </div>
@@ -68,7 +68,7 @@ export function Settings() {
                   <SelectItem value="95">95%</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 AI suggestions below this threshold will require human review
               </p>
             </div>
@@ -86,7 +86,7 @@ export function Settings() {
                 <Label htmlFor="emailNotif" className="text-base">
                   Email Notifications
                 </Label>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Receive email alerts for critical events
                 </p>
               </div>
@@ -98,7 +98,7 @@ export function Settings() {
                 <Label htmlFor="systemNotif" className="text-base">
                   System Notifications
                 </Label>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   In-app notifications and alerts
                 </p>
               </div>
@@ -110,7 +110,7 @@ export function Settings() {
                 <Label htmlFor="capaReminders" className="text-base">
                   CAPA Due Date Reminders
                 </Label>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Receive reminders before CAPA deadlines
                 </p>
               </div>
@@ -145,7 +145,7 @@ export function Settings() {
                 <Label htmlFor="crossTrigger" className="text-base">
                   Enable Cross-Module Triggers
                 </Label>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Automatically link related deviations and change controls
                 </p>
               </div>
@@ -165,7 +165,7 @@ export function Settings() {
                 <Label htmlFor="detailedAudit" className="text-base">
                   Detailed Audit Trail
                 </Label>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Log all system activities including AI actions
                 </p>
               </div>
@@ -185,7 +185,7 @@ export function Settings() {
                   <SelectItem value="permanent">Permanent</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Regulatory requirement typically 5-7 years
               </p>
             </div>

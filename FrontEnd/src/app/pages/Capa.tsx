@@ -88,9 +88,6 @@ export function Capa() {
   const { result } = (location.state ?? {}) as { result?: PipelineResult };
   const capaParsed = result?.stages?.capa?.parsed ?? null;
 
-  // If this stage was previously overridden (e.g. user navigated forward
-  // then came back), restore that state from the saved provenance so the
-  // "Modified" badge and edited values persist across back-navigation.
   const savedCapaProvenance = result?.provenance?.capa;
   const wasModified =
     savedCapaProvenance?.corrective_actions?.source === "modified" ||
@@ -104,16 +101,12 @@ export function Capa() {
   const [correction, setCorrection] = useState("");
   const [correctiveAction, setCorrectiveAction] = useState(
     wasModified
-      ? (savedCapaProvenance!.corrective_actions.value as string[]).join(
-          "\n",
-        )
+      ? (savedCapaProvenance!.corrective_actions.value as string[]).join("\n")
       : (capaParsed?.corrective_actions ?? []).join("\n"),
   );
   const [preventiveAction, setPreventiveAction] = useState(
     wasModified
-      ? (savedCapaProvenance!.preventive_actions.value as string[]).join(
-          "\n",
-        )
+      ? (savedCapaProvenance!.preventive_actions.value as string[]).join("\n")
       : (capaParsed?.preventive_actions ?? []).join("\n"),
   );
   const [effectivenessCheck, setEffectivenessCheck] = useState(
@@ -140,8 +133,8 @@ export function Capa() {
         <Card>
           <CardContent className="py-12 text-center">
             <AlertTriangle className="h-10 w-10 text-yellow-500 mx-auto mb-3" />
-            <p className="text-gray-600 font-medium">No CAPA data found.</p>
-            <p className="text-sm text-gray-400 mt-1">
+            <p className="text-muted-foreground font-medium">No CAPA data found.</p>
+            <p className="text-sm text-muted-foreground mt-1">
               Please go back and complete the root cause analysis first.
             </p>
             <Button className="mt-4" onClick={() => navigate("/deviation/new")}>
@@ -162,7 +155,6 @@ export function Capa() {
     }
   };
 
-  /** Build CAPAProvenance from current state */
   const buildCAPAProvenance = (confirmed: boolean): CAPAProvenance => {
     const curCorrectiveActions = correctiveAction
       .split("\n")
@@ -180,26 +172,17 @@ export function Capa() {
         confirmed &&
         JSON.stringify(curCorrectiveActions) !==
           JSON.stringify(capaParsed.corrective_actions)
-          ? markModified(
-              aiField(capaParsed.corrective_actions),
-              curCorrectiveActions,
-            )
+          ? markModified(aiField(capaParsed.corrective_actions), curCorrectiveActions)
           : aiField(capaParsed.corrective_actions),
       preventive_actions:
         confirmed &&
         JSON.stringify(curPreventiveActions) !==
           JSON.stringify(capaParsed.preventive_actions)
-          ? markModified(
-              aiField(capaParsed.preventive_actions),
-              curPreventiveActions,
-            )
+          ? markModified(aiField(capaParsed.preventive_actions), curPreventiveActions)
           : aiField(capaParsed.preventive_actions),
       effectiveness_check:
         confirmed && effectivenessCheck !== capaParsed.effectiveness_check
-          ? markModified(
-              aiField(capaParsed.effectiveness_check),
-              effectivenessCheck,
-            )
+          ? markModified(aiField(capaParsed.effectiveness_check), effectivenessCheck)
           : aiField(capaParsed.effectiveness_check),
       due_date:
         confirmed && dueDate !== capaParsed.due_date
@@ -210,14 +193,8 @@ export function Capa() {
 
   const buildApprovedCAPA = (): CAPAResult => ({
     ...capaParsed,
-    corrective_actions: correctiveAction
-      .split("\n")
-      .map((s) => s.trim())
-      .filter(Boolean),
-    preventive_actions: preventiveAction
-      .split("\n")
-      .map((s) => s.trim())
-      .filter(Boolean),
+    corrective_actions: correctiveAction.split("\n").map((s) => s.trim()).filter(Boolean),
+    preventive_actions: preventiveAction.split("\n").map((s) => s.trim()).filter(Boolean),
     effectiveness_check: effectivenessCheck,
     due_date: dueDate,
   });
@@ -252,18 +229,12 @@ export function Capa() {
   const handleCancelOverride = () => {
     if (wasModified) {
       setCorrectiveAction(
-        (savedCapaProvenance!.corrective_actions.value as string[]).join(
-          "\n",
-        ),
+        (savedCapaProvenance!.corrective_actions.value as string[]).join("\n"),
       );
       setPreventiveAction(
-        (savedCapaProvenance!.preventive_actions.value as string[]).join(
-          "\n",
-        ),
+        (savedCapaProvenance!.preventive_actions.value as string[]).join("\n"),
       );
-      setEffectivenessCheck(
-        savedCapaProvenance!.effectiveness_check.value as string,
-      );
+      setEffectivenessCheck(savedCapaProvenance!.effectiveness_check.value as string);
       setDueDate(savedCapaProvenance!.due_date.value as string);
     } else {
       setCorrectiveAction((capaParsed.corrective_actions ?? []).join("\n"));
@@ -290,7 +261,6 @@ export function Capa() {
     }
   };
 
-  /** Field-level badge helper */
   const FieldBadge = ({
     original,
     current,
@@ -317,7 +287,7 @@ export function Capa() {
       <div className="mb-6 flex items-center justify-end gap-3">
         {isOverrideEditing && (
           <>
-            <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
+            <Badge className="bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800 text-sm px-3 py-1">
               Editing
             </Badge>
             <Button
@@ -331,7 +301,7 @@ export function Capa() {
           </>
         )}
         {overrideConfirmed && !isOverrideEditing && (
-          <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
+          <Badge className="bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800 text-sm px-3 py-1">
             Overridden
           </Badge>
         )}
@@ -348,14 +318,14 @@ export function Capa() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-muted-foreground">
                 Based on CAPA recommendations
               </span>
-              <span className="text-sm font-semibold text-gray-900">
+              <span className="text-sm font-semibold text-foreground">
                 {capaParsed.confidence_score}%
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-muted rounded-full h-2">
               <div
                 className={`h-2 rounded-full ${
                   capaParsed.confidence_score >= 80
@@ -378,8 +348,7 @@ export function Capa() {
           <CardContent>
             <div className="space-y-2">
               <Label htmlFor="correction">
-                Immediate Correction (What was done to fix the immediate
-                problem?)
+                Immediate Correction (What was done to fix the immediate problem?)
               </Label>
               <Textarea
                 id="correction"
@@ -421,9 +390,7 @@ export function Capa() {
                 value={correctiveAction}
                 onChange={(e) => handleCorrectiveActionChange(e.target.value)}
                 readOnly={!isOverrideEditing}
-                className={
-                  !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
-                }
+                className={!isOverrideEditing ? "bg-muted cursor-default" : ""}
               />
             </div>
           </CardContent>
@@ -466,9 +433,7 @@ export function Capa() {
                 value={preventiveAction}
                 onChange={(e) => setPreventiveAction(e.target.value)}
                 readOnly={!isOverrideEditing}
-                className={
-                  !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
-                }
+                className={!isOverrideEditing ? "bg-muted cursor-default" : ""}
               />
             </div>
           </CardContent>
@@ -499,9 +464,7 @@ export function Capa() {
                 value={effectivenessCheck}
                 onChange={(e) => setEffectivenessCheck(e.target.value)}
                 readOnly={!isOverrideEditing}
-                className={
-                  !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
-                }
+                className={!isOverrideEditing ? "bg-muted cursor-default" : ""}
               />
             </div>
             <div className="space-y-2">
@@ -520,9 +483,7 @@ export function Capa() {
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 readOnly={!isOverrideEditing}
-                className={
-                  !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
-                }
+                className={!isOverrideEditing ? "bg-muted cursor-default" : ""}
               />
             </div>
           </CardContent>
@@ -538,7 +499,7 @@ export function Capa() {
               <Button
                 onClick={handleAccept}
                 disabled={decisionMade}
-                className={`flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 ${
+                className={`flex-1 bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 ${
                   capaAccepted ? "ring-2 ring-offset-2 ring-green-500" : ""
                 }`}
               >
@@ -559,9 +520,7 @@ export function Capa() {
                   variant="outline"
                   disabled={decisionMade}
                   className={`flex-1 disabled:opacity-50 ${
-                    overrideConfirmed
-                      ? "ring-2 ring-offset-2 ring-orange-500"
-                      : ""
+                    overrideConfirmed ? "ring-2 ring-offset-2 ring-orange-500" : ""
                   }`}
                 >
                   Override CAPA
@@ -575,7 +534,7 @@ export function Capa() {
                 Reject CAPA
               </Button>
             </div>
-            <p className="text-xs text-gray-500 mt-3 text-center">
+            <p className="text-xs text-muted-foreground mt-3 text-center">
               Your decision will be logged in the audit trail
             </p>
           </CardContent>
@@ -585,7 +544,7 @@ export function Capa() {
           <Button
             onClick={proceed}
             disabled={!decisionMade}
-            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Get Summary
           </Button>
@@ -615,10 +574,7 @@ export function Capa() {
             </div>
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowOverrideDialog(false)}
-            >
+            <Button variant="outline" onClick={() => setShowOverrideDialog(false)}>
               Cancel
             </Button>
             <Button
@@ -644,9 +600,7 @@ export function Capa() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="rejectJustification">
-                Reason for Rejection *
-              </Label>
+              <Label htmlFor="rejectJustification">Reason for Rejection *</Label>
               <Textarea
                 id="rejectJustification"
                 placeholder="Explain why you are rejecting the CAPA..."
@@ -657,10 +611,7 @@ export function Capa() {
             </div>
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowRejectDialog(false)}
-            >
+            <Button variant="outline" onClick={() => setShowRejectDialog(false)}>
               Cancel
             </Button>
             <Button

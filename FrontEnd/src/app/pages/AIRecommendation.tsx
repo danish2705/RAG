@@ -138,29 +138,12 @@ export function AIRecommendation() {
   const classificationStage = result?.stages?.classification;
   const parsed = classificationStage?.parsed;
 
-  // If this stage was previously overridden (e.g. user navigated forward
-  // then came back), restore that state from the saved provenance so the
-  // "Modified" badge and edited values persist across back-navigation.
-  const savedProvenance = result?.provenance?.classification;
-  const wasModified =
-    savedProvenance?.classification?.source === "modified" ||
-    savedProvenance?.rationale?.source === "modified";
-
   const [isOverrideEditing, setIsOverrideEditing] = useState(false);
   const [editedClassification, setEditedClassification] = useState<
     "Deviation" | "Change Control" | "Hybrid"
-  >(
-    wasModified
-      ? (savedProvenance!.classification.value as
-          | "Deviation"
-          | "Change Control"
-          | "Hybrid")
-      : parsed?.classification ?? "Deviation",
-  );
+  >(parsed?.classification ?? "Deviation");
   const [editedRationale, setEditedRationale] = useState(
-    wasModified
-      ? (savedProvenance!.rationale.value as string[]).join("\n")
-      : (parsed?.rationale ?? []).join("\n"),
+    (parsed?.rationale ?? []).join("\n"),
   );
 
   const [showOverrideDialog, setShowOverrideDialog] = useState(false);
@@ -170,7 +153,7 @@ export function AIRecommendation() {
 
   const [isAssessing, setIsAssessing] = useState(false);
   const [assessError, setAssessError] = useState<string | null>(null);
-  const [overrideConfirmed, setOverrideConfirmed] = useState(wasModified);
+  const [overrideConfirmed, setOverrideConfirmed] = useState(false);
 
   // ── Guard ──────────────────────────────────────────────────────────────
   if (!result || !parsed) {
@@ -324,24 +307,6 @@ export function AIRecommendation() {
   const handleOverrideClick = () => setIsOverrideEditing(true);
   const handleSaveChanges = () => setShowOverrideDialog(true);
 
-  const handleCancelOverride = () => {
-    if (wasModified) {
-      setEditedClassification(
-        savedProvenance!.classification.value as
-          | "Deviation"
-          | "Change Control"
-          | "Hybrid",
-      );
-      setEditedRationale(
-        (savedProvenance!.rationale.value as string[]).join("\n"),
-      );
-    } else {
-      setEditedClassification(parsed.classification);
-      setEditedRationale((parsed.rationale ?? []).join("\n"));
-    }
-    setIsOverrideEditing(false);
-  };
-
   const handleOverrideConfirm = () => {
     if (!overrideJustification.trim()) return;
     setShowOverrideDialog(false);
@@ -361,12 +326,6 @@ export function AIRecommendation() {
     ? editedClassification
     : parsed.classification;
 
-  const isClassificationModified =
-    overrideConfirmed && editedClassification !== parsed.classification;
-  const isRationaleModified =
-    overrideConfirmed &&
-    editedRationale !== (parsed.rationale ?? []).join("\n");
-
   // ── Render ─────────────────────────────────────────────────────────────
   return (
     <div className="p-6 w-full">
@@ -375,23 +334,13 @@ export function AIRecommendation() {
       />
       <div className="mb-6 flex items-center gap-3 justify-end">
         {isOverrideEditing && (
-          <>
-            <Badge className="bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800 text-sm px-3 py-1">
-              Editing
-            </Badge>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCancelOverride}
-              disabled={isAssessing}
-            >
-              Cancel Override
-            </Button>
-          </>
+          <Badge className="ml-auto bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800 text-sm px-3 py-1">
+            Editing
+          </Badge>
         )}
         {overrideConfirmed && !isOverrideEditing && (
           <Badge className="ml-auto bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800 text-sm px-3 py-1">
-            Overridden
+            Modified
           </Badge>
         )}
       </div>
@@ -441,7 +390,19 @@ export function AIRecommendation() {
                   >
                     {currentClassification}
                   </Badge>
-                  {isClassificationModified ? (
+                  {overrideConfirmed &&
+                    parsed.classification !== editedClassification && (
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <span className="line-through text-red-500/70">
+                          {parsed.classification}
+                        </span>
+                        <span className="text-muted-foreground/50">→</span>
+                        <span className="text-green-700 dark:text-green-400 font-medium">
+                          {editedClassification}
+                        </span>
+                      </span>
+                    )}
+                  {overrideConfirmed ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border select-none bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800">
                       <Sparkles className="h-3 w-3" />
                       Modified
@@ -497,7 +458,7 @@ export function AIRecommendation() {
                 <p className="text-sm font-medium text-foreground">
                   AI Rationale
                 </p>
-                {!isOverrideEditing && isRationaleModified ? (
+                {!isOverrideEditing && overrideConfirmed ? (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border select-none bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800">
                     <Sparkles className="h-3 w-3" />
                     Modified
@@ -556,7 +517,7 @@ export function AIRecommendation() {
               <Button
                 onClick={handleAccept}
                 disabled={isAssessing || isOverrideEditing}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white text-white disabled:opacity-50"
               >
                 {isAssessing ? (
                   <>

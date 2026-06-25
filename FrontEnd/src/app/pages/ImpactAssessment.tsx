@@ -120,13 +120,13 @@ interface RCAApiResponse {
 function getSeverityBadgeClass(severity: string): string {
   switch (severity.toLowerCase()) {
     case "critical":
-      return "bg-red-100 text-red-700 border border-red-200";
+      return "bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
     case "major":
-      return "bg-yellow-100 text-yellow-700 border border-yellow-200";
+      return "bg-yellow-100 text-yellow-700 border border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800";
     case "minor":
-      return "bg-green-100 text-green-700 border border-green-200";
+      return "bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800";
     default:
-      return "bg-gray-100 text-gray-600 border border-gray-200";
+      return "bg-muted text-muted-foreground border border-border";
   }
 }
 
@@ -147,55 +147,26 @@ export function ImpactAssessment() {
   const classificationParsed = result?.stages?.classification?.parsed ?? null;
   const impactParsed = result?.stages?.impactAssessment?.parsed ?? null;
 
-  // If this stage was previously overridden (e.g. user navigated forward
-  // then came back), restore that state from the saved provenance so the
-  // "Modified" badge and edited values persist across back-navigation.
-  const savedImpactProvenance = result?.provenance?.impactAssessment;
-  const savedWasModified = Object.values(
-    savedImpactProvenance?.impact_assessment ?? {},
-  ).some(
-    (f) => f?.severity?.source === "modified" || f?.rationale?.source === "modified",
-  );
-
   const initialAssessments = impactParsed
-    ? Object.entries(impactParsed.impact_assessment).map(([key, val]) => {
-        const savedField =
-          savedImpactProvenance?.impact_assessment?.[
-            key as keyof typeof savedImpactProvenance.impact_assessment
-          ];
-        const severity = savedField?.severity
-          ? (savedField.severity.value as
-              | "None"
-              | "Minor"
-              | "Major"
-              | "Critical")
-          : (val.severity as "None" | "Minor" | "Major" | "Critical");
-        const description = savedField?.rationale
-          ? (savedField.rationale.value as string)
-          : val.rationale;
-
-        return {
-          key,
-          category: PARAMETER_LABELS[key] ?? key,
-          severity,
-          description,
-          originalSeverity: val.severity as
-            | "None"
-            | "Minor"
-            | "Major"
-            | "Critical",
-          originalDescription: val.rationale,
-          // true when the dropdown value was changed but description not yet updated
-          severityChangedWithoutDescription: false,
-        };
-      })
+    ? Object.entries(impactParsed.impact_assessment).map(([key, val]) => ({
+        key,
+        category: PARAMETER_LABELS[key] ?? key,
+        severity: val.severity as "None" | "Minor" | "Major" | "Critical",
+        description: val.rationale,
+        originalSeverity: val.severity as
+          | "None"
+          | "Minor"
+          | "Major"
+          | "Critical",
+        originalDescription: val.rationale,
+        // true when the dropdown value was changed but description not yet updated
+        severityChangedWithoutDescription: false,
+      }))
     : [];
 
   const [isOverrideEditing, setIsOverrideEditing] = useState(false);
   const [assessments, setAssessments] = useState(initialAssessments);
-  const [overrideConfirmed, setOverrideConfirmed] = useState(
-    savedWasModified,
-  );
+  const [overrideConfirmed, setOverrideConfirmed] = useState(false);
 
   const [showOverrideDialog, setShowOverrideDialog] = useState(false);
   const [overrideJustification, setOverrideJustification] = useState("");
@@ -217,10 +188,10 @@ export function ImpactAssessment() {
         <Card>
           <CardContent className="py-12 text-center">
             <AlertTriangle className="h-10 w-10 text-yellow-500 mx-auto mb-3" />
-            <p className="text-gray-600 font-medium">
+            <p className="text-foreground font-medium">
               No impact assessment data found.
             </p>
-            <p className="text-sm text-gray-400 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Please go back and submit a quality event first.
             </p>
             <Button className="mt-4" onClick={() => navigate("/deviation/new")}>
@@ -380,11 +351,6 @@ export function ImpactAssessment() {
 
   const handleOverrideClick = () => setIsOverrideEditing(true);
 
-  const handleCancelOverride = () => {
-    setAssessments(initialAssessments);
-    setIsOverrideEditing(false);
-  };
-
   // ── Save Changes: check all cards have updated descriptions ───────────
   const handleSaveChanges = () => {
     const needsDescription = assessments
@@ -425,23 +391,13 @@ export function ImpactAssessment() {
 
       <div className="mb-6 flex items-center justify-end gap-3">
         {isOverrideEditing && (
-          <>
-            <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
-              Editing
-            </Badge>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCancelOverride}
-              disabled={isGeneratingRCA}
-            >
-              Cancel Override
-            </Button>
-          </>
+          <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
+            Editing
+          </Badge>
         )}
         {overrideConfirmed && !isOverrideEditing && (
           <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
-            Overridden
+            <PenLine className="h-3 w-3 mr-1" /> Modified
           </Badge>
         )}
       </div>
@@ -457,14 +413,14 @@ export function ImpactAssessment() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-muted-foreground">
                 Based on {classificationParsed.classification} classification
               </span>
-              <span className="text-sm font-semibold text-gray-900">
+              <span className="text-sm font-semibold text-foreground">
                 {confidenceScore}%
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-muted rounded-full h-2">
               <div
                 className={`h-2 rounded-full ${confidenceScore >= 80 ? "bg-green-500" : confidenceScore >= 60 ? "bg-yellow-500" : "bg-red-500"}`}
                 style={{ width: `${confidenceScore}%` }}
@@ -482,6 +438,7 @@ export function ImpactAssessment() {
             const isDescriptionModified =
               overrideConfirmed &&
               assessment.description !== assessment.originalDescription;
+            const isAnyModified = isSeverityModified || isDescriptionModified;
 
             return (
               <Card
@@ -491,6 +448,12 @@ export function ImpactAssessment() {
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between text-lg">
                     {assessment.category}
+                    {/* Only show "Modified" badge — no "AI Generated" label */}
+                    {!isOverrideEditing && isAnyModified && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200 select-none">
+                        <PenLine className="h-3 w-3" /> Modified
+                      </span>
+                    )}
                   </CardTitle>
                 </CardHeader>
 
@@ -566,25 +529,35 @@ export function ImpactAssessment() {
                         >
                           {assessment.severity}
                         </div>
+                        {/* Show old → new diff only for severity */}
                         {isSeverityModified && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border select-none bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800">
-                            <Sparkles className="h-3 w-3" />
-                            Modified
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <span className="line-through text-red-500/70">
+                              {assessment.originalSeverity}
+                            </span>
+                            <span className="text-muted-foreground/40">→</span>
+                            <span className="text-green-700 font-medium">
+                              {assessment.severity}
+                            </span>
                           </span>
                         )}
                       </div>
 
-                      <div className="space-y-1">
-                        <p className="text-sm text-gray-600 leading-relaxed">
-                          {assessment.description}
-                        </p>
-                        {isDescriptionModified && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border select-none bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800">
-                            <Sparkles className="h-3 w-3" />
-                            Modified
-                          </span>
-                        )}
-                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {assessment.description}
+                      </p>
+
+                      {/* Show original AI description if it was changed */}
+                      {isDescriptionModified && (
+                        <div className="text-xs border-t pt-2 mt-1 space-y-0.5">
+                          <p className="font-medium text-orange-600">
+                            Previous AI description:
+                          </p>
+                          <p className="text-red-500/70 line-through leading-relaxed">
+                            {assessment.originalDescription}
+                          </p>
+                        </div>
+                      )}
                     </>
                   )}
                 </CardContent>
@@ -612,7 +585,7 @@ export function ImpactAssessment() {
               <Button
                 onClick={handleAccept}
                 disabled={isGeneratingRCA || isOverrideEditing}
-                className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50"
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
               >
                 {isGeneratingRCA ? (
                   <>
@@ -650,7 +623,7 @@ export function ImpactAssessment() {
                 Reject Assessment
               </Button>
             </div>
-            <p className="text-xs text-gray-500 mt-3 text-center">
+            <p className="text-xs text-muted-foreground mt-3 text-center">
               Your decision will be logged in the audit trail. Accepting or
               overriding runs root cause analysis — it only starts now, not
               before you decide.

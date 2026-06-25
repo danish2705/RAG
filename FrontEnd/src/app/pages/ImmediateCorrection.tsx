@@ -71,7 +71,7 @@ export function ImmediateCorrection() {
                 rows={4}
                 placeholder="Describe the immediate action taken to address the issue"
               />
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Document what was done immediately upon discovery of the
                 deviation
               </p>
@@ -86,7 +86,7 @@ export function ImmediateCorrection() {
                 rows={3}
                 placeholder="Assess the immediate risk to product, patient, or process"
               />
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Initial assessment of potential impact before detailed analysis
               </p>
             </div>
@@ -100,7 +100,7 @@ export function ImmediateCorrection() {
                 rows={3}
                 placeholder="Describe containment measures to prevent spread or recurrence"
               />
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Actions taken to prevent the issue from affecting other
                 products, batches, or systems
               </p>

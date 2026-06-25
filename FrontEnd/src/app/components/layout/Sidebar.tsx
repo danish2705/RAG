@@ -2,18 +2,18 @@ import { useState } from "react";
 import { NavLink } from "react-router";
 import {
   LayoutDashboard,
-  AlertTriangle,
-  FileText,
   BarChart3,
   Settings,
-  Database,
+  FolderOpen,
+  ClipboardPlus,
+  ScrollText,
 } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Quality Event Intake", href: "/deviation", icon: AlertTriangle },
-  { name: "DB Log", href: "/db-log", icon: Database },
-  { name: "Audit Trail", href: "/audit-trail", icon: FileText },
+  { name: "Quality Event Intake", href: "/deviation", icon: ClipboardPlus },
+  { name: "Records", href: "/db-log", icon: FolderOpen },
+  { name: "Audit Trail", href: "/audit-trail", icon: ScrollText },
   { name: "Reports", href: "/reports", icon: BarChart3 },
   { name: "Settings", href: "/settings", icon: Settings },
 ];

@@ -112,19 +112,39 @@ export function RootCause() {
   const { result } = (location.state ?? {}) as { result?: PipelineResult };
   const rcaParsed = result?.stages?.rca?.parsed ?? null;
 
+  // If this stage was previously overridden (e.g. user navigated forward
+  // then came back), restore that state from the saved provenance so the
+  // "Modified" badge and edited values persist across back-navigation.
+  const savedRcaProvenance = result?.provenance?.rca;
+  const wasModified =
+    savedRcaProvenance?.primary_root_cause?.source === "modified" ||
+    savedRcaProvenance?.immediate_cause?.source === "modified" ||
+    savedRcaProvenance?.contributing_factors?.source === "modified" ||
+    savedRcaProvenance?.evidence?.source === "modified";
+
   const [isOverrideEditing, setIsOverrideEditing] = useState(false);
-  const [overrideConfirmed, setOverrideConfirmed] = useState(false);
+  const [overrideConfirmed, setOverrideConfirmed] = useState(wasModified);
   const [primaryRootCause, setPrimaryRootCause] = useState(
-    rcaParsed?.primary_root_cause ?? "",
+    wasModified
+      ? (savedRcaProvenance!.primary_root_cause.value as string)
+      : rcaParsed?.primary_root_cause ?? "",
   );
   const [immediateCause, setImmediateCause] = useState(
-    rcaParsed?.immediate_cause ?? "",
+    wasModified
+      ? (savedRcaProvenance!.immediate_cause.value as string)
+      : rcaParsed?.immediate_cause ?? "",
   );
   const [contributingFactors, setContributingFactors] = useState(
-    (rcaParsed?.contributing_factors ?? []).join("\n"),
+    wasModified
+      ? (savedRcaProvenance!.contributing_factors.value as string[]).join(
+          "\n",
+        )
+      : (rcaParsed?.contributing_factors ?? []).join("\n"),
   );
   const [evidence, setEvidence] = useState(
-    (rcaParsed?.evidence ?? []).join("\n"),
+    wasModified
+      ? (savedRcaProvenance!.evidence.value as string[]).join("\n")
+      : (rcaParsed?.evidence ?? []).join("\n"),
   );
 
   const [showOverrideDialog, setShowOverrideDialog] = useState(false);
@@ -307,6 +327,29 @@ export function RootCause() {
   const handleOverrideClick = () => setIsOverrideEditing(true);
   const handleSaveChanges = () => setShowOverrideDialog(true);
 
+  const handleCancelOverride = () => {
+    if (wasModified) {
+      setPrimaryRootCause(savedRcaProvenance!.primary_root_cause.value as string);
+      setImmediateCause(savedRcaProvenance!.immediate_cause.value as string);
+      setContributingFactors(
+        (savedRcaProvenance!.contributing_factors.value as string[]).join(
+          "\n",
+        ),
+      );
+      setEvidence(
+        (savedRcaProvenance!.evidence.value as string[]).join("\n"),
+      );
+    } else {
+      setPrimaryRootCause(rcaParsed.primary_root_cause ?? "");
+      setImmediateCause(rcaParsed.immediate_cause ?? "");
+      setContributingFactors(
+        (rcaParsed.contributing_factors ?? []).join("\n"),
+      );
+      setEvidence((rcaParsed.evidence ?? []).join("\n"));
+    }
+    setIsOverrideEditing(false);
+  };
+
   const handleOverrideConfirm = () => {
     if (!overrideJustification.trim()) return;
     setShowOverrideDialog(false);
@@ -333,8 +376,9 @@ export function RootCause() {
     const isModified = overrideConfirmed && current !== original;
     if (!isModified) return null;
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border select-none bg-orange-50 text-orange-700 border-orange-200">
-        <PenLine className="h-3 w-3" /> Modified
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border select-none bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800">
+        <Sparkles className="h-3 w-3" />
+        Modified
       </span>
     );
   };
@@ -346,13 +390,23 @@ export function RootCause() {
       />
       <div className="mb-6 flex items-center justify-end gap-3">
         {isOverrideEditing && (
-          <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
-            Editing
-          </Badge>
+          <>
+            <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
+              Editing
+            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCancelOverride}
+              disabled={isGeneratingCAPA}
+            >
+              Cancel Override
+            </Button>
+          </>
         )}
         {overrideConfirmed && !isOverrideEditing && (
           <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
-            Modified
+            Overridden
           </Badge>
         )}
       </div>
@@ -418,18 +472,6 @@ export function RootCause() {
                   !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
                 }
               />
-              {overrideConfirmed &&
-                primaryRootCause !== rcaParsed.primary_root_cause &&
-                !isOverrideEditing && (
-                  <div className="text-xs text-muted-foreground">
-                    <span className="font-medium text-orange-600">
-                      Previous AI value:{" "}
-                    </span>
-                    <span className="line-through text-red-500/70">
-                      {rcaParsed.primary_root_cause}
-                    </span>
-                  </div>
-                )}
             </div>
 
             <div className="space-y-2">
@@ -454,18 +496,6 @@ export function RootCause() {
                   !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
                 }
               />
-              {overrideConfirmed &&
-                immediateCause !== rcaParsed.immediate_cause &&
-                !isOverrideEditing && (
-                  <div className="text-xs text-muted-foreground">
-                    <span className="font-medium text-orange-600">
-                      Previous AI value:{" "}
-                    </span>
-                    <span className="line-through text-red-500/70">
-                      {rcaParsed.immediate_cause}
-                    </span>
-                  </div>
-                )}
             </div>
           </CardContent>
         </Card>

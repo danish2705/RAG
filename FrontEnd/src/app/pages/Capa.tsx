@@ -88,20 +88,44 @@ export function Capa() {
   const { result } = (location.state ?? {}) as { result?: PipelineResult };
   const capaParsed = result?.stages?.capa?.parsed ?? null;
 
+  // If this stage was previously overridden (e.g. user navigated forward
+  // then came back), restore that state from the saved provenance so the
+  // "Modified" badge and edited values persist across back-navigation.
+  const savedCapaProvenance = result?.provenance?.capa;
+  const wasModified =
+    savedCapaProvenance?.corrective_actions?.source === "modified" ||
+    savedCapaProvenance?.preventive_actions?.source === "modified" ||
+    savedCapaProvenance?.effectiveness_check?.source === "modified" ||
+    savedCapaProvenance?.due_date?.source === "modified";
+
   const [isOverrideEditing, setIsOverrideEditing] = useState(false);
-  const [overrideConfirmed, setOverrideConfirmed] = useState(false);
+  const [overrideConfirmed, setOverrideConfirmed] = useState(wasModified);
   const [capaAccepted, setCapaAccepted] = useState(false);
   const [correction, setCorrection] = useState("");
   const [correctiveAction, setCorrectiveAction] = useState(
-    (capaParsed?.corrective_actions ?? []).join("\n"),
+    wasModified
+      ? (savedCapaProvenance!.corrective_actions.value as string[]).join(
+          "\n",
+        )
+      : (capaParsed?.corrective_actions ?? []).join("\n"),
   );
   const [preventiveAction, setPreventiveAction] = useState(
-    (capaParsed?.preventive_actions ?? []).join("\n"),
+    wasModified
+      ? (savedCapaProvenance!.preventive_actions.value as string[]).join(
+          "\n",
+        )
+      : (capaParsed?.preventive_actions ?? []).join("\n"),
   );
   const [effectivenessCheck, setEffectivenessCheck] = useState(
-    capaParsed?.effectiveness_check ?? "",
+    wasModified
+      ? (savedCapaProvenance!.effectiveness_check.value as string)
+      : capaParsed?.effectiveness_check ?? "",
   );
-  const [dueDate, setDueDate] = useState(capaParsed?.due_date ?? "");
+  const [dueDate, setDueDate] = useState(
+    wasModified
+      ? (savedCapaProvenance!.due_date.value as string)
+      : capaParsed?.due_date ?? "",
+  );
   const [showWeakCapaWarning, setShowWeakCapaWarning] = useState(false);
 
   const [showOverrideDialog, setShowOverrideDialog] = useState(false);
@@ -225,6 +249,32 @@ export function Capa() {
   const handleOverrideClick = () => setIsOverrideEditing(true);
   const handleSaveChanges = () => setShowOverrideDialog(true);
 
+  const handleCancelOverride = () => {
+    if (wasModified) {
+      setCorrectiveAction(
+        (savedCapaProvenance!.corrective_actions.value as string[]).join(
+          "\n",
+        ),
+      );
+      setPreventiveAction(
+        (savedCapaProvenance!.preventive_actions.value as string[]).join(
+          "\n",
+        ),
+      );
+      setEffectivenessCheck(
+        savedCapaProvenance!.effectiveness_check.value as string,
+      );
+      setDueDate(savedCapaProvenance!.due_date.value as string);
+    } else {
+      setCorrectiveAction((capaParsed.corrective_actions ?? []).join("\n"));
+      setPreventiveAction((capaParsed.preventive_actions ?? []).join("\n"));
+      setEffectivenessCheck(capaParsed.effectiveness_check ?? "");
+      setDueDate(capaParsed.due_date ?? "");
+    }
+    setShowWeakCapaWarning(false);
+    setIsOverrideEditing(false);
+  };
+
   const handleOverrideConfirm = () => {
     if (!overrideJustification.trim()) return;
     setShowOverrideDialog(false);
@@ -251,8 +301,9 @@ export function Capa() {
     const isModified = overrideConfirmed && current !== original;
     if (!isModified) return null;
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border select-none bg-orange-50 text-orange-700 border-orange-200">
-        <PenLine className="h-3 w-3" /> Modified
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border select-none bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800">
+        <Sparkles className="h-3 w-3" />
+        Modified
       </span>
     );
   };
@@ -265,13 +316,23 @@ export function Capa() {
       />
       <div className="mb-6 flex items-center justify-end gap-3">
         {isOverrideEditing && (
-          <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
-            Editing
-          </Badge>
+          <>
+            <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
+              Editing
+            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCancelOverride}
+              disabled={capaAccepted}
+            >
+              Cancel Override
+            </Button>
+          </>
         )}
         {overrideConfirmed && !isOverrideEditing && (
           <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
-            Modified
+            Overridden
           </Badge>
         )}
       </div>
@@ -364,18 +425,6 @@ export function Capa() {
                   !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
                 }
               />
-              {overrideConfirmed &&
-                correctiveAction !== capaParsed.corrective_actions.join("\n") &&
-                !isOverrideEditing && (
-                  <div className="text-xs text-muted-foreground">
-                    <span className="font-medium text-orange-600">
-                      Previous AI value:{" "}
-                    </span>
-                    <span className="line-through text-red-500/70">
-                      {capaParsed.corrective_actions.join("; ")}
-                    </span>
-                  </div>
-                )}
             </div>
           </CardContent>
         </Card>
@@ -421,18 +470,6 @@ export function Capa() {
                   !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
                 }
               />
-              {overrideConfirmed &&
-                preventiveAction !== capaParsed.preventive_actions.join("\n") &&
-                !isOverrideEditing && (
-                  <div className="text-xs text-muted-foreground">
-                    <span className="font-medium text-orange-600">
-                      Previous AI value:{" "}
-                    </span>
-                    <span className="line-through text-red-500/70">
-                      {capaParsed.preventive_actions.join("; ")}
-                    </span>
-                  </div>
-                )}
             </div>
           </CardContent>
         </Card>
@@ -466,18 +503,6 @@ export function Capa() {
                   !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
                 }
               />
-              {overrideConfirmed &&
-                effectivenessCheck !== capaParsed.effectiveness_check &&
-                !isOverrideEditing && (
-                  <div className="text-xs text-muted-foreground">
-                    <span className="font-medium text-orange-600">
-                      Previous AI value:{" "}
-                    </span>
-                    <span className="line-through text-red-500/70">
-                      {capaParsed.effectiveness_check}
-                    </span>
-                  </div>
-                )}
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
@@ -499,18 +524,6 @@ export function Capa() {
                   !isOverrideEditing ? "bg-gray-100 cursor-default" : ""
                 }
               />
-              {overrideConfirmed &&
-                dueDate !== capaParsed.due_date &&
-                !isOverrideEditing && (
-                  <div className="text-xs text-muted-foreground">
-                    <span className="font-medium text-orange-600">
-                      Previous AI value:{" "}
-                    </span>
-                    <span className="line-through text-red-500/70">
-                      {capaParsed.due_date}
-                    </span>
-                  </div>
-                )}
             </div>
           </CardContent>
         </Card>

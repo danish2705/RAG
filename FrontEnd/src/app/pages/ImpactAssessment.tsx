@@ -147,26 +147,55 @@ export function ImpactAssessment() {
   const classificationParsed = result?.stages?.classification?.parsed ?? null;
   const impactParsed = result?.stages?.impactAssessment?.parsed ?? null;
 
+  // If this stage was previously overridden (e.g. user navigated forward
+  // then came back), restore that state from the saved provenance so the
+  // "Modified" badge and edited values persist across back-navigation.
+  const savedImpactProvenance = result?.provenance?.impactAssessment;
+  const savedWasModified = Object.values(
+    savedImpactProvenance?.impact_assessment ?? {},
+  ).some(
+    (f) => f?.severity?.source === "modified" || f?.rationale?.source === "modified",
+  );
+
   const initialAssessments = impactParsed
-    ? Object.entries(impactParsed.impact_assessment).map(([key, val]) => ({
-        key,
-        category: PARAMETER_LABELS[key] ?? key,
-        severity: val.severity as "None" | "Minor" | "Major" | "Critical",
-        description: val.rationale,
-        originalSeverity: val.severity as
-          | "None"
-          | "Minor"
-          | "Major"
-          | "Critical",
-        originalDescription: val.rationale,
-        // true when the dropdown value was changed but description not yet updated
-        severityChangedWithoutDescription: false,
-      }))
+    ? Object.entries(impactParsed.impact_assessment).map(([key, val]) => {
+        const savedField =
+          savedImpactProvenance?.impact_assessment?.[
+            key as keyof typeof savedImpactProvenance.impact_assessment
+          ];
+        const severity = savedField?.severity
+          ? (savedField.severity.value as
+              | "None"
+              | "Minor"
+              | "Major"
+              | "Critical")
+          : (val.severity as "None" | "Minor" | "Major" | "Critical");
+        const description = savedField?.rationale
+          ? (savedField.rationale.value as string)
+          : val.rationale;
+
+        return {
+          key,
+          category: PARAMETER_LABELS[key] ?? key,
+          severity,
+          description,
+          originalSeverity: val.severity as
+            | "None"
+            | "Minor"
+            | "Major"
+            | "Critical",
+          originalDescription: val.rationale,
+          // true when the dropdown value was changed but description not yet updated
+          severityChangedWithoutDescription: false,
+        };
+      })
     : [];
 
   const [isOverrideEditing, setIsOverrideEditing] = useState(false);
   const [assessments, setAssessments] = useState(initialAssessments);
-  const [overrideConfirmed, setOverrideConfirmed] = useState(false);
+  const [overrideConfirmed, setOverrideConfirmed] = useState(
+    savedWasModified,
+  );
 
   const [showOverrideDialog, setShowOverrideDialog] = useState(false);
   const [overrideJustification, setOverrideJustification] = useState("");
@@ -351,6 +380,11 @@ export function ImpactAssessment() {
 
   const handleOverrideClick = () => setIsOverrideEditing(true);
 
+  const handleCancelOverride = () => {
+    setAssessments(initialAssessments);
+    setIsOverrideEditing(false);
+  };
+
   // ── Save Changes: check all cards have updated descriptions ───────────
   const handleSaveChanges = () => {
     const needsDescription = assessments
@@ -391,13 +425,23 @@ export function ImpactAssessment() {
 
       <div className="mb-6 flex items-center justify-end gap-3">
         {isOverrideEditing && (
-          <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
-            Editing
-          </Badge>
+          <>
+            <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
+              Editing
+            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCancelOverride}
+              disabled={isGeneratingRCA}
+            >
+              Cancel Override
+            </Button>
+          </>
         )}
         {overrideConfirmed && !isOverrideEditing && (
           <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
-            <PenLine className="h-3 w-3 mr-1" /> Modified
+            Overridden
           </Badge>
         )}
       </div>
@@ -438,7 +482,6 @@ export function ImpactAssessment() {
             const isDescriptionModified =
               overrideConfirmed &&
               assessment.description !== assessment.originalDescription;
-            const isAnyModified = isSeverityModified || isDescriptionModified;
 
             return (
               <Card
@@ -448,12 +491,6 @@ export function ImpactAssessment() {
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between text-lg">
                     {assessment.category}
-                    {/* Only show "Modified" badge — no "AI Generated" label */}
-                    {!isOverrideEditing && isAnyModified && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200 select-none">
-                        <PenLine className="h-3 w-3" /> Modified
-                      </span>
-                    )}
                   </CardTitle>
                 </CardHeader>
 
@@ -529,35 +566,25 @@ export function ImpactAssessment() {
                         >
                           {assessment.severity}
                         </div>
-                        {/* Show old → new diff only for severity */}
                         {isSeverityModified && (
-                          <span className="text-xs text-muted-foreground flex items-center gap-1">
-                            <span className="line-through text-red-500/70">
-                              {assessment.originalSeverity}
-                            </span>
-                            <span className="text-muted-foreground/40">→</span>
-                            <span className="text-green-700 font-medium">
-                              {assessment.severity}
-                            </span>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border select-none bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800">
+                            <Sparkles className="h-3 w-3" />
+                            Modified
                           </span>
                         )}
                       </div>
 
-                      <p className="text-sm text-gray-600 leading-relaxed">
-                        {assessment.description}
-                      </p>
-
-                      {/* Show original AI description if it was changed */}
-                      {isDescriptionModified && (
-                        <div className="text-xs border-t pt-2 mt-1 space-y-0.5">
-                          <p className="font-medium text-orange-600">
-                            Previous AI description:
-                          </p>
-                          <p className="text-red-500/70 line-through leading-relaxed">
-                            {assessment.originalDescription}
-                          </p>
-                        </div>
-                      )}
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-600 leading-relaxed">
+                          {assessment.description}
+                        </p>
+                        {isDescriptionModified && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border select-none bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800">
+                            <Sparkles className="h-3 w-3" />
+                            Modified
+                          </span>
+                        )}
+                      </div>
                     </>
                   )}
                 </CardContent>

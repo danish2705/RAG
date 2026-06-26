@@ -63,14 +63,14 @@ export function AuditTrail() {
               </TableHeader>
               <TableBody>
                 {auditTrailData.map((entry, index) => (
-                  <TableRow key={index} className={entry.type === 'ai' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}>
+                  <TableRow key={index} className={entry.type === 'ai' ? 'bg-blue-50 dark:bg-blue-900/40 border-l-2 border-l-blue-500 dark:border-l-blue-400' : ''}>
                     <TableCell className="text-sm font-mono">{entry.timestamp}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {entry.type === 'ai' ? (
                           <Bot className="h-4 w-4 text-blue-600" />
                         ) : (
-                          <User className="h-4 w-4 text-gray-600" />
+                          <User className="h-4 w-4 text-muted-foreground" />
                         )}
                         <span className="text-sm font-medium">{entry.user}</span>
                       </div>
@@ -99,11 +99,11 @@ export function AuditTrail() {
           <CardContent>
             <div className="flex flex-wrap gap-6 text-sm">
               <div className="flex items-center gap-2">
-                <div className="h-4 w-4 bg-blue-50 border border-blue-200"></div>
+                <div className="h-4 w-4 bg-blue-50 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-700"></div>
                 <span className="text-muted-foreground">AI-generated action (requires human review)</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-4 w-4 bg-white border border-gray-200"></div>
+                <div className="h-4 w-4 bg-card border border-border"></div>
                 <span className="text-muted-foreground">Human decision (final authority)</span>
               </div>
             </div>

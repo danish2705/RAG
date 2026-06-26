@@ -24,12 +24,12 @@ export function Sidebar() {
   return (
     <aside
       style={{ width: collapsed ? "5rem" : "16rem", transition: "width 300ms" }}
-      className="bg-gray-900 dark:bg-gray-950 text-white flex flex-col shrink-0 overflow-hidden"
+      className="bg-sidebar text-sidebar-foreground flex flex-col shrink-0 overflow-hidden border-r border-sidebar-border"
     >
       {/* Header / toggle */}
       <div
         style={{ height: "4rem" }}
-        className={`border-b border-gray-800 flex items-center ${
+        className={`border-b border-sidebar-border flex items-center ${
           collapsed ? "justify-center" : "px-4"
         }`}
       >
@@ -41,7 +41,7 @@ export function Sidebar() {
             <span className="font-bold text-white">D</span>
           </div>
           {!collapsed && (
-            <span className="font-semibold text-sm whitespace-nowrap">
+            <span className="font-semibold text-sm whitespace-nowrap text-sidebar-foreground">
               Deviation & Change Control
             </span>
           )}
@@ -62,8 +62,8 @@ export function Sidebar() {
                     collapsed ? "justify-center px-2 py-3" : "gap-3 px-4 py-2.5"
                   } ${
                     isActive
-                      ? "bg-blue-600 text-white"
-                      : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                   }`
                 }
               >

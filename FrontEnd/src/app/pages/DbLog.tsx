@@ -178,7 +178,7 @@ function CaseViewModal({
           </DialogTitle>
           <p className="text-xs text-muted-foreground mt-1">
             Saved by{" "}
-            <span className="font-medium text-gray-600">{record.saved_by}</span>
+            <span className="font-medium text-foreground">{record.saved_by}</span>
             {" · "}
             {new Date(record.created_at).toLocaleString()}
           </p>
@@ -219,14 +219,14 @@ function CaseViewModal({
                 </div>
                 <ConfidenceBar score={cls.confidence_score} />
                 <div className="border-t border-border pt-3">
-                  <p className="text-sm font-medium text-gray-900 mb-2">
+                  <p className="text-sm font-medium text-foreground mb-2">
                     AI Rationale
                   </p>
                   <ul className="space-y-1.5">
                     {cls.rationale.map((point, i) => (
                       <li
                         key={i}
-                        className="flex items-start gap-2 text-sm text-gray-600"
+                        className="flex items-start gap-2 text-sm text-muted-foreground"
                       >
                         <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
                         {point}
@@ -302,7 +302,7 @@ function CaseViewModal({
                     <p className="text-sm font-medium text-foreground">
                       Underlying Root Cause
                     </p>
-                    <p className="text-sm text-gray-600 bg-gray-50 rounded-md p-3">
+                    <p className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
                       {rca.primary_root_cause}
                     </p>
                   </div>
@@ -310,7 +310,7 @@ function CaseViewModal({
                     <p className="text-sm font-medium text-foreground">
                       Immediate Cause
                     </p>
-                    <p className="text-sm text-gray-600 bg-gray-50 rounded-md p-3">
+                    <p className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
                       {rca.immediate_cause}
                     </p>
                   </div>
@@ -322,7 +322,7 @@ function CaseViewModal({
                       {rca.contributing_factors.map((p, i) => (
                         <li
                           key={i}
-                          className="flex items-start gap-2 text-sm text-gray-600"
+                          className="flex items-start gap-2 text-sm text-muted-foreground"
                         >
                           <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
                           {p}
@@ -338,7 +338,7 @@ function CaseViewModal({
                       {rca.evidence.map((p, i) => (
                         <li
                           key={i}
-                          className="flex items-start gap-2 text-sm text-gray-600"
+                          className="flex items-start gap-2 text-sm text-muted-foreground"
                         >
                           <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
                           {p}
@@ -377,7 +377,7 @@ function CaseViewModal({
                     {capa.corrective_actions.map((p, i) => (
                       <li
                         key={i}
-                        className="flex items-start gap-2 text-sm text-gray-600"
+                        className="flex items-start gap-2 text-sm text-muted-foreground"
                       >
                         <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
                         {p}
@@ -398,7 +398,7 @@ function CaseViewModal({
                     {capa.preventive_actions.map((p, i) => (
                       <li
                         key={i}
-                        className="flex items-start gap-2 text-sm text-gray-600"
+                        className="flex items-start gap-2 text-sm text-muted-foreground"
                       >
                         <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
                         {p}
@@ -419,7 +419,7 @@ function CaseViewModal({
                     <p className="text-sm font-medium text-foreground">
                       Effectiveness Check
                     </p>
-                    <p className="text-sm text-gray-600 bg-gray-50 rounded-md p-3">
+                    <p className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
                       {capa.effectiveness_check}
                     </p>
                   </div>
@@ -427,7 +427,7 @@ function CaseViewModal({
                     <p className="text-sm font-medium text-foreground">
                       Due Date
                     </p>
-                    <p className="text-sm text-gray-600 bg-gray-50 rounded-md p-3">
+                    <p className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
                       {capa.due_date}
                     </p>
                   </div>
@@ -622,7 +622,7 @@ const filteredCases = useMemo(() => {
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <Database className="h-8 w-8 text-muted-foreground mb-3" />
               <p className="text-muted-foreground font-medium">No records yet</p>
-              <p className="text-sm text-gray-400 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Saved cases will appear here.
               </p>
             </div>
@@ -630,7 +630,7 @@ const filteredCases = useMemo(() => {
             <Table>
               <TableHeader>
   <TableRow className="bg-muted/50 border-b border-border">
-    <TableHead className="w-20 font-semibold text-gray-700">
+    <TableHead className="w-20 font-semibold text-foreground">
       UI ID
     </TableHead>
 
@@ -668,7 +668,7 @@ const filteredCases = useMemo(() => {
       </button>
     </TableHead>
 
-    <TableHead className="w-24 text-center font-semibold text-gray-700">
+    <TableHead className="w-24 text-center font-semibold text-foreground">
       View
     </TableHead>
   </TableRow>

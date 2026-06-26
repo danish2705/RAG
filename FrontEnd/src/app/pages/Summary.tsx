@@ -382,7 +382,7 @@ export function Summary() {
         <Button
           variant="ghost"
           size="sm"
-          className="flex items-center gap-1 text-gray-500 hover:text-gray-900 px-2"
+          className="flex items-center gap-1 text-muted-foreground hover:text-foreground px-2"
           onClick={() => navigate("/deviation/capa", { state: { result } })}
         >
           <svg
@@ -456,7 +456,7 @@ export function Summary() {
                 {classificationParsed.rationale.map((point, i) => (
                   <li
                     key={i}
-                    className="flex items-start gap-2 text-sm text-gray-600"
+                    className="flex items-start gap-2 text-sm text-muted-foreground"
                   >
                     <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
                     {point}
@@ -608,7 +608,7 @@ export function Summary() {
               {rcaParsed.contributing_factors.map((point, i) => (
                 <li
                   key={i}
-                  className="flex items-start gap-2 text-sm text-gray-600"
+                  className="flex items-start gap-2 text-sm text-muted-foreground"
                 >
                   <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
                   {point}
@@ -633,7 +633,7 @@ export function Summary() {
               {rcaParsed.evidence.map((point, i) => (
                 <li
                   key={i}
-                  className="flex items-start gap-2 text-sm text-gray-600"
+                  className="flex items-start gap-2 text-sm text-muted-foreground"
                 >
                   <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
                   {point}
@@ -684,7 +684,7 @@ export function Summary() {
               {capaParsed.corrective_actions.map((point, i) => (
                 <li
                   key={i}
-                  className="flex items-start gap-2 text-sm text-gray-600"
+                  className="flex items-start gap-2 text-sm text-muted-foreground"
                 >
                   <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
                   {point}
@@ -709,7 +709,7 @@ export function Summary() {
               {capaParsed.preventive_actions.map((point, i) => (
                 <li
                   key={i}
-                  className="flex items-start gap-2 text-sm text-gray-600"
+                  className="flex items-start gap-2 text-sm text-muted-foreground"
                 >
                   <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
                   {point}
@@ -754,7 +754,7 @@ export function Summary() {
         <Card>
           <CardContent className="py-6">
             {saveError && (
-              <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+              <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800 p-3 text-sm text-red-800 dark:text-red-400">
                 <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
                 <div>
                   <p className="font-medium">Save failed</p>

@@ -14,8 +14,12 @@ const ThemeContext = createContext<ThemeContextType>({
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
-    // Persist preference across reloads
-    return (localStorage.getItem("theme") as Theme) ?? "light";
+    // 1. Respect saved preference
+    const saved = localStorage.getItem("theme") as Theme | null;
+    if (saved === "light" || saved === "dark") return saved;
+    // 2. Fall back to OS preference
+    if (window.matchMedia("(prefers-color-scheme: dark)").matches) return "dark";
+    return "light";
   });
 
   useEffect(() => {

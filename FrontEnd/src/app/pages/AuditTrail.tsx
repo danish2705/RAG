@@ -7,6 +7,7 @@ import { auditTrailData } from '../lib/mockData';
 import { Bot, User } from 'lucide-react';
 import { AIAssistant } from '../components/chat/ai-assistant'; 
 import { useState } from 'react';
+
 export function AuditTrail() {
   const [chatOpen, setChatOpen] = useState(false);
   return (
@@ -88,25 +89,6 @@ export function AuditTrail() {
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
-
-        {/* Legend */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Legend</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-6 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="h-4 w-4 bg-blue-50 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-700"></div>
-                <span className="text-muted-foreground">AI-generated action (requires human review)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-4 w-4 bg-card border border-border"></div>
-                <span className="text-muted-foreground">Human decision (final authority)</span>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>

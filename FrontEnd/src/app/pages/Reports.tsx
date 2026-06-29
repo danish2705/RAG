@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { BarChart3, FileText, Download, Search } from 'lucide-react';
+import { FileText, Download, Search } from 'lucide-react';
 import { AIAssistant } from '../components/chat/ai-assistant';
 
 export function Reports() {
@@ -85,28 +85,11 @@ export function Reports() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Custom Report Builder */}
-        <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20">
-          <CardHeader>
-            <CardTitle className="text-blue-900 dark:text-blue-300">Custom Build Report</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-blue-800 dark:text-blue-300 mb-4">
-              Create custom reports with specific date ranges, filters, and data points
-            </p>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Build Custom Report
-            </Button>
-          </CardContent>
-        </Card>
       </div>
       </div>
       <div className="fixed top-16 right-0 bottom-0 z-40">
         <AIAssistant isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
       </div>
     </div>
-    
   );
 }

@@ -16,6 +16,18 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+let isReady = false;
+
+function requireReady(req: Request, res: Response, next: () => void): void {
+  if (!isReady) {
+    res.status(503).json({
+      error: "Knowledge base is still loading, please try again shortly.",
+    });
+    return;
+  }
+  next();
+}
+
 interface AnalyzeRequestBody {
   query?: unknown;
 }
@@ -25,6 +37,7 @@ interface AnalyzeRequestBody {
 // ─────────────────────────────────────────────────────────────────────────
 app.post(
   "/api/inputQuery",
+  requireReady,
   async (req: Request, res: Response): Promise<void> => {
     const { query } = (req.body ?? {}) as AnalyzeRequestBody;
 
@@ -56,6 +69,7 @@ interface ImpactAssessmentRequestBody {
 // ─────────────────────────────────────────────────────────────────────────
 app.post(
   "/api/deviations/impact-assessment",
+  requireReady,
   async (req: Request, res: Response): Promise<void> => {
     const { query, classification } = (req.body ??
       {}) as ImpactAssessmentRequestBody;
@@ -102,6 +116,7 @@ interface RCARequestBody {
 // ─────────────────────────────────────────────────────────────────────────
 app.post(
   "/api/deviations/rca",
+  requireReady,
   async (req: Request, res: Response): Promise<void> => {
     const { query, classification } = (req.body ?? {}) as RCARequestBody;
 
@@ -233,17 +248,20 @@ app.get("/api/cases", async (_req: Request, res: Response): Promise<void> => {
 });
 
 app.get("/healthz", (_req: Request, res: Response) =>
-  res.json({ status: "ok" }),
+  res.json({ status: "ok", ready: isReady }),
 );
 
 async function start(): Promise<void> {
-  console.log("Loading knowledge base from S3 and building vector indexes...");
-  await initKnowledgeBase();
-  console.log("Knowledge base ready.");
-
-  app.listen(config.port, () => {
+  // Bind to 0.0.0.0 (not just localhost) and bind FIRST, before the slow
+  // knowledge base load, so Render's port scan succeeds immediately.
+  app.listen(config.port, "0.0.0.0", () => {
     console.log(`GxP AI orchestrator listening on port ${config.port}`);
   });
+
+  console.log("Loading knowledge base from S3 and building vector indexes...");
+  await initKnowledgeBase();
+  isReady = true;
+  console.log("Knowledge base ready.");
 }
 
 start().catch((err) => {

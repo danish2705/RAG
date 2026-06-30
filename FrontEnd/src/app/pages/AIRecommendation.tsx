@@ -538,7 +538,7 @@ export function AIRecommendation() {
           </DialogContent>
         </Dialog>
 
-        {/* Reject dialog */}
+        {/* Reject dialogs */}
         <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
           <DialogContent>
             <DialogHeader>

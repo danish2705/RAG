@@ -18,7 +18,7 @@ app.use(cors());
 
 let isReady = false;
 
-function requireReady(req: Request, res: Response, next: () => void): void {
+function requireReady(_req: Request, res: Response, next: () => void): void {
   if (!isReady) {
     res.status(503).json({
       error: "Knowledge base is still loading, please try again shortly.",

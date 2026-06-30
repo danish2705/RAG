@@ -10,7 +10,7 @@ export interface CAPAStageResult {
 }
 
 /**
- * Stage 3 of 3. Only runs if Stage 2 (RCA) passed the gate.
+ * Stage 3 of 3. Only runsf Stage 2 (RCA) passed the gate.
  * Receives the RCA output as additional context.
  */
 export async function runCAPAStage(

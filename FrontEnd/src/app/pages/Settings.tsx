@@ -22,7 +22,7 @@ import { CheckCircle, X } from "lucide-react";
 const DEFAULTS = {
   aiEnabled: true,
   aiAutoAccept: false,
-  confidenceThreshold: "85",
+  confidenceThreshold: "70",
   emailNotif: true,
   systemNotif: true,
   capaReminders: true,
@@ -46,7 +46,7 @@ const LABELS: Record<string, string> = {
 };
 
 const OPTION_LABELS: Record<string, Record<string, string>> = {
-  confidenceThreshold: { "75": "75%", "80": "80%", "85": "85%", "90": "90%", "95": "95%" },
+  confidenceThreshold: { "70": "70%", "80": "80%", "90": "90%" },
   defaultSite: {
     "plant-a": "Manufacturing Plant A",
     "plant-b": "Manufacturing Plant B",
@@ -140,7 +140,7 @@ export function Settings() {
 
             <div className="flex justify-end pt-2">
               <Button
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-blue-600 hover:bg-blue-700 text-white dark:text-white"
                 onClick={() => setShowPopup(false)}
               >
                 OK
@@ -206,11 +206,9 @@ export function Settings() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="75">75%</SelectItem>
+                    <SelectItem value="70">70%</SelectItem>
                     <SelectItem value="80">80%</SelectItem>
-                    <SelectItem value="85">85%</SelectItem>
                     <SelectItem value="90">90%</SelectItem>
-                    <SelectItem value="95">95%</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
@@ -366,7 +364,7 @@ export function Settings() {
           {/* Save Button */}
           <div className="flex justify-end">
             <Button
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 text-white dark:text-white"
               onClick={handleSave}
             >
               Save Settings

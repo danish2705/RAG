@@ -128,23 +128,8 @@ export function Header() {
         )}
       </div>
 
-      {/* Right: theme toggle + bell + user */}
+      {/* Right: bell + user (theme toggle icon removed) */}
       <div className="flex items-center gap-4">
-        {/* Standalone theme toggle — always visible */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggleTheme}
-          aria-label="Toggle theme"
-          className="h-9 w-9 text-muted-foreground hover:text-foreground"
-        >
-          {theme === "dark" ? (
-            <Sun className="h-5 w-5" />
-          ) : (
-            <Moon className="h-5 w-5" />
-          )}
-        </Button>
-
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative">
@@ -200,10 +185,10 @@ export function Header() {
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuSeparator />
 
-            {/* Dark mode toggle row */}
+            {/* Dark mode toggle — only here inside profile dropdown */}
             <DropdownMenuItem
               onSelect={(e) => {
-                e.preventDefault(); // keep dropdown open while toggling
+                e.preventDefault();
                 toggleTheme();
               }}
               className="flex items-center justify-between cursor-pointer"
@@ -216,7 +201,6 @@ export function Header() {
                 )}
                 <span>Dark Mode</span>
               </div>
-              {/* Visual toggle pill */}
               <div
                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                   theme === "dark" ? "bg-blue-600" : "bg-gray-300"

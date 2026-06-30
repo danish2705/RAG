@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
+import { StepProgressBar } from "../components/qms/StepProgressBar";
 import {
   Card,
   CardContent,
@@ -8,6 +9,10 @@ import {
 } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
+import { Label } from "../components/ui/label";
+import { Textarea } from "../components/ui/textarea";
+import { AlertBanner } from "../components/qms/AlertBanner";
+import { AlertTriangle, Save, Sparkles } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -15,722 +20,614 @@ import {
   DialogTitle,
 } from "../components/ui/dialog";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../components/ui/table";
-import {
-  AlertTriangle,
-  Eye,
-  Loader2,
-  Sparkles,
-  Database,
-  ArrowUpDown,
-  Search,
-} from "lucide-react";
+  aiField,
+  markModified,
+  type CAPAProvenance,
+} from "../types/dataProvenance";
 import { AIAssistant } from "../components/chat/ai-assistant";
-import { Input } from "../components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../components/ui/select";
 
-// ── Types ─────────────────────────────────────────────────────────────────
+// ── Shared types ──────────────────────────────────────────────────────────────
+import type { CAPAResult } from "../types/pipeline";
+import { useWorkflowStore } from "../store/workflowStore";
 
-interface ImpactParameter {
-  severity: "None" | "Minor" | "Major" | "Critical";
-  rationale: string;
-}
+// ── Component ─────────────────────────────────────────────────────────────────
 
-interface ClassificationParsed {
-  classification: "Deviation" | "Change Control" | "Hybrid";
-  rationale: string[];
-  confidence_score: number;
-}
+export function Capa() {
+  const navigate = useNavigate();
+  const [chatOpen, setChatOpen] = useState(false);
 
-interface ImpactAssessmentParsed {
-  impact_assessment: {
-    product_impact: ImpactParameter;
-    patient_impact: ImpactParameter;
-    data_integrity_impact: ImpactParameter;
-    compliance_impact: ImpactParameter;
-  };
-  confidence_score: number;
-}
+  // ── Read from store ───────────────────────────────────────────────────────
+  const result = useWorkflowStore((s) => s.pipelineResult);
+  const mergePipelineResult = useWorkflowStore((s) => s.mergePipelineResult);
 
-interface RCAResult {
-  sequence_of_events: string[];
-  immediate_cause: string;
-  primary_root_cause: string;
-  contributing_factors: string[];
-  evidence: string[];
-  impact_assessment: string;
-  confidence_score: number;
-}
+  const capaParsed = result?.stages?.capa?.parsed ?? null;
 
-interface CAPAResult {
-  capa_required: boolean;
-  corrective_actions: string[];
-  preventive_actions: string[];
-  effectiveness_check: string;
-  due_date: string;
-  confidence_score: number;
-}
+  const savedCapaProvenance = result?.provenance?.capa;
+  const wasModified =
+    savedCapaProvenance?.corrective_actions?.source === "modified" ||
+    savedCapaProvenance?.preventive_actions?.source === "modified" ||
+    savedCapaProvenance?.effectiveness_check?.source === "modified" ||
+    savedCapaProvenance?.due_date?.source === "modified";
 
-interface DeviationCase {
-  id: number;
-  query: string;
-  saved_by: string;
-  classification: ClassificationParsed | null;
-  impact_assessment: ImpactAssessmentParsed | null;
-  rca: RCAResult | null;
-  capa: CAPAResult | null;
-  status: string;
-  created_at: string;
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────
-
-function getClassificationBadgeClass(type: string): string {
-  if (type === "Deviation") return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
-  if (type === "Change Control")
-    return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
-  if (type === "Hybrid")
-    return "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800";
-  return "bg-muted text-muted-foreground border-border";
-}
-
-function getSeverityBadgeClass(severity: string): string {
-  switch (severity.toLowerCase()) {
-    case "critical":
-      return "bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
-    case "major":
-      return "bg-yellow-100 text-yellow-700 border border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800";
-    case "minor":
-      return "bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800";
-    default:
-      return "bg-muted text-muted-foreground border border-border";
-  }
-}
-
-function ConfidenceBar({ score }: { score: number }) {
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-muted-foreground">
-          AI Confidence Score
-        </span>
-        <span className="text-sm font-semibold text-foreground">{score}%</span>
-      </div>
-      <div className="w-full bg-muted rounded-full h-2">
-        <div
-          className={`h-2 rounded-full ${score >= 80 ? "bg-green-500" : score >= 60 ? "bg-yellow-500" : "bg-red-500"}`}
-          style={{ width: `${score}%` }}
-        />
-      </div>
-    </div>
+  const [isOverrideEditing, setIsOverrideEditing] = useState(false);
+  const [overrideConfirmed, setOverrideConfirmed] = useState(wasModified);
+  const [capaAccepted, setCapaAccepted] = useState(false);
+  const [correction, setCorrection] = useState("");
+  const [correctiveAction, setCorrectiveAction] = useState(
+    wasModified
+      ? (savedCapaProvenance!.corrective_actions.value as string[]).join("\n")
+      : (capaParsed?.corrective_actions ?? []).join("\n"),
   );
-}
+  const [preventiveAction, setPreventiveAction] = useState(
+    wasModified
+      ? (savedCapaProvenance!.preventive_actions.value as string[]).join("\n")
+      : (capaParsed?.preventive_actions ?? []).join("\n"),
+  );
+  const [effectivenessCheck, setEffectivenessCheck] = useState(
+    wasModified
+      ? (savedCapaProvenance!.effectiveness_check.value as string)
+      : (capaParsed?.effectiveness_check ?? ""),
+  );
+  const [dueDate, setDueDate] = useState(
+    wasModified
+      ? (savedCapaProvenance!.due_date.value as string)
+      : (capaParsed?.due_date ?? ""),
+  );
+  const [showWeakCapaWarning, setShowWeakCapaWarning] = useState(false);
 
-const PARAMETER_LABELS: Record<string, string> = {
-  product_impact: "Product Impact",
-  patient_impact: "Patient Impact",
-  data_integrity_impact: "Data Integrity Impact",
-  compliance_impact: "Compliance Impact",
-};
+  const [showOverrideDialog, setShowOverrideDialog] = useState(false);
+  const [overrideJustification, setOverrideJustification] = useState("");
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectJustification, setRejectJustification] = useState("");
 
-// ── View Modal ─────────────────────────────────────────────────────────────
+  // ── Guard ─────────────────────────────────────────────────────────────────
+  if (!capaParsed || !result) {
+    return (
+      <div className="p-6 w-full">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <AlertTriangle className="h-10 w-10 text-yellow-500 mx-auto mb-3" />
+            <p className="text-muted-foreground font-medium">
+              No CAPA data found.
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Please go back and complete the root cause analysis first.
+            </p>
+            <Button className="mt-4" onClick={() => navigate("/deviation")}>
+              Go Back
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-function CaseViewModal({
-  record,
-  onClose,
-}: {
-  record: DeviationCase;
-  onClose: () => void;
-}) {
-  const cls = record.classification;
-  const imp = record.impact_assessment;
-  const rca = record.rca;
-  const capa = record.capa;
+  const decisionMade = capaAccepted || isOverrideEditing || overrideConfirmed;
 
-  const impactEntries = imp
-    ? Object.entries(imp.impact_assessment).map(([key, val]) => ({
-        key,
-        category: PARAMETER_LABELS[key] ?? key,
-        severity: val.severity,
-        description: val.rationale,
-      }))
-    : [];
+  const handleCorrectiveActionChange = (value: string) => {
+    setCorrectiveAction(value);
+    if (isOverrideEditing) {
+      setShowWeakCapaWarning(value.length > 0 && value.length < 50);
+    }
+  };
 
+  // ── Provenance + CAPA builders ────────────────────────────────────────────
+
+  const buildCAPAProvenance = (confirmed: boolean): CAPAProvenance => {
+    const curCorrectiveActions = correctiveAction
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const curPreventiveActions = preventiveAction
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    return {
+      capa_required: capaParsed.capa_required,
+      confidence_score: capaParsed.confidence_score,
+      corrective_actions:
+        confirmed &&
+        JSON.stringify(curCorrectiveActions) !==
+          JSON.stringify(capaParsed.corrective_actions)
+          ? markModified(
+              aiField(capaParsed.corrective_actions),
+              curCorrectiveActions,
+            )
+          : aiField(capaParsed.corrective_actions),
+      preventive_actions:
+        confirmed &&
+        JSON.stringify(curPreventiveActions) !==
+          JSON.stringify(capaParsed.preventive_actions)
+          ? markModified(
+              aiField(capaParsed.preventive_actions),
+              curPreventiveActions,
+            )
+          : aiField(capaParsed.preventive_actions),
+      effectiveness_check:
+        confirmed && effectivenessCheck !== capaParsed.effectiveness_check
+          ? markModified(
+              aiField(capaParsed.effectiveness_check),
+              effectivenessCheck,
+            )
+          : aiField(capaParsed.effectiveness_check),
+      due_date:
+        confirmed && dueDate !== capaParsed.due_date
+          ? markModified(aiField(capaParsed.due_date), dueDate)
+          : aiField(capaParsed.due_date),
+    };
+  };
+
+  const buildApprovedCAPA = (): CAPAResult => ({
+    ...capaParsed,
+    corrective_actions: correctiveAction
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean),
+    preventive_actions: preventiveAction
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean),
+    effectiveness_check: effectivenessCheck,
+    due_date: dueDate,
+  });
+
+  // ── Navigation to summary (store update replaces navigate-with-state) ─────
+
+  const proceed = () => {
+    const capaProvenance = buildCAPAProvenance(overrideConfirmed);
+    mergePipelineResult({
+      stages: {
+        ...result.stages,
+        capa: { ...result.stages.capa!, parsed: buildApprovedCAPA() },
+      },
+      correction,
+      provenance: { ...result.provenance, capa: capaProvenance },
+    });
+    navigate("/deviation/summary");
+  };
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
+  const handleAccept = () => setCapaAccepted(true);
+  const handleOverrideClick = () => setIsOverrideEditing(true);
+  const handleSaveChanges = () => setShowOverrideDialog(true);
+
+  const handleCancelOverride = () => {
+    if (wasModified) {
+      setCorrectiveAction(
+        (savedCapaProvenance!.corrective_actions.value as string[]).join("\n"),
+      );
+      setPreventiveAction(
+        (savedCapaProvenance!.preventive_actions.value as string[]).join("\n"),
+      );
+      setEffectivenessCheck(
+        savedCapaProvenance!.effectiveness_check.value as string,
+      );
+      setDueDate(savedCapaProvenance!.due_date.value as string);
+    } else {
+      setCorrectiveAction((capaParsed.corrective_actions ?? []).join("\n"));
+      setPreventiveAction((capaParsed.preventive_actions ?? []).join("\n"));
+      setEffectivenessCheck(capaParsed.effectiveness_check ?? "");
+      setDueDate(capaParsed.due_date ?? "");
+    }
+    setShowWeakCapaWarning(false);
+    setIsOverrideEditing(false);
+  };
+
+  const handleOverrideConfirm = () => {
+    if (!overrideJustification.trim()) return;
+    setShowOverrideDialog(false);
+    setIsOverrideEditing(false);
+    setOverrideConfirmed(true);
+    setOverrideJustification("");
+  };
+
+  const handleReject = () => {
+    if (rejectJustification.trim()) {
+      setShowRejectDialog(false);
+      navigate("/deviation");
+    }
+  };
+
+  const FieldBadge = ({
+    original,
+    current,
+  }: {
+    original: string;
+    current: string;
+  }) => {
+    const isModified = overrideConfirmed && current !== original;
+    if (!isModified) return null;
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border select-none bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800">
+        <Sparkles className="h-3 w-3" />
+        Modified
+      </span>
+    );
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-lg">
-            <Database className="h-5 w-5 text-blue-600" />
-            Case #{record.id} — Full Summary
-          </DialogTitle>
-          <p className="text-xs text-muted-foreground mt-1">
-            Saved by{" "}
-            <span className="font-medium text-foreground">{record.saved_by}</span>
-            {" · "}
-            {new Date(record.created_at).toLocaleString()}
-          </p>
-        </DialogHeader>
+    <div className="relative h-full w-full">
+      <div
+        className={`min-h-screen p-6 transition-[padding] duration-200 ${chatOpen ? "pr-80" : "pr-6"}`}
+      >
+        <StepProgressBar
+          classification={
+            result?.stages?.classification?.parsed?.classification
+          }
+          capaAccepted={capaAccepted}
+        />
 
-        <div className="space-y-6 pt-2">
-          {/* Query */}
-          <Card>
+        <div className="mb-6 flex items-center justify-end gap-3">
+          {isOverrideEditing && (
+            <>
+              <Badge className="bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800 text-sm px-3 py-1">
+                Editing
+              </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancelOverride}
+                disabled={capaAccepted}
+              >
+                Cancel Override
+              </Button>
+            </>
+          )}
+          {overrideConfirmed && !isOverrideEditing && (
+            <Badge className="bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800 text-sm px-3 py-1">
+              Overridden
+            </Badge>
+          )}
+        </div>
+
+        <div className="space-y-6">
+          {/* Confidence */}
+          <Card className="shadow-sm">
             <CardHeader>
-              <CardTitle className="text-base">Original Query</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-blue-600" />
+                Overall AI Confidence Score
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground leading-relaxed bg-muted/50 rounded-md p-3">
-                {record.query}
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">
+                  Based on CAPA recommendations
+                </span>
+                <span className="text-sm font-semibold text-foreground">
+                  {capaParsed.confidence_score}%
+                </span>
+              </div>
+              <div className="w-full bg-muted rounded-full h-2">
+                <div
+                  className={`h-2 rounded-full ${
+                    capaParsed.confidence_score >= 80
+                      ? "bg-green-500"
+                      : capaParsed.confidence_score >= 60
+                        ? "bg-yellow-500"
+                        : "bg-red-500"
+                  }`}
+                  style={{ width: `${capaParsed.confidence_score}%` }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Correction — always editable */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Correction</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Label htmlFor="correction">
+                  Immediate Correction (What was done to fix the immediate
+                  problem?)
+                </Label>
+                <Textarea
+                  id="correction"
+                  placeholder="Describe the immediate action taken to address this specific deviation..."
+                  rows={4}
+                  value={correction}
+                  onChange={(e) => setCorrection(e.target.value)}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Corrective Action */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                Corrective Action
+                <Sparkles className="h-5 w-5 text-blue-600" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Label htmlFor="correctiveAction">
+                    Corrective Action (What will prevent THIS deviation from
+                    recurring?) — one action per line
+                  </Label>
+                  {!isOverrideEditing && (
+                    <FieldBadge
+                      original={capaParsed.corrective_actions.join("\n")}
+                      current={correctiveAction}
+                    />
+                  )}
+                </div>
+                <Textarea
+                  id="correctiveAction"
+                  placeholder="Define specific actions to eliminate the root cause and prevent recurrence..."
+                  rows={5}
+                  value={correctiveAction}
+                  onChange={(e) => handleCorrectiveActionChange(e.target.value)}
+                  readOnly={!isOverrideEditing}
+                  className={
+                    !isOverrideEditing ? "bg-muted cursor-default" : ""
+                  }
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {showWeakCapaWarning && (
+            <AlertBanner
+              type="warning"
+              title="CAPA May Be Insufficient"
+              message="The corrective action appears to be too brief or generic. Consider providing more specific, measurable actions that directly address the root cause."
+            />
+          )}
+
+          {/* Preventive Action */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                Preventive Action
+                <Sparkles className="h-5 w-5 text-blue-600" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Label htmlFor="preventiveAction">
+                    Preventive Action (What will prevent SIMILAR deviations?) —
+                    one action per line
+                  </Label>
+                  {!isOverrideEditing && (
+                    <FieldBadge
+                      original={capaParsed.preventive_actions.join("\n")}
+                      current={preventiveAction}
+                    />
+                  )}
+                </div>
+                <Textarea
+                  id="preventiveAction"
+                  placeholder="Define actions to prevent similar issues in other areas or systems..."
+                  rows={5}
+                  value={preventiveAction}
+                  onChange={(e) => setPreventiveAction(e.target.value)}
+                  readOnly={!isOverrideEditing}
+                  className={
+                    !isOverrideEditing ? "bg-muted cursor-default" : ""
+                  }
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Effectiveness Check & Due Date */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                Effectiveness Check & Due Date
+                <Sparkles className="h-5 w-5 text-blue-600" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="effectivenessCheck">
+                    Effectiveness Check
+                  </Label>
+                  {!isOverrideEditing && (
+                    <FieldBadge
+                      original={capaParsed.effectiveness_check}
+                      current={effectivenessCheck}
+                    />
+                  )}
+                </div>
+                <Textarea
+                  id="effectivenessCheck"
+                  rows={3}
+                  value={effectivenessCheck}
+                  onChange={(e) => setEffectivenessCheck(e.target.value)}
+                  readOnly={!isOverrideEditing}
+                  className={
+                    !isOverrideEditing ? "bg-muted cursor-default" : ""
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="dueDate">Due Date</Label>
+                  {!isOverrideEditing && (
+                    <FieldBadge
+                      original={capaParsed.due_date}
+                      current={dueDate}
+                    />
+                  )}
+                </div>
+                <Textarea
+                  id="dueDate"
+                  rows={1}
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  readOnly={!isOverrideEditing}
+                  className={
+                    !isOverrideEditing ? "bg-muted cursor-default" : ""
+                  }
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Decision Required */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Decision Required</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-4">
+                <Button
+                  onClick={handleAccept}
+                  disabled={decisionMade}
+                  className={`flex-1 bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 ${
+                    capaAccepted ? "ring-2 ring-offset-2 ring-green-500" : ""
+                  }`}
+                >
+                  Accept CAPA
+                </Button>
+                {isOverrideEditing ? (
+                  <Button
+                    onClick={handleSaveChanges}
+                    disabled={capaAccepted}
+                    className="flex-1 bg-orange-600 hover:bg-orange-700 text-white disabled:opacity-50"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Changes
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleOverrideClick}
+                    variant="outline"
+                    disabled={decisionMade}
+                    className={`flex-1 disabled:opacity-50 ${
+                      overrideConfirmed
+                        ? "ring-2 ring-offset-2 ring-orange-500"
+                        : ""
+                    }`}
+                  >
+                    Override CAPA
+                  </Button>
+                )}
+                <Button
+                  onClick={() => setShowRejectDialog(true)}
+                  disabled={decisionMade}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
+                >
+                  Reject CAPA
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-3 text-center">
+                Your decision will be logged in the audit trail
               </p>
             </CardContent>
           </Card>
 
-          {/* Classification */}
-          {cls && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  Classification
-                  <Sparkles className="h-4 w-4 text-blue-600" />
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Type:
-                  </span>
-                  <Badge
-                    className={getClassificationBadgeClass(cls.classification)}
-                  >
-                    {cls.classification}
-                  </Badge>
-                </div>
-                <ConfidenceBar score={cls.confidence_score} />
-                <div className="border-t border-border pt-3">
-                  <p className="text-sm font-medium text-foreground mb-2">
-                    AI Rationale
-                  </p>
-                  <ul className="space-y-1.5">
-                    {cls.rationale.map((point, i) => (
-                      <li
-                        key={i}
-                        className="flex items-start gap-2 text-sm text-muted-foreground"
-                      >
-                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
-                        {point}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <div className="flex justify-end">
+            <Button
+              onClick={proceed}
+              disabled={!decisionMade}
+              className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Get Summary
+            </Button>
+          </div>
+        </div>
 
-          {/* Impact Assessment */}
-          {imp && (
-            <>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Sparkles className="h-4 w-4 text-blue-600" />
-                    Impact Assessment — Overall Confidence
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ConfidenceBar score={imp.confidence_score} />
-                </CardContent>
-              </Card>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {impactEntries.map((entry) => (
-                  <Card key={entry.key}>
-                    <CardHeader>
-                      <CardTitle className="text-sm">
-                        {entry.category}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <div
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getSeverityBadgeClass(entry.severity)}`}
-                      >
-                        {entry.severity}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {entry.description}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
+        {/* Override Dialog */}
+        <Dialog open={showOverrideDialog} onOpenChange={setShowOverrideDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Override CAPA</DialogTitle>
+              <DialogDescription>
+                Please provide a justification for overriding the CAPA. This
+                will be recorded in the audit trail.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="overrideJustification">Justification *</Label>
+                <Textarea
+                  id="overrideJustification"
+                  placeholder="Explain why you are overriding the CAPA..."
+                  rows={4}
+                  value={overrideJustification}
+                  onChange={(e) => setOverrideJustification(e.target.value)}
+                />
               </div>
-            </>
-          )}
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowOverrideDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleOverrideConfirm}
+                disabled={!overrideJustification.trim()}
+              >
+                Confirm Override
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-          {/* RCA */}
-          {rca && (
-            <>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Sparkles className="h-4 w-4 text-blue-600" />
-                    Root Cause Analysis — Overall Confidence
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ConfidenceBar score={rca.confidence_score} />
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    Primary Root Cause
-                    <Sparkles className="h-4 w-4 text-blue-600" />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-foreground">
-                      Underlying Root Cause
-                    </p>
-                    <p className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
-                      {rca.primary_root_cause}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-foreground">
-                      Immediate Cause
-                    </p>
-                    <p className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
-                      {rca.immediate_cause}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-foreground">
-                      Contributing Factors
-                    </p>
-                    <ul className="space-y-1.5">
-                      {rca.contributing_factors.map((p, i) => (
-                        <li
-                          key={i}
-                          className="flex items-start gap-2 text-sm text-muted-foreground"
-                        >
-                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
-                          {p}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-foreground">
-                      Supporting Evidence
-                    </p>
-                    <ul className="space-y-1.5">
-                      {rca.evidence.map((p, i) => (
-                        <li
-                          key={i}
-                          className="flex items-start gap-2 text-sm text-muted-foreground"
-                        >
-                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
-                          {p}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </CardContent>
-              </Card>
-            </>
-          )}
+        {/* Reject Dialog */}
+        <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reject CAPA</DialogTitle>
+              <DialogDescription>
+                Please provide a reason for rejecting this CAPA. You will be
+                redirected to the deviation form. This will be recorded in the
+                audit trail.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="rejectJustification">
+                  Reason for Rejection *
+                </Label>
+                <Textarea
+                  id="rejectJustification"
+                  placeholder="Explain why you are rejecting the CAPA..."
+                  rows={4}
+                  value={rejectJustification}
+                  onChange={(e) => setRejectJustification(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowRejectDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleReject}
+                disabled={!rejectJustification.trim()}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Confirm Rejection
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-          {/* CAPA */}
-          {capa && (
-            <>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Sparkles className="h-4 w-4 text-blue-600" />
-                    CAPA — Overall Confidence
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ConfidenceBar score={capa.confidence_score} />
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    Corrective Action
-                    <Sparkles className="h-4 w-4 text-blue-600" />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-1.5">
-                    {capa.corrective_actions.map((p, i) => (
-                      <li
-                        key={i}
-                        className="flex items-start gap-2 text-sm text-muted-foreground"
-                      >
-                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
-                        {p}
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    Preventive Action
-                    <Sparkles className="h-4 w-4 text-blue-600" />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-1.5">
-                    {capa.preventive_actions.map((p, i) => (
-                      <li
-                        key={i}
-                        className="flex items-start gap-2 text-sm text-muted-foreground"
-                      >
-                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
-                        {p}
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    Effectiveness Check & Due Date
-                    <Sparkles className="h-4 w-4 text-blue-600" />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-foreground">
-                      Effectiveness Check
-                    </p>
-                    <p className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
-                      {capa.effectiveness_check}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-foreground">
-                      Due Date
-                    </p>
-                    <p className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
-                      {capa.due_date}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ── Main Page ─────────────────────────────────────────────────────────────
-
-export function DbLog() {
-  const navigate = useNavigate();
-  const [cases, setCases] = useState<DeviationCase[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedCase, setSelectedCase] = useState<DeviationCase | null>(null);
-  const [chatOpen, setChatOpen] = useState(false);
-
-const [sortField, setSortField] = useState<
-  "saved_by" | "classification" | "created_at"
->("created_at");
-
-const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-
-const [submittedByFilter, setSubmittedByFilter] = useState("");
-const [classificationFilter, setClassificationFilter] = useState("all");
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/cases");
-        if (!res.ok) throw new Error(`Server returned ${res.status}`);
-        const data = await res.json();
-        setCases(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load cases.");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
-  const handleSort = (
-  field: "saved_by" | "classification" | "created_at"
-) => {
-  if (sortField === field) {
-    setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-  } else {
-    setSortField(field);
-    setSortDirection("asc");
-  }
-};
-const filteredCases = useMemo(() => {
-  let data = [...cases];
-
-  data = data.filter((c) => {
-
-
-
-    const matchesSubmittedBy =
-      !submittedByFilter ||
-      (c.saved_by || "")
-        .toLowerCase()
-        .includes(submittedByFilter.toLowerCase());
-
-
-    const matchesClassification =
-      classificationFilter === "all" ||
-      c.classification?.classification === classificationFilter;
-
-
-
-    return (
-      matchesSubmittedBy &&
-      matchesClassification
-    );
-  });
-
-  data.sort((a, b) => {
-    let valueA = "";
-    let valueB = "";
-
-    switch (sortField) {
-      case "saved_by":
-        valueA = a.saved_by || "";
-        valueB = b.saved_by || "";
-        break;
-
-      case "classification":
-        valueA = a.classification?.classification || "";
-        valueB = b.classification?.classification || "";
-        break;
-
-      case "created_at":
-        return sortDirection === "asc"
-          ? new Date(a.created_at).getTime() -
-              new Date(b.created_at).getTime()
-          : new Date(b.created_at).getTime() -
-              new Date(a.created_at).getTime();
-    }
-
-    return sortDirection === "asc"
-      ? valueA.localeCompare(valueB)
-      : valueB.localeCompare(valueA);
-  });
-
-  return data;
-}, [
-  cases,
-  submittedByFilter,
-  classificationFilter,
-  sortField,
-  sortDirection,
-]);
-  return (
-    <div className="relative h-full w-full">
-      <div className={`h-full p-6 overflow-y-auto transition-[margin] duration-200 ${chatOpen ? 'mr-80' : ''}`}>
-      {selectedCase && (
-        <CaseViewModal
-          record={selectedCase}
-          onClose={() => setSelectedCase(null)}
-        />
-      )}
-
-      <div className="mb-6 flex items-center gap-3">
-        <div>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {filteredCases.length} case{filteredCases.length === 1 ? "" : "s"}
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="ml-auto"
-          onClick={() => navigate("/deviation")}
-        >
-          + New Case
-        </Button>
-      </div>
-
-      {/* Filter bar */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search submitted by, query…"
-            value={submittedByFilter}
-            onChange={(e) => setSubmittedByFilter(e.target.value)}
-            className="pl-9 h-10 bg-muted/50 border-border"
+        <div className="fixed top-16 right-0 bottom-0 z-40">
+          <AIAssistant
+            isOpen={chatOpen}
+            onToggle={() => setChatOpen(!chatOpen)}
           />
         </div>
-
-        <Select
-          value={classificationFilter}
-          onValueChange={setClassificationFilter}
-        >
-          <SelectTrigger className="h-10 w-[180px] bg-muted/50 border-border">
-            <SelectValue placeholder="All Types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="Deviation">Deviation</SelectItem>
-            <SelectItem value="Change Control">Change Control</SelectItem>
-            <SelectItem value="Hybrid">Hybrid</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <span className="text-sm text-muted-foreground whitespace-nowrap pl-1">
-          {filteredCases.length} result{filteredCases.length === 1 ? "" : "s"}
-        </span>
-      </div>
-
-      <Card>
-        <CardContent className="p-0">
-          
-          {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="h-6 w-6 animate-spin text-blue-500 mr-2" />
-              <span className="text-muted-foreground text-sm">Loading records…</span>
-            </div>
-          ) : error ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <AlertTriangle className="h-8 w-8 text-red-400 mb-3" />
-              <p className="text-foreground font-medium">Could not load cases</p>
-              <p className="text-sm text-muted-foreground mt-1">{error}</p>
-            </div>
-          ) : cases.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Database className="h-8 w-8 text-muted-foreground mb-3" />
-              <p className="text-muted-foreground font-medium">No records yet</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Saved cases will appear here.
-              </p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-  <TableRow className="bg-muted/50 border-b border-border">
-    <TableHead className="w-20 font-semibold text-foreground">
-      UI ID
-    </TableHead>
-
-    <TableHead className="font-semibold text-foreground">
-      <button
-        onClick={() => handleSort("saved_by")}
-        className="flex items-center gap-2"
-      >
-        Submitted By
-        <ArrowUpDown className="h-4 w-4" />
-      </button>
-    </TableHead>
-
-    <TableHead className="font-semibold text-foreground">
-      Query
-    </TableHead>
-
-    <TableHead className="font-semibold text-foreground">
-      <button
-        onClick={() => handleSort("classification")}
-        className="flex items-center gap-2"
-      >
-        Classification
-        <ArrowUpDown className="h-4 w-4" />
-      </button>
-    </TableHead>
-
-    <TableHead className="font-semibold text-foreground">
-      <button
-        onClick={() => handleSort("created_at")}
-        className="flex items-center gap-2"
-      >
-        Saved On
-        <ArrowUpDown className="h-4 w-4" />
-      </button>
-    </TableHead>
-
-    <TableHead className="w-24 text-center font-semibold text-foreground">
-      View
-    </TableHead>
-  </TableRow>
-</TableHeader>
-              <TableBody>
-                {filteredCases.map((c, index) => (
-                  <TableRow
-                    key={c.id}
-                    className={`hover:bg-muted/50 transition-colors ${
-                      index % 2 === 0
-                        ? "bg-blue-50 dark:bg-blue-900/20 border-l-2 border-l-blue-500 dark:border-l-blue-400"
-                        : "bg-card"
-                    }`}
-                  >
-                    <TableCell className="font-mono text-sm text-muted-foreground">
-                      #{String(c.id).padStart(4, "0")}
-                    </TableCell>
-                    <TableCell className="text-sm font-medium text-foreground">
-                      {c.saved_by || "—"}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground max-w-xs">
-                      <span className="line-clamp-2">{c.query}</span>
-                    </TableCell>
-                    <TableCell>
-                      {c.classification ? (
-                        <Badge
-                          className={`text-xs ${getClassificationBadgeClass(c.classification.classification)}`}
-                        >
-                          {c.classification.classification}
-                        </Badge>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                      {new Date(c.created_at).toLocaleDateString("en-GB", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50"
-                        onClick={() => setSelectedCase(c)}
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                        View
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-      </div>
-      <div className="fixed top-16 right-0 bottom-0 z-40">
-        <AIAssistant isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
       </div>
     </div>
   );

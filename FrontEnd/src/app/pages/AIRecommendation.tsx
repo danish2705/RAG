@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { apiFetch } from "../lib/api";
 import { StepProgressBar } from "../components/qms/StepProgressBar";
 import {
   Card,
@@ -148,23 +149,17 @@ export function AIRecommendation() {
     setIsAssessing(true);
 
     try {
-      const response = await fetch("/api/deviations/impact-assessment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: result.query,
-          classification: approvedClassification,
-        }),
-      });
-
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(
-          body?.error || `Request failed with status ${response.status}`,
-        );
-      }
-
-      const impactResult: ImpactAssessmentApiResponse = await response.json();
+      const impactResult: ImpactAssessmentApiResponse = await apiFetch(
+        "/api/deviations/impact-assessment",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: result.query,
+            classification: approvedClassification,
+          }),
+        },
+      );
 
       // ── Merge new stage data into the store ──────────────────────────────
       mergePipelineResult({

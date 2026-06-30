@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { apiFetch } from "../lib/api";
 import { StepProgressBar } from "../components/qms/StepProgressBar";
 import {
   Card,
@@ -184,20 +185,14 @@ export function RootCause() {
     const approvedRCA = buildApprovedRCA();
 
     try {
-      const response = await fetch("/api/deviations/capa", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: result.query, rca: approvedRCA }),
-      });
-
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(
-          body?.error || `Request failed with status ${response.status}`,
-        );
-      }
-
-      const capaResult: CAPAApiResponse = await response.json();
+      const capaResult: CAPAApiResponse = await apiFetch(
+        "/api/deviations/capa",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: result.query, rca: approvedRCA }),
+        },
+      );
       navigateToCAPA(capaResult.stages.capa, rcaProvenance, approvedRCA);
     } catch (err) {
       setCapaError(

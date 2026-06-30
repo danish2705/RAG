@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router";
+import { apiFetch } from "../lib/api";
 import {
   Card,
   CardContent,
@@ -98,7 +99,8 @@ interface DeviationCase {
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 function getClassificationBadgeClass(type: string): string {
-  if (type === "Deviation") return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
+  if (type === "Deviation")
+    return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
   if (type === "Change Control")
     return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
   if (type === "Hybrid")
@@ -178,7 +180,9 @@ function CaseViewModal({
           </DialogTitle>
           <p className="text-xs text-muted-foreground mt-1">
             Saved by{" "}
-            <span className="font-medium text-foreground">{record.saved_by}</span>
+            <span className="font-medium text-foreground">
+              {record.saved_by}
+            </span>
             {" · "}
             {new Date(record.created_at).toLocaleString()}
           </p>
@@ -451,21 +455,19 @@ export function DbLog() {
   const [selectedCase, setSelectedCase] = useState<DeviationCase | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
 
-const [sortField, setSortField] = useState<
-  "saved_by" | "classification" | "created_at"
->("created_at");
+  const [sortField, setSortField] = useState<
+    "saved_by" | "classification" | "created_at"
+  >("created_at");
 
-const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
-const [submittedByFilter, setSubmittedByFilter] = useState("");
-const [classificationFilter, setClassificationFilter] = useState("all");
+  const [submittedByFilter, setSubmittedByFilter] = useState("");
+  const [classificationFilter, setClassificationFilter] = useState("all");
 
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/cases");
-        if (!res.ok) throw new Error(`Server returned ${res.status}`);
-        const data = await res.json();
+        const data = await apiFetch("/api/cases");
         setCases(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load cases.");
@@ -474,259 +476,260 @@ const [classificationFilter, setClassificationFilter] = useState("all");
       }
     })();
   }, []);
-  const handleSort = (
-  field: "saved_by" | "classification" | "created_at"
-) => {
-  if (sortField === field) {
-    setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-  } else {
-    setSortField(field);
-    setSortDirection("asc");
-  }
-};
-const filteredCases = useMemo(() => {
-  let data = [...cases];
-
-  data = data.filter((c) => {
-
-
-
-    const matchesSubmittedBy =
-      !submittedByFilter ||
-      (c.saved_by || "")
-        .toLowerCase()
-        .includes(submittedByFilter.toLowerCase());
-
-
-    const matchesClassification =
-      classificationFilter === "all" ||
-      c.classification?.classification === classificationFilter;
-
-
-
-    return (
-      matchesSubmittedBy &&
-      matchesClassification
-    );
-  });
-
-  data.sort((a, b) => {
-    let valueA = "";
-    let valueB = "";
-
-    switch (sortField) {
-      case "saved_by":
-        valueA = a.saved_by || "";
-        valueB = b.saved_by || "";
-        break;
-
-      case "classification":
-        valueA = a.classification?.classification || "";
-        valueB = b.classification?.classification || "";
-        break;
-
-      case "created_at":
-        return sortDirection === "asc"
-          ? new Date(a.created_at).getTime() -
-              new Date(b.created_at).getTime()
-          : new Date(b.created_at).getTime() -
-              new Date(a.created_at).getTime();
+  const handleSort = (field: "saved_by" | "classification" | "created_at") => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
     }
+  };
+  const filteredCases = useMemo(() => {
+    let data = [...cases];
 
-    return sortDirection === "asc"
-      ? valueA.localeCompare(valueB)
-      : valueB.localeCompare(valueA);
-  });
+    data = data.filter((c) => {
+      const matchesSubmittedBy =
+        !submittedByFilter ||
+        (c.saved_by || "")
+          .toLowerCase()
+          .includes(submittedByFilter.toLowerCase());
 
-  return data;
-}, [
-  cases,
-  submittedByFilter,
-  classificationFilter,
-  sortField,
-  sortDirection,
-]);
+      const matchesClassification =
+        classificationFilter === "all" ||
+        c.classification?.classification === classificationFilter;
+
+      return matchesSubmittedBy && matchesClassification;
+    });
+
+    data.sort((a, b) => {
+      let valueA = "";
+      let valueB = "";
+
+      switch (sortField) {
+        case "saved_by":
+          valueA = a.saved_by || "";
+          valueB = b.saved_by || "";
+          break;
+
+        case "classification":
+          valueA = a.classification?.classification || "";
+          valueB = b.classification?.classification || "";
+          break;
+
+        case "created_at":
+          return sortDirection === "asc"
+            ? new Date(a.created_at).getTime() -
+                new Date(b.created_at).getTime()
+            : new Date(b.created_at).getTime() -
+                new Date(a.created_at).getTime();
+      }
+
+      return sortDirection === "asc"
+        ? valueA.localeCompare(valueB)
+        : valueB.localeCompare(valueA);
+    });
+
+    return data;
+  }, [
+    cases,
+    submittedByFilter,
+    classificationFilter,
+    sortField,
+    sortDirection,
+  ]);
   return (
     <div className="relative h-full w-full">
-      <div className={`h-full p-6 overflow-y-auto transition-[margin] duration-200 ${chatOpen ? 'mr-80' : ''}`}>
-      {selectedCase && (
-        <CaseViewModal
-          record={selectedCase}
-          onClose={() => setSelectedCase(null)}
-        />
-      )}
-
-      <div className="mb-6 flex items-center gap-3">
-        <div>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {filteredCases.length} case{filteredCases.length === 1 ? "" : "s"}
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="ml-auto"
-          onClick={() => navigate("/deviation")}
-        >
-          + New Case
-        </Button>
-      </div>
-
-      {/* Filter bar */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search submitted by, query…"
-            value={submittedByFilter}
-            onChange={(e) => setSubmittedByFilter(e.target.value)}
-            className="pl-9 h-10 bg-muted/50 border-border"
+      <div
+        className={`h-full p-6 overflow-y-auto transition-[margin] duration-200 ${chatOpen ? "mr-80" : ""}`}
+      >
+        {selectedCase && (
+          <CaseViewModal
+            record={selectedCase}
+            onClose={() => setSelectedCase(null)}
           />
+        )}
+
+        <div className="mb-6 flex items-center gap-3">
+          <div>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {filteredCases.length} case{filteredCases.length === 1 ? "" : "s"}
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto"
+            onClick={() => navigate("/deviation")}
+          >
+            + New Case
+          </Button>
         </div>
 
-        <Select
-          value={classificationFilter}
-          onValueChange={setClassificationFilter}
-        >
-          <SelectTrigger className="h-10 w-[180px] bg-muted/50 border-border">
-            <SelectValue placeholder="All Types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="Deviation">Deviation</SelectItem>
-            <SelectItem value="Change Control">Change Control</SelectItem>
-            <SelectItem value="Hybrid">Hybrid</SelectItem>
-          </SelectContent>
-        </Select>
+        {/* Filter bar */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search submitted by, query…"
+              value={submittedByFilter}
+              onChange={(e) => setSubmittedByFilter(e.target.value)}
+              className="pl-9 h-10 bg-muted/50 border-border"
+            />
+          </div>
 
-        <span className="text-sm text-muted-foreground whitespace-nowrap pl-1">
-          {filteredCases.length} result{filteredCases.length === 1 ? "" : "s"}
-        </span>
-      </div>
+          <Select
+            value={classificationFilter}
+            onValueChange={setClassificationFilter}
+          >
+            <SelectTrigger className="h-10 w-[180px] bg-muted/50 border-border">
+              <SelectValue placeholder="All Types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="Deviation">Deviation</SelectItem>
+              <SelectItem value="Change Control">Change Control</SelectItem>
+              <SelectItem value="Hybrid">Hybrid</SelectItem>
+            </SelectContent>
+          </Select>
 
-      <Card>
-        <CardContent className="p-0">
-          
-          {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="h-6 w-6 animate-spin text-blue-500 mr-2" />
-              <span className="text-muted-foreground text-sm">Loading records…</span>
-            </div>
-          ) : error ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <AlertTriangle className="h-8 w-8 text-red-400 mb-3" />
-              <p className="text-foreground font-medium">Could not load cases</p>
-              <p className="text-sm text-muted-foreground mt-1">{error}</p>
-            </div>
-          ) : cases.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Database className="h-8 w-8 text-muted-foreground mb-3" />
-              <p className="text-muted-foreground font-medium">No records yet</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Saved cases will appear here.
-              </p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-  <TableRow className="bg-muted/50 border-b border-border">
-    <TableHead className="w-20 font-semibold text-foreground">
-      UI ID
-    </TableHead>
+          <span className="text-sm text-muted-foreground whitespace-nowrap pl-1">
+            {filteredCases.length} result{filteredCases.length === 1 ? "" : "s"}
+          </span>
+        </div>
 
-    <TableHead className="font-semibold text-foreground">
-      <button
-        onClick={() => handleSort("saved_by")}
-        className="flex items-center gap-2"
-      >
-        Submitted By
-        <ArrowUpDown className="h-4 w-4" />
-      </button>
-    </TableHead>
+        <Card>
+          <CardContent className="p-0">
+            {loading ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="h-6 w-6 animate-spin text-blue-500 mr-2" />
+                <span className="text-muted-foreground text-sm">
+                  Loading records…
+                </span>
+              </div>
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <AlertTriangle className="h-8 w-8 text-red-400 mb-3" />
+                <p className="text-foreground font-medium">
+                  Could not load cases
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">{error}</p>
+              </div>
+            ) : cases.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <Database className="h-8 w-8 text-muted-foreground mb-3" />
+                <p className="text-muted-foreground font-medium">
+                  No records yet
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Saved cases will appear here.
+                </p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50 border-b border-border">
+                    <TableHead className="w-20 font-semibold text-foreground">
+                      UI ID
+                    </TableHead>
 
-    <TableHead className="font-semibold text-foreground">
-      Query
-    </TableHead>
-
-    <TableHead className="font-semibold text-foreground">
-      <button
-        onClick={() => handleSort("classification")}
-        className="flex items-center gap-2"
-      >
-        Classification
-        <ArrowUpDown className="h-4 w-4" />
-      </button>
-    </TableHead>
-
-    <TableHead className="font-semibold text-foreground">
-      <button
-        onClick={() => handleSort("created_at")}
-        className="flex items-center gap-2"
-      >
-        Saved On
-        <ArrowUpDown className="h-4 w-4" />
-      </button>
-    </TableHead>
-
-    <TableHead className="w-24 text-center font-semibold text-foreground">
-      View
-    </TableHead>
-  </TableRow>
-</TableHeader>
-              <TableBody>
-                {filteredCases.map((c) => (
-                  <TableRow
-                    key={c.id}
-                    className="hover:bg-muted/50 transition-colors"
-                  >
-                    <TableCell className="font-mono text-sm text-muted-foreground">
-                      #{String(c.id).padStart(4, "0")}
-                    </TableCell>
-                    <TableCell className="text-sm font-medium text-foreground">
-                      {c.saved_by || "—"}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground max-w-xs">
-                      <span className="line-clamp-2">{c.query}</span>
-                    </TableCell>
-                    <TableCell>
-                      {c.classification ? (
-                        <Badge
-                          className={`text-xs ${getClassificationBadgeClass(c.classification.classification)}`}
-                        >
-                          {c.classification.classification}
-                        </Badge>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                      {new Date(c.created_at).toLocaleDateString("en-GB", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50"
-                        onClick={() => setSelectedCase(c)}
+                    <TableHead className="font-semibold text-foreground">
+                      <button
+                        onClick={() => handleSort("saved_by")}
+                        className="flex items-center gap-2"
                       >
-                        <Eye className="h-3.5 w-3.5" />
-                        View
-                      </Button>
-                    </TableCell>
+                        Submitted By
+                        <ArrowUpDown className="h-4 w-4" />
+                      </button>
+                    </TableHead>
+
+                    <TableHead className="font-semibold text-foreground">
+                      Query
+                    </TableHead>
+
+                    <TableHead className="font-semibold text-foreground">
+                      <button
+                        onClick={() => handleSort("classification")}
+                        className="flex items-center gap-2"
+                      >
+                        Classification
+                        <ArrowUpDown className="h-4 w-4" />
+                      </button>
+                    </TableHead>
+
+                    <TableHead className="font-semibold text-foreground">
+                      <button
+                        onClick={() => handleSort("created_at")}
+                        className="flex items-center gap-2"
+                      >
+                        Saved On
+                        <ArrowUpDown className="h-4 w-4" />
+                      </button>
+                    </TableHead>
+
+                    <TableHead className="w-24 text-center font-semibold text-foreground">
+                      View
+                    </TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {filteredCases.map((c) => (
+                    <TableRow
+                      key={c.id}
+                      className="hover:bg-muted/50 transition-colors"
+                    >
+                      <TableCell className="font-mono text-sm text-muted-foreground">
+                        #{String(c.id).padStart(4, "0")}
+                      </TableCell>
+                      <TableCell className="text-sm font-medium text-foreground">
+                        {c.saved_by || "—"}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground max-w-xs">
+                        <span className="line-clamp-2">{c.query}</span>
+                      </TableCell>
+                      <TableCell>
+                        {c.classification ? (
+                          <Badge
+                            className={`text-xs ${getClassificationBadgeClass(c.classification.classification)}`}
+                          >
+                            {c.classification.classification}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            —
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                        {new Date(c.created_at).toLocaleDateString("en-GB", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50"
+                          onClick={() => setSelectedCase(c)}
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
       </div>
       <div className="fixed top-16 right-0 bottom-0 z-40">
-        <AIAssistant isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
+        <AIAssistant
+          isOpen={chatOpen}
+          onToggle={() => setChatOpen(!chatOpen)}
+        />
       </div>
     </div>
   );

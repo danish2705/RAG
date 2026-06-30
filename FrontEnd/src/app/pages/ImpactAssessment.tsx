@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { apiFetch } from "../lib/api";
 import { StepProgressBar } from "../components/qms/StepProgressBar";
 import {
   Card,
@@ -222,7 +223,7 @@ export function ImpactAssessment() {
     setRcaError(null);
     setIsGeneratingRCA(true);
     try {
-      const response = await fetch("/api/deviations/rca", {
+      const rcaResult: RCAApiResponse = await apiFetch("/api/deviations/rca", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -230,13 +231,6 @@ export function ImpactAssessment() {
           classification: classificationParsed,
         }),
       });
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(
-          body?.error || `Request failed with status ${response.status}`,
-        );
-      }
-      const rcaResult: RCAApiResponse = await response.json();
       navigateToRCA(rcaResult.stages.rca, impactProvenance);
     } catch (err) {
       setRcaError(

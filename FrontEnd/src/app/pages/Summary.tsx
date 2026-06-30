@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { apiFetch } from "../lib/api";
 import { StepProgressBar } from "../components/qms/StepProgressBar";
 import {
   Card,
@@ -210,7 +211,7 @@ export function Summary() {
     setIsSaving(true);
 
     try {
-      const response = await fetch("/api/save", {
+      await apiFetch("/api/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -225,13 +226,6 @@ export function Summary() {
           provenance: provenance ?? null,
         }),
       });
-
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(
-          body?.error || `Request failed with status ${response.status}`,
-        );
-      }
 
       setIsSaved(true);
       // Clear the workflow store after successful save, then redirect

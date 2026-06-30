@@ -10,7 +10,7 @@
 //   Read   → const result = useWorkflowStore(s => s.pipelineResult);
 //   Clear  → const clear = useWorkflowStore(s => s.clearWorkflow);  (call on Summary save)
 
-import { create } from "zustand";
+import { useSyncExternalStore } from "react";
 import type { PipelineResult } from "../types/pipeline";
 
 interface WorkflowState {
@@ -30,30 +30,62 @@ interface WorkflowState {
   clearWorkflow: () => void;
 }
 
-export const useWorkflowStore = create<WorkflowState>((set) => ({
+const listeners = new Set<() => void>();
+let store: WorkflowState;
+
+const notifyListeners = () => listeners.forEach((listener) => listener());
+const updateStore = (nextStore: WorkflowState) => {
+  store = nextStore;
+  notifyListeners();
+};
+
+const setPipelineResult = (result: PipelineResult) =>
+  updateStore({
+    ...store,
+    pipelineResult: result,
+    submittedAt: new Date().toISOString(),
+  });
+
+const mergePipelineResult = (partial: Partial<PipelineResult>) =>
+  updateStore({
+    ...store,
+    pipelineResult: store.pipelineResult
+      ? {
+          ...store.pipelineResult,
+          ...partial,
+          stages: {
+            ...store.pipelineResult.stages,
+            ...(partial.stages ?? {}),
+          },
+          provenance: {
+            ...store.pipelineResult.provenance,
+            ...(partial.provenance ?? {}),
+          },
+        }
+      : null,
+  });
+
+const clearWorkflow = () =>
+  updateStore({
+    ...store,
+    pipelineResult: null,
+    submittedAt: null,
+  });
+
+store = {
   pipelineResult: null,
   submittedAt: null,
+  setPipelineResult,
+  mergePipelineResult,
+  clearWorkflow,
+};
 
-  setPipelineResult: (result) =>
-    set({ pipelineResult: result, submittedAt: new Date().toISOString() }),
-
-  mergePipelineResult: (partial) =>
-    set((state) => ({
-      pipelineResult: state.pipelineResult
-        ? {
-            ...state.pipelineResult,
-            ...partial,
-            stages: {
-              ...state.pipelineResult.stages,
-              ...(partial.stages ?? {}),
-            },
-            provenance: {
-              ...state.pipelineResult.provenance,
-              ...(partial.provenance ?? {}),
-            },
-          }
-        : null,
-    })),
-
-  clearWorkflow: () => set({ pipelineResult: null, submittedAt: null }),
-}));
+export const useWorkflowStore = <Selected>(selector: (state: WorkflowState) => Selected) =>
+  useSyncExternalStore(
+    (listener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    () => selector(store),
+    () => selector(store),
+  );

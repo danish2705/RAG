@@ -18,7 +18,7 @@ function Switch({
         "dark:data-[state=checked]:bg-blue-500 dark:data-[state=unchecked]:bg-input/80",
         "focus-visible:border-ring focus-visible:ring-blue-500/50",
         "inline-flex h-[1.15rem] w-8 shrink-0 items-center rounded-full border border-transparent",
-        "transition-all outline-none focus-visible:ring-[3px]",
+        "transition-all outline-none focus-visible:ring-[3px] cursor-pointer",
         "disabled:cursor-not-allowed disabled:opacity-50",
         className,
       )}

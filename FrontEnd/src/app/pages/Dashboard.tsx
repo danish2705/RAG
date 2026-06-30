@@ -106,9 +106,11 @@ export function Dashboard() {
 
   return (
     <div className="relative h-full w-full">
+      {/* Dashboard content — padded on the right when the AI panel is open so
+          content doesn't render underneath the fixed panel. */}
       <div
-        className={`h-full p-6 space-y-6 overflow-y-auto transition-[margin] duration-200 ${
-          aiOpen ? 'mr-80' : ''
+        className={`p-6 space-y-6 transition-[padding] duration-200 ${
+          aiOpen ? 'pr-80' : ''
         }`}
       >
         {/* Page title + New Quality Event button */}
@@ -202,10 +204,13 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* AI Assistant Panel — docked to the right edge of the viewport, below the header */}
+      {/* AI Assistant Panel — fixed to the right edge of the viewport.
+          `fixed` removes the panel from the document flow entirely, so it
+          floats independently above the page and cannot clip, overlap, or
+          interfere with the scroll container's own scrollbar track. */}
       <div className="fixed top-16 right-0 bottom-0 z-40">
         <AIAssistantPanel isOpen={aiOpen} onToggle={() => setAiOpen(!aiOpen)} />
       </div>
     </div>
   );
-}
+} 

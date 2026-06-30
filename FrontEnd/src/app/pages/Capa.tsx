@@ -623,13 +623,13 @@ export function Capa() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      </div>
 
-        <div className="fixed top-16 right-0 bottom-0 z-40">
-          <AIAssistant
-            isOpen={chatOpen}
-            onToggle={() => setChatOpen(!chatOpen)}
-          />
-        </div>
+      <div className="fixed top-16 right-0 bottom-0 z-40">
+        <AIAssistant
+          isOpen={chatOpen}
+          onToggle={() => setChatOpen(!chatOpen)}
+        />
       </div>
     </div>
   );

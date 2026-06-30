@@ -21,3 +21,34 @@ button:disabled,
 [disabled] {
   cursor: not-allowed;
 }
+
+/* ── Visible scrollbar ───────────────────────────────────────────────────
+   Default browser scrollbars are very thin/faint on light backgrounds and
+   can look hidden, especially next to the AI Assistant panel. Make the
+   thumb clearly visible while keeping it slim, using the existing
+   theme-aware muted-foreground color so it works in light and dark mode. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted-foreground) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--muted-foreground);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  opacity: 0.5;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--foreground);
+}

@@ -4,7 +4,7 @@ import { config } from "../config.js";
 
 let extractorPromise: Promise<FeatureExtractionPipeline> | undefined;
 
-// Lazily loads the model once (same model as the notebook's
+// Lazily loads the model once (same model as the notebook's)
 // SentenceTransformer('all-MiniLM-L6-v2')) and reuses it for every call.
 function getExtractor(): Promise<FeatureExtractionPipeline> {
   if (!extractorPromise) {

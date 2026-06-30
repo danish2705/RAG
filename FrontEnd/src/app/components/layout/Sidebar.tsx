@@ -42,7 +42,7 @@ export function Sidebar() {
   const isDark = useDarkMode();
 
   // Theme tokens
-  const bg        = isDark ? "#0f172a" : "#ffffff";
+  const bg        = isDark ? "#04060b" : "#ffffff";
   const border    = isDark ? "#1e293b" : "#e2e8f0";
   const textMain  = isDark ? "#e2e8f0" : "#1e293b";
   const textMuted = isDark ? "#94a3b8" : "#475569";
@@ -71,9 +71,9 @@ export function Sidebar() {
         >
           <div
             style={{ backgroundColor: "#2563eb", borderRadius: "6px" }}
-            className="h-8 w-8 flex items-center justify-center shrink-0"
+            className="h-10 w-12 flex items-center justify-center shrink-0"
           >
-            <span className="font-bold text-white">D</span>
+            <span className="font-bold text-white">D&C</span>
           </div>
           {!collapsed && (
             <span

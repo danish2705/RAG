@@ -82,7 +82,7 @@ export function AIAssistantPanel({ isOpen, onToggle }: AIAssistantPanelProps) {
     <>
       {/* Inline right panel — shown when open */}
       {isOpen && (
-        <div className="w-80 border-l border-border bg-background flex flex-col h-full">
+        <div className="w-80 h-full border-l border-border bg-background flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-4 border-b border-border">
             <div className="flex items-center gap-2">
@@ -172,4 +172,3 @@ export function AIAssistantPanel({ isOpen, onToggle }: AIAssistantPanelProps) {
  
 // Keep old export for backward compat
 export { AIAssistantPanel as AIAssistant };
- 

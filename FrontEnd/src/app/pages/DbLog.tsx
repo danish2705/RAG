@@ -674,10 +674,14 @@ const filteredCases = useMemo(() => {
   </TableRow>
 </TableHeader>
               <TableBody>
-                {filteredCases.map((c) => (
+                {filteredCases.map((c, index) => (
                   <TableRow
                     key={c.id}
-                    className="hover:bg-muted/50 transition-colors"
+                    className={`hover:bg-muted/50 transition-colors ${
+                      index % 2 === 0
+                        ? "bg-blue-50 dark:bg-blue-900/20 border-l-2 border-l-blue-500 dark:border-l-blue-400"
+                        : "bg-card"
+                    }`}
                   >
                     <TableCell className="font-mono text-sm text-muted-foreground">
                       #{String(c.id).padStart(4, "0")}

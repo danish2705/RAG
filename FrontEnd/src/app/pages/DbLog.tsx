@@ -114,6 +114,10 @@ function getAlternatingRowClass(index: number): string {
     : "bg-white hover:bg-blue-50 dark:bg-gray-900/20 dark:hover:bg-blue-900/20";
 }
 
+function getRowBorderClass(index: number): string {
+  return index % 2 === 1 ? "border-l-4 border-l-blue-500" : "border-l-4 border-l-transparent";
+}
+
 function getSeverityBadgeClass(severity: string): string {
   switch (severity.toLowerCase()) {
     case "critical":
@@ -631,7 +635,7 @@ export function DbLog() {
                 </p>
               </div>
             ) : (
-              <Table>
+              <Table className="border-separate border-spacing-0">
                 <TableHeader>
                   <TableRow className="bg-muted/50 border-b border-border">
                     <TableHead className="w-20 font-semibold text-foreground">
@@ -683,7 +687,7 @@ export function DbLog() {
                       key={c.id}
                       className={`transition-colors ${getAlternatingRowClass(index)}`}
                     >
-                      <TableCell className="font-mono text-sm text-muted-foreground">
+                      <TableCell className={`font-mono text-sm text-muted-foreground ${getRowBorderClass(index)}`}>
                         #{String(c.id).padStart(4, "0")}
                       </TableCell>
                       <TableCell className="text-sm font-medium text-foreground">

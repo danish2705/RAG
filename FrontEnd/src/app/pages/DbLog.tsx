@@ -42,7 +42,7 @@ import {
   SelectValue,
 } from "../components/ui/select";
 
-// ── Types ─────────────────────────────────────────────────────────────────
+// ── Type ─────────────────────────────────────────────────────────────────
 
 interface ImpactParameter {
   severity: "None" | "Minor" | "Major" | "Critical";
@@ -96,7 +96,7 @@ interface DeviationCase {
   created_at: string;
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────
+// ── Helper ───────────────────────────────────────────────────────────────
 
 function getClassificationBadgeClass(type: string): string {
   if (type === "Deviation")
@@ -106,6 +106,16 @@ function getClassificationBadgeClass(type: string): string {
   if (type === "Hybrid")
     return "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800";
   return "bg-muted text-muted-foreground border-border";
+}
+
+function getAlternatingRowClass(index: number): string {
+  return index % 2 === 1
+    ? "bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-900/30"
+    : "bg-white hover:bg-blue-50 dark:bg-gray-900/20 dark:hover:bg-blue-900/20";
+}
+
+function getRowBorderClass(index: number): string {
+  return index % 2 === 1 ? "border-l-4 border-l-blue-500" : "border-l-4 border-l-transparent";
 }
 
 function getSeverityBadgeClass(severity: string): string {
@@ -625,7 +635,7 @@ export function DbLog() {
                 </p>
               </div>
             ) : (
-              <Table>
+              <Table className="border-separate border-spacing-0">
                 <TableHeader>
                   <TableRow className="bg-muted/50 border-b border-border">
                     <TableHead className="w-20 font-semibold text-foreground">
@@ -672,12 +682,12 @@ export function DbLog() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCases.map((c) => (
+                  {filteredCases.map((c, index) => (
                     <TableRow
                       key={c.id}
-                      className="hover:bg-muted/50 transition-colors"
+                      className={`transition-colors ${getAlternatingRowClass(index)}`}
                     >
-                      <TableCell className="font-mono text-sm text-muted-foreground">
+                      <TableCell className={`font-mono text-sm text-muted-foreground ${getRowBorderClass(index)}`}>
                         #{String(c.id).padStart(4, "0")}
                       </TableCell>
                       <TableCell className="text-sm font-medium text-foreground">

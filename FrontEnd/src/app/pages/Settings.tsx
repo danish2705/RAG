@@ -17,58 +17,15 @@ import {
 import { AIAssistant } from "../components/chat/ai-assistant";
 import { useState } from "react";
 import { CheckCircle, X } from "lucide-react";
-
-// Default values — used to detect changes
-const DEFAULTS = {
-  aiEnabled: true,
-  aiAutoAccept: false,
-  confidenceThreshold: "70",
-  emailNotif: true,
-  systemNotif: true,
-  capaReminders: true,
-  defaultSite: "plant-a",
-  crossTrigger: true,
-  detailedAudit: true,
-  dataRetention: "7",
-};
-
-const LABELS: Record<string, string> = {
-  aiEnabled: "Enable AI Recommendations",
-  aiAutoAccept: "Auto-Accept High Confidence AI Decisions",
-  confidenceThreshold: "Minimum Confidence Threshold",
-  emailNotif: "Email Notifications",
-  systemNotif: "System Notifications",
-  capaReminders: "CAPA Due Date Reminders",
-  defaultSite: "Default Site",
-  crossTrigger: "Enable Cross-Module Triggers",
-  detailedAudit: "Detailed Audit Trail",
-  dataRetention: "Data Retention Period",
-};
-
-const OPTION_LABELS: Record<string, Record<string, string>> = {
-  confidenceThreshold: { "70": "70%", "80": "80%", "90": "90%" },
-  defaultSite: {
-    "plant-a": "Manufacturing Plant A",
-    "plant-b": "Manufacturing Plant B",
-    "lab": "Quality Lab",
-    "dist": "Distribution Center",
-  },
-  dataRetention: {
-    "5": "5 years",
-    "7": "7 years (Recommended)",
-    "10": "10 years",
-    "permanent": "Permanent",
-  },
-};
+import { DEFAULTS, LABELS, OPTION_LABELS } from "../lib/Settings";
 
 export function Settings() {
   const [chatOpen, setChatOpen] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [savedChanges, setSavedChanges] = useState<string[]>([]);
 
-  // Controlled state for all settings
   const [settings, setSettings] = useState({ ...DEFAULTS });
-  // Snapshot of last saved state (to diff against)
+
   const [lastSaved, setLastSaved] = useState({ ...DEFAULTS });
 
   const setSwitch = (key: keyof typeof DEFAULTS) => (val: boolean) =>
@@ -78,7 +35,7 @@ export function Settings() {
     setSettings((s) => ({ ...s, [key]: val }));
 
   const handleSave = () => {
-    // Collect human-readable list of changes
+
     const changes: string[] = [];
     (Object.keys(settings) as (keyof typeof DEFAULTS)[]).forEach((key) => {
       if (settings[key] !== lastSaved[key]) {

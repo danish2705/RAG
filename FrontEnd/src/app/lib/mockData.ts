@@ -1,4 +1,4 @@
-// Mock data for the QMS application
+// Mock data or the QMS application
 
 export const kpiData = {
   totalDeviations: 142,

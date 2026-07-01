@@ -118,7 +118,7 @@ export function ChangeDecision() {
               </div>
             </div>
 
-            {/* Confidence Score */}
+            {/* Confidence Scores */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-gray-600">AI Confidence Score</span>

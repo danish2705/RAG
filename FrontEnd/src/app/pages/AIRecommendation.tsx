@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { apiFetch } from "../lib/api";
 import { StepProgressBar } from "../components/qms/StepProgressBar";
@@ -50,6 +50,13 @@ import type {
 import { useWorkflowStore } from "../store/workflowStore";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+function parseRationaleLines(text: string): string[] {
+  return text
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
 
 function getClassificationBadgeClass(type: string): string {
   if (type === "Deviation")
@@ -110,104 +117,99 @@ export function AIRecommendation() {
       </div>
     );
   }
+  const rationaleLines = useMemo(
+    () => parseRationaleLines(editedRationale),
+    [editedRationale],
+  );
 
-  // ── Per-field change detection ────────────────────────────────────────────
   const classificationChanged = editedClassification !== parsed.classification;
-  const rationaleChanged =
-    editedRationale.trim() !== (parsed.rationale ?? []).join("\n").trim();
+  const rationaleChanged = useMemo(
+    () => editedRationale.trim() !== (parsed.rationale ?? []).join("\n").trim(),
+    [editedRationale, parsed.rationale],
+  );
 
   // ── Provenance builder ────────────────────────────────────────────────────
-
-  const buildClassificationProvenance = (
-    isOverride: boolean,
-  ): ClassificationProvenance => {
-    if (isOverride) {
-      const newRationale = editedRationale
-        .split("\n")
-        .map((s) => s.trim())
-        .filter(Boolean);
+  const buildClassificationProvenance = useCallback(
+    (isOverride: boolean): ClassificationProvenance => {
+      if (isOverride) {
+        return {
+          classification: markModified(
+            aiField(parsed.classification),
+            editedClassification,
+          ) as DataField<ClassificationType>,
+          rationale: markModified(aiField(parsed.rationale), rationaleLines),
+          confidence_score: parsed.confidence_score,
+        };
+      }
       return {
-        classification: markModified(
-          aiField(parsed.classification),
-          editedClassification,
-        ) as DataField<ClassificationType>,
-        rationale: markModified(aiField(parsed.rationale), newRationale),
+        classification: aiField(parsed.classification),
+        rationale: aiField(parsed.rationale),
         confidence_score: parsed.confidence_score,
       };
-    }
-    return {
-      classification: aiField(parsed.classification),
-      rationale: aiField(parsed.rationale),
-      confidence_score: parsed.confidence_score,
-    };
-  };
-
+    },
+    [parsed, editedClassification, rationaleLines],
+  );
   // ── API call + store update ───────────────────────────────────────────────
+  const runImpactAssessment = useCallback(
+    async (
+      approvedClassification: ClassificationParsed,
+      classificationProvenance: ClassificationProvenance,
+    ) => {
+      setAssessError(null);
+      setIsAssessing(true);
 
-  const runImpactAssessment = async (
-    approvedClassification: ClassificationParsed,
-    classificationProvenance: ClassificationProvenance,
-  ) => {
-    setAssessError(null);
-    setIsAssessing(true);
-
-    try {
-      const impactResult: ImpactAssessmentApiResponse = await apiFetch(
-        "/api/deviations/impact-assessment",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            query: result.query,
-            classification: approvedClassification,
-          }),
-        },
-      );
-
-      mergePipelineResult({
-        stages: {
-          ...result.stages,
-          classification: {
-            ...result.stages.classification!,
-            parsed: approvedClassification,
+      try {
+        const impactResult: ImpactAssessmentApiResponse = await apiFetch(
+          "/api/deviations/impact-assessment",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              query: result.query,
+              classification: approvedClassification,
+            }),
           },
-          impactAssessment: impactResult.stages.impactAssessment,
-        },
-        provenance: {
-          ...result.provenance,
-          classification: classificationProvenance,
-        },
-      });
+        );
 
-      navigate("/deviation/impact-assessment");
-    } catch (err) {
-      setAssessError(
-        err instanceof Error
-          ? err.message
-          : "Something went wrong running the impact assessment. Please try again.",
-      );
-    } finally {
-      setIsAssessing(false);
-    }
-  };
+        mergePipelineResult({
+          stages: {
+            ...result.stages,
+            classification: {
+              ...result.stages.classification!,
+              parsed: approvedClassification,
+            },
+            impactAssessment: impactResult.stages.impactAssessment,
+          },
+          provenance: {
+            ...result.provenance,
+            classification: classificationProvenance,
+          },
+        });
 
-  const handleAccept = () => {
+        navigate("/deviation/impact-assessment");
+      } catch (err) {
+        setAssessError(
+          err instanceof Error
+            ? err.message
+            : "Something went wrong running the impact assessment. Please try again.",
+        );
+      } finally {
+        setIsAssessing(false);
+      }
+    },
+    [result, mergePipelineResult, navigate],
+  );
+
+  const handleAccept = useCallback(() => {
     const isOverride = overrideConfirmed;
-    const newRationale = editedRationale
-      .split("\n")
-      .map((s) => s.trim())
-      .filter(Boolean);
-
     const approvedClassification: ClassificationParsed = isOverride
       ? {
           ...parsed,
           classification: editedClassification,
-          rationale: newRationale,
+          rationale: rationaleLines,
         }
       : parsed;
-
     const classificationProvenance = buildClassificationProvenance(isOverride);
-
     const existingImpactAssessment = result.stages?.impactAssessment;
     if (!isOverride && existingImpactAssessment?.parsed) {
       mergePipelineResult({
@@ -229,25 +231,35 @@ export function AIRecommendation() {
     }
 
     void runImpactAssessment(approvedClassification, classificationProvenance);
-  };
+  }, [
+    overrideConfirmed,
+    parsed,
+    editedClassification,
+    rationaleLines,
+    buildClassificationProvenance,
+    result,
+    mergePipelineResult,
+    navigate,
+    runImpactAssessment,
+  ]);
 
-  const handleOverrideClick = () => setIsOverrideEditing(true);
-  const handleSaveChanges = () => setShowOverrideDialog(true);
+  const handleOverrideClick = useCallback(() => setIsOverrideEditing(true), []);
+  const handleSaveChanges = useCallback(() => setShowOverrideDialog(true), []);
 
-  const handleOverrideConfirm = () => {
+  const handleOverrideConfirm = useCallback(() => {
     if (!overrideJustification.trim()) return;
     setShowOverrideDialog(false);
     setIsOverrideEditing(false);
     setOverrideConfirmed(true);
     setOverrideJustification("");
-  };
+  }, [overrideJustification]);
 
-  const handleReject = () => {
+  const handleReject = useCallback(() => {
     if (rejectJustification.trim()) {
       setShowRejectDialog(false);
       navigate("/deviation");
     }
-  };
+  }, [rejectJustification, navigate]);
 
   const currentClassification = overrideConfirmed
     ? editedClassification
@@ -411,19 +423,15 @@ export function AIRecommendation() {
                   </div>
                 ) : (
                   <ul className="space-y-2">
-                    {editedRationale
-                      .split("\n")
-                      .map((s) => s.trim())
-                      .filter(Boolean)
-                      .map((point, i) => (
-                        <li
-                          key={i}
-                          className="flex items-start gap-2 text-sm text-muted-foreground"
-                        >
-                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
-                          {point}
-                        </li>
-                      ))}
+                    {rationaleLines.map((point, i) => (
+                      <li
+                        key={i}
+                        className="flex items-start gap-2 text-sm text-muted-foreground"
+                      >
+                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
+                        {point}
+                      </li>
+                    ))}
                   </ul>
                 )}
               </div>
@@ -541,7 +549,6 @@ export function AIRecommendation() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
         {/* Reject dialog */}
         <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
           <DialogContent>
@@ -570,21 +577,18 @@ export function AIRecommendation() {
             <DialogFooter>
               <Button
                 variant="outline"
-                onClick={() => setShowRejectDialog(false)}
-              >
+                onClick={() => setShowRejectDialog(false)}>
                 Cancel
               </Button>
               <Button
                 onClick={handleReject}
                 disabled={!rejectJustification.trim()}
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
+                className="bg-red-600 hover:bg-red-700 text-white">
                 Confirm Rejection
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
         <div className="fixed top-16 right-0 bottom-0 z-40">
           <AIAssistant
             isOpen={chatOpen}

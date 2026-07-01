@@ -672,10 +672,12 @@ export function DbLog() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCases.map((c) => (
+                  {filteredCases.map((c, index) => (
                     <TableRow
                       key={c.id}
-                      className="hover:bg-muted/50 transition-colors"
+                      className={`hover:bg-muted/50 transition-colors ${
+                        index % 2 === 1 ? "bg-muted/30 dark:bg-muted/20" : "bg-white dark:bg-transparent"
+                      }`}
                     >
                       <TableCell className="font-mono text-sm text-muted-foreground">
                         #{String(c.id).padStart(4, "0")}

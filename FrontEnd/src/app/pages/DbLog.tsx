@@ -42,7 +42,7 @@ import {
   SelectValue,
 } from "../components/ui/select";
 
-// ── Types ─────────────────────────────────────────────────────────────────
+// ── Type ─────────────────────────────────────────────────────────────────
 
 interface ImpactParameter {
   severity: "None" | "Minor" | "Major" | "Critical";

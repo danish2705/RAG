@@ -29,9 +29,8 @@ export async function loadPdfFromDisk(filePath: string): Promise<string> {
 }
 
 /**
- * Drop-in replacement for loadKnowledgeBase() in s3Loader.ts.
- * Same signature (folder/prefix + docType), same return shape (SourceDoc[]),
- * so knowledgeBase.ts doesn't need to change how it calls this.
+ * Loads all PDFs from a subfolder of the local kb-data directory,
+ * tagging each document with the given docType ('deviation' | 'change_control').
  */
 export async function loadKnowledgeBase(
   folder: string,

@@ -13,15 +13,6 @@ dotenv.config({ path: path.resolve(__dirname, "../.env") });
 //   return val;
 // }
 
-export interface AwsConfig {
-  region: string;
-  accessKeyId: string | undefined;
-  secretAccessKey: string | undefined;
-  bucket: string | undefined;
-  deviationPrefix: string;
-  changeControlPrefix: string;
-}
-
 export interface LlmConfig {
   apiUrl: string | undefined;
   apiKey: string | undefined;
@@ -37,8 +28,9 @@ export interface DatabaseConfig {
 }
 
 export interface KbConfig {
-  source: "local" | "s3";
   localPath: string;
+  deviationFolder: string;
+  changeControlFolder: string;
 }
 
 export interface GateConfig {
@@ -46,7 +38,6 @@ export interface GateConfig {
 }
 
 export interface Config {
-  aws: AwsConfig;
   llm: LlmConfig;
   embeddings: EmbeddingsConfig;
   kb: KbConfig;
@@ -59,14 +50,6 @@ export const config: Config = {
   databaseUrl: {
     url: process.env.DATABASE_URL!,
   },
-  aws: {
-    region: "us-east-1",
-    accessKeyId: process.env.AWS_ACCESS_KEY,
-    secretAccessKey: process.env.AWS_SECRET_KEY,
-    bucket: process.env.BUCKET_NAME,
-    deviationPrefix: process.env.DEVIATION_PREFIX || "deviation/",
-    changeControlPrefix: process.env.CHANGE_CONTROL_PREFIX || "changecontrol/",
-  },
   llm: {
     apiUrl: process.env.API_URL,
     apiKey: process.env.API_KEY,
@@ -76,10 +59,12 @@ export const config: Config = {
     model: process.env.EMBEDDING_MODEL || "all-MiniLM-L6-v2",
   },
   kb: {
-    // "local" reads PDFs from disk (kb-data/), "s3" reads from the S3 bucket.
-    source: (process.env.KB_SOURCE as "local" | "s3") || "local",
+    // Reads PDFs from disk. Folder layout: <localPath>/deviation/*.pdf
+    // and <localPath>/changecontrol/*.pdf
     localPath:
       process.env.KB_LOCAL_PATH || path.resolve(__dirname, "../kb-data"),
+    deviationFolder: process.env.DEVIATION_FOLDER || "deviation",
+    changeControlFolder: process.env.CHANGE_CONTROL_FOLDER || "changecontrol",
   },
   gate: {
     // Feature 2: confidence threshold used by the gate between pipeline stages.
@@ -87,4 +72,3 @@ export const config: Config = {
   },
   port: Number(process.env.PORT ?? 3000),
 };
-

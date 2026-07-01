@@ -13,6 +13,25 @@ export interface VectorIndex {
   source: string;
 }
 
+// Explicit allowlist mapping source -> table name. Table names can't be
+// parameterized with pg placeholders, so we never interpolate `source`
+// directly into SQL — only this pre-validated constant ever goes in.
+const TABLE_BY_SOURCE: Record<string, string> = {
+  deviation: "deviation_chunks",
+  change_control: "change_control_chunks",
+};
+
+function tableFor(source: string): string {
+  const table = TABLE_BY_SOURCE[source];
+  if (!table) {
+    throw new Error(
+      `Unknown source "${source}" - no chunks table mapped for it. ` +
+        `Known sources: ${Object.keys(TABLE_BY_SOURCE).join(", ")}`,
+    );
+  }
+  return table;
+}
+
 function hashText(text: string): string {
   return createHash("sha256").update(text).digest("hex");
 }
@@ -22,7 +41,6 @@ function toSqlVector(vector: number[]): string {
 }
 
 interface PendingRow {
-  source: string;
   docKey: string;
   chunkIndex: number;
   hash: string;
@@ -31,11 +49,14 @@ interface PendingRow {
 
 /**
  * Syncs a set of chunks for one source ('deviation' | 'change_control')
- * into Postgres.
+ * into its own dedicated table (deviation_chunks / change_control_chunks).
  *
- * Optimized version: instead of one SELECT + one INSERT per chunk, this
- * 1) fetches all existing hashes for the source in a single query,
- * 2) compares in memory using a Set/Map (no per-chunk DB round-trip),
+ * Because each source now has its own table, doc_key + chunk_index is a
+ * genuinely unique key within that table - no more risk of one source's
+ * upsert silently overwriting another source's row.
+ *
+ * 1) fetches all existing hashes for the source's table in a single query,
+ * 2) compares in memory using a Map (no per-chunk DB round-trip),
  * 3) embeds every changed/new chunk in one batched embedTexts() call,
  * 4) writes all changed/new rows in a single multi-row upsert,
  * 5) deletes stale rows (no longer present in source docs) in one query.
@@ -46,6 +67,7 @@ export async function buildIndex(chunks: DocChunk[]): Promise<VectorIndex> {
   }
 
   const source = chunks[0].type; // 'deviation' | 'change_control'
+  const table = tableFor(source);
 
   // group chunks by doc_key (= S3 key / file path), preserving order so we
   // can assign a stable chunk_index per document.
@@ -56,10 +78,9 @@ export async function buildIndex(chunks: DocChunk[]): Promise<VectorIndex> {
     byDoc.set(c.source, arr);
   }
 
-  // 1) Fetch all existing hashes for this source in one query.
+  // 1) Fetch all existing hashes for this source's table in one query.
   const existingResult = await pool.query(
-    `SELECT doc_key, chunk_index, content_hash FROM chunks WHERE source = $1`,
-    [source],
+    `SELECT doc_key, chunk_index, content_hash FROM ${table}`,
   );
   const existingHashes = new Map<string, string>(); // "docKey::index" -> hash
   for (const row of existingResult.rows) {
@@ -81,7 +102,7 @@ export async function buildIndex(chunks: DocChunk[]): Promise<VectorIndex> {
         continue; // unchanged, skip
       }
 
-      pending.push({ source, docKey, chunkIndex: i, hash, text: chunk.text });
+      pending.push({ docKey, chunkIndex: i, hash, text: chunk.text });
     }
   }
 
@@ -93,12 +114,11 @@ export async function buildIndex(chunks: DocChunk[]): Promise<VectorIndex> {
     const valuesSql: string[] = [];
     const params: unknown[] = [];
     pending.forEach((row, idx) => {
-      const base = idx * 6;
+      const base = idx * 5;
       valuesSql.push(
-        `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6})`,
+        `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5})`,
       );
       params.push(
-        row.source,
         row.docKey,
         row.chunkIndex,
         row.hash,
@@ -108,7 +128,7 @@ export async function buildIndex(chunks: DocChunk[]): Promise<VectorIndex> {
     });
 
     await pool.query(
-      `INSERT INTO chunks (source, doc_key, chunk_index, content_hash, text, embedding)
+      `INSERT INTO ${table} (doc_key, chunk_index, content_hash, text, embedding)
        VALUES ${valuesSql.join(", ")}
        ON CONFLICT (doc_key, chunk_index)
        DO UPDATE SET content_hash = EXCLUDED.content_hash,
@@ -126,12 +146,11 @@ export async function buildIndex(chunks: DocChunk[]): Promise<VectorIndex> {
     const staleIndexes = staleKeys.map((k) => Number(k.split("::")[1]));
 
     await pool.query(
-      `DELETE FROM chunks
-       WHERE source = $1
-         AND (doc_key, chunk_index) IN (
-           SELECT * FROM UNNEST($2::text[], $3::int[])
-         )`,
-      [source, staleDocKeys, staleIndexes],
+      `DELETE FROM ${table}
+       WHERE (doc_key, chunk_index) IN (
+         SELECT * FROM UNNEST($1::text[], $2::int[])
+       )`,
+      [staleDocKeys, staleIndexes],
     );
   }
 
@@ -144,19 +163,23 @@ export async function retrieve(
   index: VectorIndex,
   topK = 3,
 ): Promise<RetrievedChunk[]> {
+  const table = tableFor(index.source);
   const [queryVector] = await embedTexts([query]);
 
   const result = await pool.query(
-    `SELECT text, source, doc_key
-     FROM chunks
-     WHERE source = $1
-     ORDER BY embedding <=> $2
-     LIMIT $3`,
-    [index.source, toSqlVector(queryVector), topK],
+    `SELECT text, doc_key
+     FROM ${table}
+     ORDER BY embedding <=> $1
+     LIMIT $2`,
+    [toSqlVector(queryVector), topK],
   );
 
   return result.rows.map((row) => ({
     text: row.text,
-    meta: { text: row.text, source: row.doc_key, type: row.source } as DocChunk,
+    meta: {
+      text: row.text,
+      source: row.doc_key,
+      type: index.source,
+    } as DocChunk,
   }));
 }

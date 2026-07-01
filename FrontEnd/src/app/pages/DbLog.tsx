@@ -108,6 +108,12 @@ function getClassificationBadgeClass(type: string): string {
   return "bg-muted text-muted-foreground border-border";
 }
 
+function getAlternatingRowClass(index: number): string {
+  return index % 2 === 1
+    ? "bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-900/30"
+    : "bg-white hover:bg-blue-50 dark:bg-gray-900/20 dark:hover:bg-blue-900/20";
+}
+
 function getSeverityBadgeClass(severity: string): string {
   switch (severity.toLowerCase()) {
     case "critical":
@@ -675,9 +681,7 @@ export function DbLog() {
                   {filteredCases.map((c, index) => (
                     <TableRow
                       key={c.id}
-                      className={`hover:bg-muted/50 transition-colors ${
-                        index % 2 === 1 ? "bg-muted/30 dark:bg-muted/20" : "bg-white dark:bg-transparent"
-                      }`}
+                      className={`transition-colors ${getAlternatingRowClass(index)}`}
                     >
                       <TableCell className="font-mono text-sm text-muted-foreground">
                         #{String(c.id).padStart(4, "0")}

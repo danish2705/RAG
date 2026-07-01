@@ -1,5 +1,4 @@
-import { loadKnowledgeBase as loadFromS3 } from "./s3Loader.js";
-import { loadKnowledgeBase as loadFromDisk } from "./localLoader.js";
+import { loadKnowledgeBase } from "./localLoader.js";
 import { prepareChunks } from "./chunker.js";
 import {
   buildIndex,
@@ -25,21 +24,17 @@ export interface RetrieveContextResult {
 }
 
 /**
- * Loads both knowledge bases from S3 and builds their vector indexes.
- * Equivalent to the notebook's top-level cells that call load_kb(),
- * prepare_chunks(), and build_index() for "deviation/" and "changecontrol/".
+ * Loads both knowledge bases from local disk (kb-data/deviation and
+ * kb-data/changecontrol) and builds their vector indexes.
  *
  * Call this once at startup (server.ts / cli.ts both do this).
  */
 export function initKnowledgeBase(): Promise<void> {
   if (!initPromise) {
     initPromise = (async () => {
-      const loadKnowledgeBase =
-        config.kb.source === "s3" ? loadFromS3 : loadFromDisk;
-
       const [deviationDocs, ccDocs] = await Promise.all([
-        loadKnowledgeBase(config.aws.deviationPrefix, "deviation"),
-        loadKnowledgeBase(config.aws.changeControlPrefix, "change_control"),
+        loadKnowledgeBase(config.kb.deviationFolder, "deviation"),
+        loadKnowledgeBase(config.kb.changeControlFolder, "change_control"),
       ]);
 
       devIndex = await buildIndex(prepareChunks(deviationDocs));

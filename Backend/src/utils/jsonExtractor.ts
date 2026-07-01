@@ -1,13 +1,4 @@
-/**
- * Extracts and parses the first {...} JSON object out of raw LLM text.
- *
- * The notebook's classify_query() did this with a regex + bare except that
- * silently fell back to {"type": "deviation"} on any failure — meaning a
- * malformed or empty LLM response was invisibly treated as a successful
- * classification. Here we throw instead, so the caller (and the gate) can
- * see the failure and route the case to a human rather than guessing.
- */
-export function gitextractJson(rawText: string): unknown {
+export function extractJson(rawText: string): unknown {
   if (typeof rawText !== "string" || rawText.trim().length === 0) {
     throw new Error("Empty response from LLM");
   }

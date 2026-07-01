@@ -37,15 +37,18 @@ Query: ${query}
   try {
     return extractJson(response) as QueryRouting;
   } catch {
-    // Unlike the notebook (which silently returned {"type": "deviation"}),
-    // we fall back to "hybrid" so retrieval pulls from both knowledge bases
-    // rather than guessing a single one when routing itself is uncertain.
-    return { type: "hybrid", confidence: "low", reason: "routing_parse_failed" };
+    //forged data to by pass the error
+    return {
+      type: "hybrid",
+      confidence: "low",
+      reason: "routing_parse_failed",
+    };
   }
 }
 
-/** Equivalent to route(query_type) in the notebook. */
-export function routeToSources(queryType: string): Array<"deviation" | "change_control"> {
+export function routeToSources(
+  queryType: string,
+): Array<"deviation" | "change_control"> {
   if (queryType === "deviation") return ["deviation"];
   if (queryType === "change_control") return ["change_control"];
   return ["deviation", "change_control"];

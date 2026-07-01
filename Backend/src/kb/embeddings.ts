@@ -1,35 +1,59 @@
-import { pipeline, type FeatureExtractionPipeline } from "@xenova/transformers";
 import { config } from "../config.js";
-// process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
-let extractorPromise: Promise<FeatureExtractionPipeline> | undefined;
+// Batch size per HF API call. Keeps request payloads reasonable and avoids
+// hitting any single-request size/time limits on the provider side.
+const BATCH_SIZE = 32;
 
-// Lazily loads the model once (same model as the notebook's)
-// SentenceTransformer('all-MiniLM-L6-v2')) and reuses it for every call.
-function getExtractor(): Promise<FeatureExtractionPipeline> {
-  if (!extractorPromise) {
-    extractorPromise = pipeline("feature-extraction", config.embeddings.model);
+/**
+ * Calls Hugging Face's router feature-extraction endpoint to embed a batch
+ * of texts in one HTTP request. Replaces the local @xenova/transformers
+ * model - no ONNX runtime, no local CPU inference, nothing to download.
+ */
+async function embedBatch(texts: string[]): Promise<number[][]> {
+  if (!config.embeddings.apiKey) {
+    throw new Error(
+      "API_KEY is not set - required for the embeddings API call (reuses the same HF token as the LLM).",
+    );
   }
-  return extractorPromise;
+
+  const response = await fetch(config.embeddings.apiUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.embeddings.apiKey}`,
+      "Content-Type": "application/json",
+    },
+    // { inputs: [...] } with pooling handled by the underlying model
+    // (sentence-transformers models already return one pooled vector per input).
+    body: JSON.stringify({ inputs: texts, options: { wait_for_model: true } }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`Embeddings API error ${response.status}: ${body}`);
+  }
+
+  const data = (await response.json()) as unknown;
+
+  if (!Array.isArray(data) || !Array.isArray(data[0])) {
+    throw new Error(
+      `Unexpected embeddings API response shape: ${JSON.stringify(data).slice(0, 200)}`,
+    );
+  }
+
+  return data as number[][];
 }
 
 /**
- * Equivalent to model.encode(texts) in the notebook.
- * Returns an array of plain-number arrays (one embedding vector per input string).
+ * Equivalent to model.encode(texts) in the notebook, now backed by the HF
+ * router API instead of a local model. Returns one embedding vector per
+ * input string, same order as the input.
  */
-const BATCH_SIZE = 16;
-
 export async function embedTexts(texts: string[]): Promise<number[][]> {
-  const extractor = await getExtractor();
   const vectors: number[][] = [];
 
   for (let start = 0; start < texts.length; start += BATCH_SIZE) {
     const batch = texts.slice(start, start + BATCH_SIZE);
-    const output = await extractor(batch, { pooling: "mean", normalize: true });
-
-    // With a batch input, output.dims = [batchSize, embeddingDim].
-    // output.tolist() gives back one array of numbers per input text.
-    const batchVectors = output.tolist() as number[][];
+    const batchVectors = await embedBatch(batch);
     vectors.push(...batchVectors);
 
     console.log(

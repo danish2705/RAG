@@ -21,6 +21,8 @@ export interface LlmConfig {
 
 export interface EmbeddingsConfig {
   model: string;
+  apiUrl: string;
+  apiKey: string | undefined;
 }
 
 export interface DatabaseConfig {
@@ -56,7 +58,15 @@ export const config: Config = {
     model: process.env.LLM_MODEL || "meta-llama/Llama-3.1-8B-Instruct",
   },
   embeddings: {
-    model: process.env.EMBEDDING_MODEL || "all-MiniLM-L6-v2",
+    model:
+      process.env.EMBEDDING_MODEL || "sentence-transformers/all-MiniLM-L6-v2",
+    apiUrl:
+      process.env.EMBEDDING_API_URL ||
+      `https://router.huggingface.co/hf-inference/models/${
+        process.env.EMBEDDING_MODEL || "sentence-transformers/all-MiniLM-L6-v2"
+      }/pipeline/feature-extraction`,
+    // Reuses the same HF token already used for chat completions (API_KEY).
+    apiKey: process.env.API_KEY,
   },
   kb: {
     // Reads PDFs from disk. Folder layout: <localPath>/deviation/*.pdf

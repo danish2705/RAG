@@ -7,7 +7,7 @@
  * classification. Here we throw instead, so the caller (and the gate) can
  * see the failure and route the case to a human rather than guessing.
  */
-export function extractJson(rawText: string): unknown {
+export function gitextractJson(rawText: string): unknown {
   if (typeof rawText !== "string" || rawText.trim().length === 0) {
     throw new Error("Empty response from LLM");
   }

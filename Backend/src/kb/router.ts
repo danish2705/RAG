@@ -9,7 +9,6 @@ export interface QueryRouting {
   reason: string;
 }
 
-
 const ROUTER_SYSTEM_PROMPT = `
 You are a routing assistant. Decide which knowledge base(s) a query needs.
 Return JSON only.

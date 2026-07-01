@@ -21,7 +21,7 @@ export async function listLocalPdfFiles(folder: string): Promise<string[]> {
     .map((f) => path.join(dirPath, f));
 }
 
-/** Equivalent to loadPdfFromS3(key), but reads from local disk. */
+/**readsfrom local disk. */
 export async function loadPdfFromDisk(filePath: string): Promise<string> {
   const buffer = await fs.readFile(filePath);
   const { text } = await pdfParse(buffer);

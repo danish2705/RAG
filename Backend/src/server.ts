@@ -32,9 +32,7 @@ interface AnalyzeRequestBody {
   query?: unknown;
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// STAGE 1: Classification / routing ONLY.
-// ─────────────────────────────────────────────────────────────────────────
+// Classification / routing ONLY.
 app.post(
   "/api/inputQuery",
   requireReady,

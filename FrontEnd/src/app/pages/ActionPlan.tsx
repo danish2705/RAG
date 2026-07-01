@@ -160,7 +160,7 @@ export function ActionPlan() {
           <Button
             onClick={() => navigate('/change-control/cross-trigger')}
             className="bg-blue-600 hover:bg-blue-700"
-          >
+            >
             Continue
           </Button>
         </div>

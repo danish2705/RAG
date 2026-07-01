@@ -12,7 +12,6 @@ import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
-import { AlertBanner } from "../components/qms/AlertBanner";
 import { AlertTriangle, Loader2, Save, Sparkles } from "lucide-react";
 import {
   Dialog,
@@ -28,12 +27,8 @@ import {
   type RCAProvenance,
 } from "../types/dataProvenance";
 import { AIAssistant } from "../components/chat/ai-assistant";
-
-// ── Shared types ──────────────────────────────────────────────────────────────
 import type { RCAResult, CAPAApiResponse } from "../types/pipeline";
 import { useWorkflowStore } from "../store/workflowStore";
-
-// ── Component ─────────────────────────────────────────────────────────────────
 
 export function RootCause() {
   const navigate = useNavigate();
@@ -83,7 +78,6 @@ export function RootCause() {
   const [isGeneratingCAPA, setIsGeneratingCAPA] = useState(false);
   const [capaError, setCapaError] = useState<string | null>(null);
 
-  // ── Guard ─────────────────────────────────────────────────────────────────
   if (!rcaParsed || !result) {
     return (
       <div className="p-6 w-full">
@@ -104,8 +98,6 @@ export function RootCause() {
       </div>
     );
   }
-
-  // ── Provenance builder ────────────────────────────────────────────────────
 
   const buildRCAProvenance = (confirmed: boolean): RCAProvenance => {
     const curFactors = contributingFactors
@@ -145,8 +137,6 @@ export function RootCause() {
       confidence_score: rcaParsed.confidence_score,
     };
   };
-
-  // ── Helpers ───────────────────────────────────────────────────────────────
 
   const buildApprovedRCA = (): RCAResult => ({
     ...rcaParsed,
@@ -271,7 +261,6 @@ export function RootCause() {
     );
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="relative h-full w-full">
       <div

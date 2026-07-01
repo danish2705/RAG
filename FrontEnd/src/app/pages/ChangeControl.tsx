@@ -97,7 +97,7 @@ export function ChangeControl() {
             </CardContent>
           </Card>
 
-          {/* Impact Scope */}
+          {/* Impacts Scope */}
           <Card>
             <CardHeader>
               <CardTitle>Impact Scope</CardTitle>

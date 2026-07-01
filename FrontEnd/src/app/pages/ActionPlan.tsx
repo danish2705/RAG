@@ -5,17 +5,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { actionPlanData } from '../lib/mockData';
-
 export function ActionPlan() {
   const navigate = useNavigate();
-
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-900">Action Plan</h1>
         <p className="text-sm text-gray-500 mt-1">Define and assign required actions</p>
       </div>
-
       <div className="space-y-6">
         <Card>
           <CardHeader>

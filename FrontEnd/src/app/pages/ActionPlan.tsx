@@ -110,7 +110,6 @@ export function ActionPlan() {
         <h1 className="text-2xl font-semibold text-foreground">Action Plan</h1>
         <p className="text-sm text-muted-foreground mt-1">Define and assign required actions</p>
       </div>
-
       <div className="space-y-6">
         <Card>
           <CardHeader>

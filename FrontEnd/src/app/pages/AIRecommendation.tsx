@@ -42,7 +42,6 @@ import {
 } from "../types/dataProvenance";
 import { AIAssistant } from "../components/chat/ai-assistant";
 
-// ── Shared types (no more local re-definitions) ───────────────────────────────
 import type {
   ClassificationParsed,
   ClassificationType,
@@ -68,7 +67,6 @@ export function AIRecommendation() {
   const navigate = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
 
-  // ── Read from store instead of location.state ─────────────────────────────
   const result = useWorkflowStore((s) => s.pipelineResult);
   const mergePipelineResult = useWorkflowStore((s) => s.mergePipelineResult);
 
@@ -91,7 +89,7 @@ export function AIRecommendation() {
   const [assessError, setAssessError] = useState<string | null>(null);
   const [overrideConfirmed, setOverrideConfirmed] = useState(false);
 
-  // ── Guard: redirect if store is empty (e.g. user refreshed the page) ──────
+  // ── Guard ─────────────────────────────────────────────────────────────────
   if (!result || !parsed) {
     return (
       <div className="p-6 w-full">
@@ -112,6 +110,11 @@ export function AIRecommendation() {
       </div>
     );
   }
+
+  // ── Per-field change detection ────────────────────────────────────────────
+  const classificationChanged = editedClassification !== parsed.classification;
+  const rationaleChanged =
+    editedRationale.trim() !== (parsed.rationale ?? []).join("\n").trim();
 
   // ── Provenance builder ────────────────────────────────────────────────────
 
@@ -161,7 +164,6 @@ export function AIRecommendation() {
         },
       );
 
-      // ── Merge new stage data into the store ──────────────────────────────
       mergePipelineResult({
         stages: {
           ...result.stages,
@@ -264,13 +266,27 @@ export function AIRecommendation() {
         />
         <div className="mb-6 flex items-center gap-3 justify-end">
           {isOverrideEditing && (
-            <Badge className="ml-auto bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800 text-sm px-3 py-1">
-              Editing
-            </Badge>
+            <>
+              <Badge className="ml-auto bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800 text-sm px-3 py-1">
+                Editing
+              </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-border text-muted-foreground hover:text-foreground"
+                onClick={() => {
+                  setIsOverrideEditing(false);
+                  setEditedClassification(parsed.classification);
+                  setEditedRationale((parsed.rationale ?? []).join("\n"));
+                }}
+              >
+                Cancel Override
+              </Button>
+            </>
           )}
           {overrideConfirmed && !isOverrideEditing && (
             <Badge className="ml-auto bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800 text-sm px-3 py-1">
-              Modified
+                Overriden
             </Badge>
           )}
         </div>
@@ -318,19 +334,7 @@ export function AIRecommendation() {
                     >
                       {currentClassification}
                     </Badge>
-                    {overrideConfirmed &&
-                      parsed.classification !== editedClassification && (
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <span className="line-through text-red-500/70">
-                            {parsed.classification}
-                          </span>
-                          <span className="text-muted-foreground/50">→</span>
-                          <span className="text-green-700 dark:text-green-400 font-medium">
-                            {editedClassification}
-                          </span>
-                        </span>
-                      )}
-                    {overrideConfirmed ? (
+                    {overrideConfirmed && classificationChanged ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border select-none bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800">
                         <Sparkles className="h-3 w-3" />
                         Modified
@@ -386,7 +390,7 @@ export function AIRecommendation() {
                   <p className="text-sm font-medium text-foreground">
                     AI Rationale
                   </p>
-                  {!isOverrideEditing && overrideConfirmed ? (
+                  {!isOverrideEditing && overrideConfirmed && rationaleChanged ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border select-none bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800">
                       <Sparkles className="h-3 w-3" />
                       Modified
@@ -538,7 +542,7 @@ export function AIRecommendation() {
           </DialogContent>
         </Dialog>
 
-        {/* Reject dialogs */}
+        {/* Reject dialog */}
         <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
           <DialogContent>
             <DialogHeader>

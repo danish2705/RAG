@@ -39,15 +39,20 @@ function useDarkMode() {
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const isDark = useDarkMode();
 
   // Theme tokens
-  const bg        = isDark ? "#0f172a" : "#ffffff";
-  const border    = isDark ? "#1e293b" : "#e2e8f0";
+  const bg        = isDark ? "#000000" : "#ffffff";
+  const border    = isDark ? "#1e232a" : "#e2e8f0";
   const textMain  = isDark ? "#e2e8f0" : "#1e293b";
   const textMuted = isDark ? "#94a3b8" : "#475569";
   const hoverBg   = isDark ? "#1e293b" : "#eff6ff";
   const hoverText = isDark ? "#e2e8f0" : "#2563eb";
+
+  // Tooltip tokens
+  const tooltipBg     = isDark ? "#1e232a" : "#ffffff";
+  const tooltipText   = "#2563eb";
 
   return (
     <aside
@@ -58,7 +63,7 @@ export function Sidebar() {
         color: textMain,
         borderRight: `1px solid ${border}`,
       }}
-      className="flex flex-col shrink-0 overflow-hidden"
+      className="flex flex-col shrink-0"
     >
       {/* Header / toggle */}
       <div
@@ -71,9 +76,9 @@ export function Sidebar() {
         >
           <div
             style={{ backgroundColor: "#2563eb", borderRadius: "6px" }}
-            className="h-8 w-8 flex items-center justify-center shrink-0"
+            className="h-10 w-12 flex items-center justify-center shrink-0"
           >
-            <span className="font-bold text-white">D</span>
+            <span className="font-bold text-white">D&C</span>
           </div>
           {!collapsed && (
             <span
@@ -90,11 +95,10 @@ export function Sidebar() {
       <nav className="flex-1 px-3 py-4">
         <ul className="space-y-1">
           {navigation.map((item) => (
-            <li key={item.name}>
+            <li key={item.name} style={{ position: "relative" }}>
               <NavLink
                 to={item.href}
                 end={item.href === "/"}
-                title={collapsed ? item.name : undefined}
                 style={({ isActive }) => ({
                   display: "flex",
                   alignItems: "center",
@@ -115,6 +119,7 @@ export function Sidebar() {
                     el.style.backgroundColor = hoverBg;
                     el.style.color = hoverText;
                   }
+                  setHoveredItem(item.name);
                 }}
                 onMouseLeave={(e) => {
                   const el = e.currentTarget;
@@ -123,13 +128,62 @@ export function Sidebar() {
                     el.style.backgroundColor = "transparent";
                     el.style.color = textMuted;
                   }
+                  setHoveredItem(null);
                 }}
               >
-                <item.icon className="h-5 w-5 shrink-0" />
+                <item.icon
+                  className="h-5 w-5 shrink-0"
+                  style={{
+                    transform: hoveredItem === item.name ? "scale(1.2)" : "scale(1)",
+                    transition: "transform 150ms ease",
+                  }}
+                />
                 {!collapsed && (
-                  <span className="whitespace-nowrap">{item.name}</span>
+                  <span
+                    className="whitespace-nowrap"
+                    style={{
+                      display: "inline-block",
+                      transform: hoveredItem === item.name ? "scale(1.1)" : "scale(1)",
+                      transformOrigin: "left center",
+                      transition: "transform 150ms ease",
+                    }}
+                  >
+                    {item.name}
+                  </span>
                 )}
               </NavLink>
+
+              {/* Custom animated tooltip (collapsed mode only) */}
+              {collapsed && (
+                <span
+                  style={{
+                    position: "absolute",
+                    left: "calc(100% + 0.75rem)",
+                    top: "50%",
+                    transform:
+                      hoveredItem === item.name
+                        ? "translateY(-50%) scale(1)"
+                        : "translateY(-50%) scale(0.8)",
+                    transformOrigin: "left center",
+                    opacity: hoveredItem === item.name ? 1 : 0,
+                    visibility: hoveredItem === item.name ? "visible" : "hidden",
+                    transition: "transform 150ms ease, opacity 150ms ease, visibility 150ms",
+                    backgroundColor: tooltipBg,
+                    color: tooltipText,
+                    borderRadius: "0.375rem",
+                    padding: "0.375rem 0.75rem",
+                    fontSize: "0.8125rem",
+                    fontWeight: 500,
+                    fontStyle: "italic",
+                    whiteSpace: "nowrap",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                    zIndex: 50,
+                    pointerEvents: "none",
+                  }}
+                >
+                  {item.name}
+                </span>
+              )}
             </li>
           ))}
         </ul>

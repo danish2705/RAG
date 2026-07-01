@@ -25,7 +25,6 @@ import {
   Loader2,
   Sparkles,
   User,
-  PenLine,
 } from "lucide-react";
 import type {
   DataField,
@@ -92,42 +91,15 @@ const PARAMETER_LABELS: Record<string, string> = {
 
 function ModifiedBadge<T>({
   field,
-  renderValue,
 }: {
   field?: DataField<T>;
   renderValue?: (v: T) => string;
 }) {
   if (!field || field.source !== "modified") return null;
 
-  const render =
-    renderValue ??
-    ((v: T) => {
-      if (Array.isArray(v)) return (v as unknown[]).join(", ");
-      return String(v);
-    });
-
   return (
-    <span className="inline-flex flex-col gap-0.5 w-fit">
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200 select-none w-fit">
-        <PenLine className="h-3 w-3" /> Modified
-      </span>
-      {field.originalValue !== undefined && (
-        <span className="text-xs text-muted-foreground flex flex-wrap items-center gap-1 mt-0.5">
-          <span
-            className="line-through text-red-500/70 max-w-xs"
-            title={render(field.originalValue)}
-          >
-            {render(field.originalValue)}
-          </span>
-          <span className="text-muted-foreground/40">→</span>
-          <span
-            className="text-green-700 font-medium max-w-xs"
-            title={render(field.value)}
-          >
-            {render(field.value)}
-          </span>
-        </span>
-      )}
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200 select-none w-fit">
+      <Sparkles className="h-3 w-3" /> Modified
     </span>
   );
 }
@@ -228,7 +200,6 @@ export function Summary() {
       });
 
       setIsSaved(true);
-      // Clear the workflow store after successful save, then redirect
       setTimeout(() => {
         clearWorkflow();
         navigate("/db-log");
@@ -308,7 +279,6 @@ export function Summary() {
         </Dialog>
 
         <div className="mb-6 flex items-center gap-3">
-          {/* Back button — no state needed, store already has the data */}
           <Button
             variant="ghost"
             size="sm"
@@ -378,7 +348,6 @@ export function Summary() {
                   </p>
                   <ModifiedBadge
                     field={provenance?.classification?.rationale}
-                    renderValue={(v) => v.join("; ")}
                   />
                 </div>
                 <ul className="space-y-2">
@@ -424,7 +393,7 @@ export function Summary() {
                       {(sevField?.source === "modified" ||
                         ratField?.source === "modified") && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200 select-none">
-                          <PenLine className="h-3 w-3" /> Modified
+                          <Sparkles className="h-3 w-3" /> Modified
                         </span>
                       )}
                     </CardTitle>
@@ -436,35 +405,11 @@ export function Summary() {
                       >
                         {entry.severity}
                       </div>
-                      {sevField?.source === "modified" &&
-                        sevField.originalValue !== undefined && (
-                          <span className="text-xs text-muted-foreground flex items-center gap-1">
-                            <span className="line-through text-red-500/70">
-                              {String(sevField.originalValue)}
-                            </span>
-                            <span className="text-muted-foreground/40">→</span>
-                            <span className="text-green-700 font-medium">
-                              {String(sevField.value)}
-                            </span>
-                          </span>
-                        )}
                     </div>
 
                     <p className="text-sm text-muted-foreground leading-relaxed">
                       {entry.description}
                     </p>
-
-                    {ratField?.source === "modified" &&
-                      ratField.originalValue !== undefined && (
-                        <div className="text-xs border-t pt-2 space-y-0.5">
-                          <p className="font-medium text-orange-600">
-                            Previous AI description:
-                          </p>
-                          <p className="line-through text-red-500/70 leading-relaxed">
-                            {String(ratField.originalValue)}
-                          </p>
-                        </div>
-                      )}
                   </CardContent>
                 </Card>
               );
@@ -527,7 +472,6 @@ export function Summary() {
             <CardContent className="space-y-2">
               <ModifiedBadge
                 field={provenance?.rca?.contributing_factors}
-                renderValue={(v) => v.join("; ")}
               />
               <ul className="space-y-2">
                 {rcaParsed.contributing_factors.map((point, i) => (
@@ -553,7 +497,6 @@ export function Summary() {
             <CardContent className="space-y-2">
               <ModifiedBadge
                 field={provenance?.rca?.evidence}
-                renderValue={(v) => v.join("; ")}
               />
               <ul className="space-y-2">
                 {rcaParsed.evidence.map((point, i) => (
@@ -604,7 +547,6 @@ export function Summary() {
             <CardContent className="space-y-2">
               <ModifiedBadge
                 field={provenance?.capa?.corrective_actions}
-                renderValue={(v) => v.join("; ")}
               />
               <ul className="space-y-2">
                 {capaParsed.corrective_actions.map((point, i) => (
@@ -629,7 +571,6 @@ export function Summary() {
             <CardContent className="space-y-2">
               <ModifiedBadge
                 field={provenance?.capa?.preventive_actions}
-                renderValue={(v) => v.join("; ")}
               />
               <ul className="space-y-2">
                 {capaParsed.preventive_actions.map((point, i) => (
@@ -681,38 +622,34 @@ export function Summary() {
           </Card>
 
           {/* ── Save ──────────────────────────────────────────────────────── */}
-          <Card>
-            <CardContent className="py-6">
-              {saveError && (
-                <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800 p-3 text-sm text-red-800 dark:text-red-400">
-                  <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="font-medium">Save failed</p>
-                    <p className="mt-1">{saveError}</p>
-                  </div>
+          <div className="pt-1 pb-1">
+            {saveError && (
+              <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800 p-3 text-sm text-red-800 dark:text-red-400">
+                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-medium">Save failed</p>
+                  <p className="mt-1">{saveError}</p>
                 </div>
-              )}
-              <div className="flex justify-end">
-                <Button
-                  onClick={handleSaveClick}
-                  disabled={isSaving || isSaved}
-                  className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
-                >
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    "Save"
-                  )}
-                </Button>
               </div>
-              <p className="text-xs text-muted-foreground mt-3 text-right">
-                This record will be logged in the DB log
-              </p>
-            </CardContent>
-          </Card>
+            )}
+
+            <div className="flex justify-end pr-10">
+              <Button
+                onClick={handleSaveClick}
+                disabled={isSaving || isSaved}
+                className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save"
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
 
         <div className="fixed top-16 right-0 bottom-0 z-40">

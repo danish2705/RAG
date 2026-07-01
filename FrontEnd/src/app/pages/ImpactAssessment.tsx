@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-import { AlertTriangle, Sparkles, Loader2, Save, PenLine } from "lucide-react";
+import { AlertTriangle, Sparkles, Loader2, Save } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -299,13 +299,33 @@ export function ImpactAssessment() {
 
         <div className="mb-6 flex items-center justify-end gap-3">
           {isOverrideEditing && (
-            <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
-              Editing
-            </Badge>
+            <>
+              <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
+                Editing
+              </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-border text-muted-foreground hover:text-foreground"
+                onClick={() => {
+                  setIsOverrideEditing(false);
+                  setAssessments((prev) =>
+                    prev.map((a) => ({
+                      ...a,
+                      severity: a.originalSeverity,
+                      description: a.originalDescription,
+                      severityChangedWithoutDescription: false,
+                    }))
+                  );
+                }}
+              >
+                Cancel Override
+              </Button>
+            </>
           )}
           {overrideConfirmed && !isOverrideEditing && (
             <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
-              <PenLine className="h-3 w-3 mr-1" /> Modified
+              Overriden
             </Badge>
           )}
         </div>
@@ -358,7 +378,7 @@ export function ImpactAssessment() {
                       {assessment.category}
                       {!isOverrideEditing && isAnyModified && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200 select-none">
-                          <PenLine className="h-3 w-3" /> Modified
+                          <Sparkles className="h-3 w-3" /> Modified
                         </span>
                       )}
                     </CardTitle>
@@ -432,35 +452,11 @@ export function ImpactAssessment() {
                           >
                             {assessment.severity}
                           </div>
-                          {isSeverityModified && (
-                            <span className="text-xs text-muted-foreground flex items-center gap-1">
-                              <span className="line-through text-red-500/70">
-                                {assessment.originalSeverity}
-                              </span>
-                              <span className="text-muted-foreground/40">
-                                →
-                              </span>
-                              <span className="text-green-700 font-medium">
-                                {assessment.severity}
-                              </span>
-                            </span>
-                          )}
                         </div>
 
                         <p className="text-sm text-muted-foreground leading-relaxed">
                           {assessment.description}
                         </p>
-
-                        {isDescriptionModified && (
-                          <div className="text-xs border-t pt-2 mt-1 space-y-0.5">
-                            <p className="font-medium text-orange-600">
-                              Previous AI description:
-                            </p>
-                            <p className="text-red-500/70 line-through leading-relaxed">
-                              {assessment.originalDescription}
-                            </p>
-                          </div>
-                        )}
                       </>
                     )}
                   </CardContent>

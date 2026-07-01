@@ -96,7 +96,7 @@ interface DeviationCase {
   created_at: string;
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────
+// ── Helper ───────────────────────────────────────────────────────────────
 
 function getClassificationBadgeClass(type: string): string {
   if (type === "Deviation")

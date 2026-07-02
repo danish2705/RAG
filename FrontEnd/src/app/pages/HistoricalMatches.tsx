@@ -5,7 +5,7 @@ import { AlertBanner } from '../components/qms/AlertBanner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Badge } from '../components/ui/badge';
 import { StatusBadge } from '../components/qms/StatusBadge';
-import { historicalMatches } from '../lib/mockData';
+import { historicalMatches } from '../mocks/mockData';
 import { AlertTriangle } from 'lucide-react';
 
 export function HistoricalMatches() {

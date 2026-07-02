@@ -7,7 +7,7 @@ import {
   statusColors,
   eventTypeCards,
   metricCards,
-} from "../lib/mockDashboard";
+} from "../mocks/mockDashboard";
 
 export function Dashboard() {
   const [aiOpen, setAiOpen] = useState(false);

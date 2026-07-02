@@ -34,7 +34,7 @@ export function RootCause() {
   const navigate = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
 
-  // ── Read from store ───────────────────────────────────────────────────────
+  // Read from store 
   const result = useWorkflowStore((s) => s.pipelineResult);
   const mergePipelineResult = useWorkflowStore((s) => s.mergePipelineResult);
 

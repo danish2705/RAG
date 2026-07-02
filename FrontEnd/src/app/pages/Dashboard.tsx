@@ -20,7 +20,7 @@ export function Dashboard() {
           aiOpen ? "mr-80" : ""
         }`}
       >
-        {/* Page title + New Quality Event button */}
+        {/* New Quality Event button */}
         <div className="flex justify-end">
           <button
             onClick={() => navigate("/deviation")}
@@ -63,7 +63,7 @@ export function Dashboard() {
           </div>
         </div>
 
-        {/* Operational + Quality Metrics */}
+        {/* Performance Metrics */}
         <div>
           <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2.5">
             Performance Metrics
@@ -140,7 +140,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* AI Assistant Panel — docked to the right edge of the viewport, below the header */}
+      {/* AI Assistant Panel*/}
       <div className="fixed top-16 right-0 bottom-0 z-40">
         <AIAssistantPanel isOpen={aiOpen} onToggle={() => setAiOpen(!aiOpen)} />
       </div>

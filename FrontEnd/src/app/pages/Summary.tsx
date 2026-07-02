@@ -26,20 +26,11 @@ import {
   Sparkles,
   User,
 } from "lucide-react";
-import type {
-  DataField,
-  ClassificationProvenance,
-  ImpactAssessmentProvenance,
-  RCAProvenance,
-  CAPAProvenance,
-} from "../types/dataProvenance";
+import type { DataField } from "../types/dataProvenance";
 import { AIAssistant } from "../components/chat/ai-assistant";
-
-// ── Shared types ──────────────────────────────────────────────────────────────
 import { useWorkflowStore } from "../store/workflowStore";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
+// Helpers
 function getClassificationBadgeClass(type: string): string {
   if (type === "Deviation")
     return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
@@ -104,13 +95,11 @@ function ModifiedBadge<T>({
   );
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
 export function Summary() {
   const navigate = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
 
-  // ── Read from store and clear on save ────────────────────────────────────
+  // Read from store and clear on save
   const result = useWorkflowStore((s) => s.pipelineResult);
   const clearWorkflow = useWorkflowStore((s) => s.clearWorkflow);
 
@@ -127,7 +116,7 @@ export function Summary() {
   const [savedByName, setSavedByName] = useState("");
   const [savedByError, setSavedByError] = useState("");
 
-  // ── Guard ─────────────────────────────────────────────────────────────────
+  // Guard
   if (
     !result ||
     !classificationParsed ||
@@ -164,7 +153,7 @@ export function Summary() {
     }),
   );
 
-  // ── Save handlers ─────────────────────────────────────────────────────────
+  // Save handlers
 
   const handleSaveClick = () => {
     setSavedByName("");
@@ -215,7 +204,7 @@ export function Summary() {
     }
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // Render
   return (
     <div className="relative h-full w-full">
       <div
@@ -315,7 +304,7 @@ export function Summary() {
         </div>
 
         <div className="space-y-6">
-          {/* ── 1. Classification ─────────────────────────────────────────── */}
+          {/* 1. Classification */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -365,7 +354,7 @@ export function Summary() {
             </CardContent>
           </Card>
 
-          {/* ── 2. Impact Assessment ──────────────────────────────────────── */}
+          {/* 2. Impact Assessment */}
           <Card className="shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -416,7 +405,7 @@ export function Summary() {
             })}
           </div>
 
-          {/* ── 3. Root Cause Analysis ────────────────────────────────────── */}
+          {/* 3. Root Cause Analysis */}
           <Card className="shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -470,9 +459,7 @@ export function Summary() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <ModifiedBadge
-                field={provenance?.rca?.contributing_factors}
-              />
+              <ModifiedBadge field={provenance?.rca?.contributing_factors} />
               <ul className="space-y-2">
                 {rcaParsed.contributing_factors.map((point, i) => (
                   <li
@@ -495,9 +482,7 @@ export function Summary() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <ModifiedBadge
-                field={provenance?.rca?.evidence}
-              />
+              <ModifiedBadge field={provenance?.rca?.evidence} />
               <ul className="space-y-2">
                 {rcaParsed.evidence.map((point, i) => (
                   <li
@@ -512,7 +497,7 @@ export function Summary() {
             </CardContent>
           </Card>
 
-          {/* ── 4. CAPA ───────────────────────────────────────────────────── */}
+          {/* 4. CAPA */}
           <Card className="shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -545,9 +530,7 @@ export function Summary() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <ModifiedBadge
-                field={provenance?.capa?.corrective_actions}
-              />
+              <ModifiedBadge field={provenance?.capa?.corrective_actions} />
               <ul className="space-y-2">
                 {capaParsed.corrective_actions.map((point, i) => (
                   <li
@@ -569,9 +552,7 @@ export function Summary() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <ModifiedBadge
-                field={provenance?.capa?.preventive_actions}
-              />
+              <ModifiedBadge field={provenance?.capa?.preventive_actions} />
               <ul className="space-y-2">
                 {capaParsed.preventive_actions.map((point, i) => (
                   <li
@@ -621,7 +602,7 @@ export function Summary() {
             </CardContent>
           </Card>
 
-          {/* ── Save ──────────────────────────────────────────────────────── */}
+          {/* Save */}
           <div className="pt-1 pb-1">
             {saveError && (
               <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800 p-3 text-sm text-red-800 dark:text-red-400">

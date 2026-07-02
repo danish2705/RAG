@@ -8,7 +8,7 @@ import { ImpactAssessment } from "./pages/ImpactAssessment";
 import { RootCause } from "./pages/RootCause";
 import { Capa } from "./pages/Capa";
 import { Summary } from "./pages/Summary";
-import { DbLog } from "./pages/DbLog";
+import { DbLog } from "./pages/Dblog";
 import { AuditTrail } from "./pages/AuditTrail";
 import { Reports } from "./pages/Reports";
 import { Settings } from "./pages/Settings";

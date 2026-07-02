@@ -5,15 +5,10 @@ import { NewDeviation } from "./pages/InputQuery";
 import { AIRecommendation } from "./pages/AIRecommendation";
 import { ImmediateCorrection } from "./pages/ImmediateCorrection";
 import { ImpactAssessment } from "./pages/ImpactAssessment";
-import { HistoricalMatches } from "./pages/HistoricalMatches";
 import { RootCause } from "./pages/RootCause";
 import { Capa } from "./pages/Capa";
 import { Summary } from "./pages/Summary";
 import { DbLog } from "./pages/DbLog";
-import { ChangeControl } from "./pages/ChangeControl";
-import { ChangeDecision } from "./pages/ChangeDecision";
-import { ActionPlan } from "./pages/ActionPlan";
-import { CrossTrigger } from "./pages/CrossTrigger";
 import { AuditTrail } from "./pages/AuditTrail";
 import { Reports } from "./pages/Reports";
 import { Settings } from "./pages/Settings";
@@ -31,15 +26,10 @@ export const router = createBrowserRouter([
         Component: ImmediateCorrection,
       },
       { path: "deviation/impact-assessment", Component: ImpactAssessment },
-      { path: "deviation/historical-analysis", Component: HistoricalMatches },
       { path: "deviation/root-cause", Component: RootCause },
       { path: "deviation/capa", Component: Capa },
       { path: "deviation/summary", Component: Summary },
       { path: "db-log", Component: DbLog },
-      { path: "change-control", Component: ChangeControl },
-      { path: "change-control/decision", Component: ChangeDecision },
-      { path: "change-control/action-plan", Component: ActionPlan },
-      { path: "change-control/cross-trigger", Component: CrossTrigger },
       { path: "audit-trail", Component: AuditTrail },
       { path: "reports", Component: Reports },
       { path: "settings", Component: Settings },

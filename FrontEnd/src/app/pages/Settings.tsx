@@ -17,7 +17,7 @@ import {
 import { AIAssistant } from "../components/chat/ai-assistant";
 import { useState } from "react";
 import { CheckCircle, X } from "lucide-react";
-import { DEFAULTS, LABELS, OPTION_LABELS } from "../lib/Settings";
+import { DEFAULTS, LABELS, OPTION_LABELS } from "../mocks/Settings";
 
 export function Settings() {
   const [chatOpen, setChatOpen] = useState(false);

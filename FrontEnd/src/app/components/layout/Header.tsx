@@ -36,11 +36,6 @@ const PAGE_META: Record<
     subtitle: "Evaluate the impact of the quality event",
     back: "/deviation/ai-recommendation",
   },
-  "/deviation/historical-analysis": {
-    title: "Historical Analysis",
-    subtitle: "Review similar past events and trends",
-    back: "/deviation/impact-assessment",
-  },
   "/deviation/root-cause": {
     title: "Root Cause Analysis",
     subtitle: "Identify the root cause of the quality event",
@@ -61,7 +56,7 @@ const PAGE_META: Record<
     subtitle: "Overview of quality events and metrics",
   },
   "/db-log": {
-    title: "DB Log",
+    title: "Records",
     subtitle: "All saved deviation and change control cases",
   },
   "/audit-trail": {

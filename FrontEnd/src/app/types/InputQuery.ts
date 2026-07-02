@@ -8,3 +8,5 @@ export interface FormState {
   dateTimeDetected: string;
   immediateActions: string;
 }
+
+export type FormErrors = Partial<Record<keyof FormState, string>>;

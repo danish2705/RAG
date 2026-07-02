@@ -1,13 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { AIAssistantPanel } from "../components/chat/ai-assistant";
-import {
-  recentRecords,
-  severityColors,
-  statusColors,
-  eventTypeCards,
-  metricCards,
-} from "../mocks/mockDashboard";
+import { eventTypeCards, metricCards, recentRecords, severityColors, statusColors, } from "../mocks/mockDashboard";
 
 export function Dashboard() {
   const [aiOpen, setAiOpen] = useState(false);

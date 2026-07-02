@@ -2,34 +2,18 @@ import { useState, useRef } from "react";
 import { useNavigate } from "react-router";
 import { apiFetch } from "../mocks/api";
 import { StepProgressBar } from "../components/eventIntake/StepProgressBar";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, } from "../components/ui/card";
 import { Label } from "../components/ui/label";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Button } from "../components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, } from "../components/ui/select";
 import { Upload, Sparkles, X, Loader2, AlertCircle } from "lucide-react";
-import {
-  siteOptions,
-  eventTypeOptions,
-  sourceSystemOptions,
-} from "../mocks/mockData";
+import { siteOptions, eventTypeOptions, sourceSystemOptions, MAX_FILE_SIZE_BYTES, ALLOWED_FILE_TYPES,} from "../mocks/mockInputQuery";
 import { AIAssistant } from "../components/chat/ai-assistant";
 import type { PipelineResult } from "../types/pipeline";
 import { useWorkflowStore } from "../store/workflowStore";
-import type { FormState } from "../types/InputQuery";
-import { MAX_FILE_SIZE_BYTES, ALLOWED_FILE_TYPES } from "../mocks/mockInputQuery";
+import type { FormState, FormErrors } from "../types/InputQuery";
 
 function buildQueryFromForm(formData: FormState): string {
   const lines = [
@@ -52,7 +36,6 @@ function buildQueryFromForm(formData: FormState): string {
 }
 
 //Component
-
 export function NewDeviation() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -84,8 +67,7 @@ export function NewDeviation() {
     !!formData.description.trim() &&
     !!formData.dateTimeDetected;
 
-  //File handling 
-
+  //File handling
   const validateAndAddFiles = (incoming: File[]) => {
     const accepted: File[] = [];
     const rejected: string[] = [];
@@ -130,7 +112,6 @@ export function NewDeviation() {
   };
 
   //Field updates
-
   const updateField = (field: keyof FormState, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => {
@@ -142,7 +123,6 @@ export function NewDeviation() {
   };
 
   //Validation
-
   const validate = (): boolean => {
     const nextErrors: FormErrors = {};
 
@@ -160,7 +140,6 @@ export function NewDeviation() {
   };
 
   //Submit
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
@@ -177,7 +156,7 @@ export function NewDeviation() {
         body: JSON.stringify({ query }),
       });
 
-      //Store result globally instead of passing via location.state 
+      //Store result globally instead of passing via location.state
       setPipelineResult(result);
       navigate("/deviation/ai-recommendation");
     } catch (err) {
@@ -191,8 +170,7 @@ export function NewDeviation() {
     }
   };
 
-  //Render      
-
+  //Render
   return (
     <div className="relative h-full w-full">
       <div

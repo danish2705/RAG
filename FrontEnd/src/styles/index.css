@@ -2,9 +2,7 @@
 @import './tailwind.css';
 @import './theme.css';
 
-/* Ensure all interactive elements show a pointer cursor, including
-   custom clickable elements (divs/spans with onClick or role="button")
-   that don't get it by default. */
+/* Ensure all interactive elements show a pointer cursor*/
 button:not(:disabled),
 a,
 [role="button"]:not([aria-disabled="true"]),
@@ -22,11 +20,7 @@ button:disabled,
   cursor: not-allowed;
 }
 
-/* ── Visible scrollbar ───────────────────────────────────────────────────
-   Default browser scrollbars are very thin/faint on light backgrounds and
-   can look hidden, especially next to the AI Assistant panel. Make the
-   thumb clearly visible while keeping it slim, using the existing
-   theme-aware muted-foreground color so it works in light and dark mode. */
+/* Visible scrollbar  */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--muted-foreground) transparent;

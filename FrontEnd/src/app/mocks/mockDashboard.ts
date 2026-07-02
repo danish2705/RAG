@@ -1,17 +1,5 @@
-import {
-  LayoutGrid,
-  AlertTriangle,
-  GitBranch,
-  Layers,
-  RefreshCw,
-  BarChart2,
-  CheckCircle,
-} from "lucide-react";
-import type {
-  RecentRecord,
-  SeverityColors,
-  StatusColors,
-} from "../types/dashboard";
+import { LayoutGrid, AlertTriangle, GitBranch, Layers, RefreshCw, BarChart2, CheckCircle, } from "lucide-react";
+import type { RecentRecord, SeverityColors, StatusColors, } from "../types/dashboard";
 
 export const recentRecords: RecentRecord[] = [
   {

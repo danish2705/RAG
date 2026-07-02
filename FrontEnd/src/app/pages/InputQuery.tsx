@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router";
-import { apiFetch } from "../lib/api";
+import { apiFetch } from "../mocks/api";
 import { StepProgressBar } from "../components/qms/StepProgressBar";
 import {
   Card,
@@ -24,7 +24,7 @@ import {
   siteOptions,
   eventTypeOptions,
   sourceSystemOptions,
-} from "../lib/mockData";
+} from "../mocks/mockData";
 import { AIAssistant } from "../components/chat/ai-assistant";
 
 // ── Shared types (no more local re-definitions) ───────────────────────────────

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router";
-import { apiFetch } from "../lib/api";
+import { apiFetch } from "../mocks/api";
 import {
   Card,
   CardContent,

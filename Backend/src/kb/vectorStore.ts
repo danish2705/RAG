@@ -66,11 +66,9 @@ export async function buildIndex(chunks: DocChunk[]): Promise<VectorIndex> {
     throw new Error("No valid text found in chunks!");
   }
 
-  const source = chunks[0].type; // 'deviation' | 'change_control'
+  const source = chunks[0].type; 
   const table = tableFor(source);
 
-  // group chunks by doc_key (= S3 key / file path), preserving order so we
-  // can assign a stable chunk_index per document.
   const byDoc = new Map<string, DocChunk[]>();
   for (const c of chunks) {
     const arr = byDoc.get(c.source) ?? [];
@@ -99,7 +97,7 @@ export async function buildIndex(chunks: DocChunk[]): Promise<VectorIndex> {
       seenKeys.add(key);
 
       if (existingHashes.get(key) === hash) {
-        continue; // unchanged, skip
+        continue; 
       }
 
       pending.push({ docKey, chunkIndex: i, hash, text: chunk.text });

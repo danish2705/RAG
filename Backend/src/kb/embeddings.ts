@@ -43,11 +43,6 @@ async function embedBatch(texts: string[]): Promise<number[][]> {
   return data as number[][];
 }
 
-/**
- * Equivalent to model.encode(texts) in the notebook, now backed by the HF
- * router API instead of a local model. Returns one embedding vector per
- * input string, same order as the input.
- */
 export async function embedTexts(texts: string[]): Promise<number[][]> {
   const vectors: number[][] = [];
 

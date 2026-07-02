@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router";
 import { apiFetch } from "../mocks/api";
-import { StepProgressBar } from "../components/qms/StepProgressBar";
+import { StepProgressBar } from "../components/eventIntake/StepProgressBar";
 import {
   Card,
   CardContent,
@@ -26,17 +26,10 @@ import {
   sourceSystemOptions,
 } from "../mocks/mockData";
 import { AIAssistant } from "../components/chat/ai-assistant";
-
-//Shared types (no more local re-definitions)
 import type { PipelineResult } from "../types/pipeline";
 import { useWorkflowStore } from "../store/workflowStore";
 import type { FormState } from "../types/InputQuery";
 import { MAX_FILE_SIZE_BYTES, ALLOWED_FILE_TYPES } from "../mocks/mockInputQuery";
-//Form types
-
-
-
-type FormErrors = Partial<Record<keyof FormState, string>>;
 
 function buildQueryFromForm(formData: FormState): string {
   const lines = [

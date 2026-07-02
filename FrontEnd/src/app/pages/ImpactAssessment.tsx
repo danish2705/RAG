@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { apiFetch } from "../mocks/api";
-import { StepProgressBar } from "../components/qms/StepProgressBar";
+import { StepProgressBar } from "../components/eventIntake/StepProgressBar";
 import {
   Card,
   CardContent,
@@ -34,14 +34,11 @@ import {
   type ImpactAssessmentProvenance,
 } from "../types/dataProvenance";
 import { AIAssistant } from "../components/chat/ai-assistant";
-
-//Shared types
 import type { ImpactSeverity, RCAApiResponse } from "../types/pipeline";
 import { useWorkflowStore } from "../store/workflowStore";
 import { PARAMETER_LABELS } from "../mocks/mockImpactAssessment";
 
 //Helpers
-
 function getSeverityBadgeClass(severity: string): string {
   switch (severity.toLowerCase()) {
     case "critical":
@@ -55,9 +52,7 @@ function getSeverityBadgeClass(severity: string): string {
   }
 }
 
-
 //Component
-
 export function ImpactAssessment() {
   const navigate = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
@@ -119,7 +114,6 @@ export function ImpactAssessment() {
   }
 
   //Field update helpers 
-
   const updateSeverity = (index: number, value: string) => {
     setAssessments((prev) => {
       const updated = [...prev];
@@ -143,7 +137,6 @@ export function ImpactAssessment() {
   };
 
   //Provenance builder
-
   const buildImpactProvenance = (
     confirmed: boolean,
   ): ImpactAssessmentProvenance => {
@@ -184,7 +177,6 @@ export function ImpactAssessment() {
   };
 
   //Navigation helpers
-
   const navigateToRCA = (
     rcaStage: RCAApiResponse["stages"]["rca"],
     impactProvenance: ImpactAssessmentProvenance,

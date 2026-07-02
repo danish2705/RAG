@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { apiFetch } from "../mocks/api";
-import { StepProgressBar } from "../components/qms/StepProgressBar";
+import { StepProgressBar } from "../components/eventIntake/StepProgressBar";
 import {
   Card,
   CardContent,
@@ -41,7 +41,6 @@ import {
   type DataField,
 } from "../types/dataProvenance";
 import { AIAssistant } from "../components/chat/ai-assistant";
-
 import type {
   ClassificationParsed,
   ClassificationType,
@@ -50,7 +49,6 @@ import type {
 import { useWorkflowStore } from "../store/workflowStore";
 
 //Helpers
-
 function parseRationaleLines(text: string): string[] {
   return text
     .split("\n")
@@ -95,7 +93,7 @@ export function AIRecommendation() {
   const [assessError, setAssessError] = useState<string | null>(null);
   const [overrideConfirmed, setOverrideConfirmed] = useState(false);
 
-  //Guard 
+  //Guard
   if (!result || !parsed) {
     return (
       <div className="p-6 w-full">
@@ -297,7 +295,7 @@ export function AIRecommendation() {
           )}
           {overrideConfirmed && !isOverrideEditing && (
             <Badge className="ml-auto bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800 text-sm px-3 py-1">
-                Overriden
+              Overriden
             </Badge>
           )}
         </div>
@@ -401,7 +399,9 @@ export function AIRecommendation() {
                   <p className="text-sm font-medium text-foreground">
                     AI Rationale
                   </p>
-                  {!isOverrideEditing && overrideConfirmed && rationaleChanged ? (
+                  {!isOverrideEditing &&
+                  overrideConfirmed &&
+                  rationaleChanged ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border select-none bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800">
                       <Sparkles className="h-3 w-3" />
                       Modified
@@ -576,13 +576,15 @@ export function AIRecommendation() {
             <DialogFooter>
               <Button
                 variant="outline"
-                onClick={() => setShowRejectDialog(false)}>
+                onClick={() => setShowRejectDialog(false)}
+              >
                 Cancel
               </Button>
               <Button
                 onClick={handleReject}
                 disabled={!rejectJustification.trim()}
-                className="bg-red-600 hover:bg-red-700 text-white">
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
                 Confirm Rejection
               </Button>
             </DialogFooter>

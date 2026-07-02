@@ -28,17 +28,16 @@ import {
 } from "../types/dataProvenance";
 import { AIAssistant } from "../components/chat/ai-assistant";
 
-// ── Shared types ──────────────────────────────────────────────────────────────
+//Shared types 
 import type { CAPAResult } from "../types/pipeline";
 import { useWorkflowStore } from "../store/workflowStore";
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
+//Component 
 export function Capa() {
   const navigate = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
 
-  // ── Read from store ───────────────────────────────────────────────────────
+  //Read from store 
   const result = useWorkflowStore((s) => s.pipelineResult);
   const mergePipelineResult = useWorkflowStore((s) => s.mergePipelineResult);
 
@@ -82,7 +81,7 @@ export function Capa() {
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectJustification, setRejectJustification] = useState("");
 
-  // ── Guard ─────────────────────────────────────────────────────────────────
+  //Guard
   if (!capaParsed || !result) {
     return (
       <div className="p-6 w-full">
@@ -113,7 +112,7 @@ export function Capa() {
     }
   };
 
-  // ── Provenance + CAPA builders ────────────────────────────────────────────
+  //Provenance + CAPA builders
 
   const buildCAPAProvenance = (confirmed: boolean): CAPAProvenance => {
     const curCorrectiveActions = correctiveAction
@@ -174,7 +173,7 @@ export function Capa() {
     due_date: dueDate,
   });
 
-  // ── Navigation to summary (store update replaces navigate-with-state) ─────
+  //Navigation to summary (store update replaces navigate-with-state)
 
   const proceed = () => {
     const capaProvenance = buildCAPAProvenance(overrideConfirmed);
@@ -189,7 +188,7 @@ export function Capa() {
     navigate("/deviation/summary");
   };
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
+  //Handlers
 
   const handleAccept = () => setCapaAccepted(true);
   const handleOverrideClick = () => setIsOverrideEditing(true);
@@ -249,7 +248,7 @@ export function Capa() {
     );
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  //Render
   return (
     <div className="relative h-full w-full">
       <div

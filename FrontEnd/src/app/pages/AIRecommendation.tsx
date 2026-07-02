@@ -49,7 +49,7 @@ import type {
 } from "../types/pipeline";
 import { useWorkflowStore } from "../store/workflowStore";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+//Helpers
 
 function parseRationaleLines(text: string): string[] {
   return text
@@ -68,8 +68,7 @@ function getClassificationBadgeClass(type: string): string {
   return "bg-muted text-muted-foreground border-border";
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
+//Component
 export function AIRecommendation() {
   const navigate = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
@@ -96,7 +95,7 @@ export function AIRecommendation() {
   const [assessError, setAssessError] = useState<string | null>(null);
   const [overrideConfirmed, setOverrideConfirmed] = useState(false);
 
-  // ── Guard ─────────────────────────────────────────────────────────────────
+  //Guard 
   if (!result || !parsed) {
     return (
       <div className="p-6 w-full">
@@ -128,7 +127,7 @@ export function AIRecommendation() {
     [editedRationale, parsed.rationale],
   );
 
-  // ── Provenance builder ────────────────────────────────────────────────────
+  //Provenance builder
   const buildClassificationProvenance = useCallback(
     (isOverride: boolean): ClassificationProvenance => {
       if (isOverride) {
@@ -149,7 +148,7 @@ export function AIRecommendation() {
     },
     [parsed, editedClassification, rationaleLines],
   );
-  // ── API call + store update ───────────────────────────────────────────────
+  //API call + store update
   const runImpactAssessment = useCallback(
     async (
       approvedClassification: ClassificationParsed,
@@ -265,7 +264,7 @@ export function AIRecommendation() {
     ? editedClassification
     : parsed.classification;
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  //Render
   return (
     <div className="relative h-full w-full">
       <div

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { StepProgressBar } from "../components/qms/StepProgressBar";
+import { StepProgressBar } from "../components/eventIntake/StepProgressBar";
 import {
   Card,
   CardContent,
@@ -11,7 +11,7 @@ import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
-import { AlertBanner } from "../components/qms/AlertBanner";
+import { AlertBanner } from "../components/eventIntake/AlertBanner";
 import { AlertTriangle, Save, Sparkles } from "lucide-react";
 import {
   Dialog,
@@ -27,18 +27,15 @@ import {
   type CAPAProvenance,
 } from "../types/dataProvenance";
 import { AIAssistant } from "../components/chat/ai-assistant";
-
-// ── Shared types ──────────────────────────────────────────────────────────────
 import type { CAPAResult } from "../types/pipeline";
 import { useWorkflowStore } from "../store/workflowStore";
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
+//Component
 export function Capa() {
   const navigate = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
 
-  // ── Read from store ───────────────────────────────────────────────────────
+  //Read from store
   const result = useWorkflowStore((s) => s.pipelineResult);
   const mergePipelineResult = useWorkflowStore((s) => s.mergePipelineResult);
 
@@ -82,7 +79,7 @@ export function Capa() {
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectJustification, setRejectJustification] = useState("");
 
-  // ── Guard ─────────────────────────────────────────────────────────────────
+  //Guard
   if (!capaParsed || !result) {
     return (
       <div className="p-6 w-full">
@@ -113,8 +110,7 @@ export function Capa() {
     }
   };
 
-  // ── Provenance + CAPA builders ────────────────────────────────────────────
-
+  //Provenance + CAPA builders
   const buildCAPAProvenance = (confirmed: boolean): CAPAProvenance => {
     const curCorrectiveActions = correctiveAction
       .split("\n")
@@ -174,8 +170,7 @@ export function Capa() {
     due_date: dueDate,
   });
 
-  // ── Navigation to summary (store update replaces navigate-with-state) ─────
-
+  //Navigation to summary (store update replaces navigate-with-state)
   const proceed = () => {
     const capaProvenance = buildCAPAProvenance(overrideConfirmed);
     mergePipelineResult({
@@ -189,8 +184,7 @@ export function Capa() {
     navigate("/deviation/summary");
   };
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
-
+  //Handlers
   const handleAccept = () => setCapaAccepted(true);
   const handleOverrideClick = () => setIsOverrideEditing(true);
   const handleSaveChanges = () => setShowOverrideDialog(true);
@@ -249,7 +243,7 @@ export function Capa() {
     );
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  //Render
   return (
     <div className="relative h-full w-full">
       <div

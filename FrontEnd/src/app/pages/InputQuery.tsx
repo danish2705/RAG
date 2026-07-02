@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router";
 import { apiFetch } from "../mocks/api";
-import { StepProgressBar } from "../components/qms/StepProgressBar";
+import { StepProgressBar } from "../components/eventIntake/StepProgressBar";
 import {
   Card,
   CardContent,
@@ -26,28 +26,10 @@ import {
   sourceSystemOptions,
 } from "../mocks/mockData";
 import { AIAssistant } from "../components/chat/ai-assistant";
-
-// ── Shared types (no more local re-definitions) ───────────────────────────────
 import type { PipelineResult } from "../types/pipeline";
 import { useWorkflowStore } from "../store/workflowStore";
-
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
-const ALLOWED_FILE_TYPES = ["application/pdf", "image/png", "image/jpeg"];
-
-// ── Form types ────────────────────────────────────────────────────────────────
-
-interface FormState {
-  site: string;
-  eventType: string;
-  sourceSystem: string;
-  description: string;
-  batch: string;
-  system: string;
-  dateTimeDetected: string;
-  immediateActions: string;
-}
-
-type FormErrors = Partial<Record<keyof FormState, string>>;
+import type { FormState } from "../types/InputQuery";
+import { MAX_FILE_SIZE_BYTES, ALLOWED_FILE_TYPES } from "../mocks/mockInputQuery";
 
 function buildQueryFromForm(formData: FormState): string {
   const lines = [
@@ -69,7 +51,7 @@ function buildQueryFromForm(formData: FormState): string {
   return lines.filter((line) => line !== null).join("\n");
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+//Component
 
 export function NewDeviation() {
   const navigate = useNavigate();
@@ -92,7 +74,7 @@ export function NewDeviation() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // ── Store ──────────────────────────────────────────────────────────────────
+  //Store
   const setPipelineResult = useWorkflowStore((s) => s.setPipelineResult);
 
   const isFormReady =
@@ -102,7 +84,7 @@ export function NewDeviation() {
     !!formData.description.trim() &&
     !!formData.dateTimeDetected;
 
-  // ── File handling ──────────────────────────────────────────────────────────
+  //File handling 
 
   const validateAndAddFiles = (incoming: File[]) => {
     const accepted: File[] = [];
@@ -147,7 +129,7 @@ export function NewDeviation() {
     setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // ── Field updates ──────────────────────────────────────────────────────────
+  //Field updates
 
   const updateField = (field: keyof FormState, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -159,7 +141,7 @@ export function NewDeviation() {
     });
   };
 
-  // ── Validation ─────────────────────────────────────────────────────────────
+  //Validation
 
   const validate = (): boolean => {
     const nextErrors: FormErrors = {};
@@ -177,7 +159,7 @@ export function NewDeviation() {
     return Object.keys(nextErrors).length === 0;
   };
 
-  // ── Submit ─────────────────────────────────────────────────────────────────
+  //Submit
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -195,7 +177,7 @@ export function NewDeviation() {
         body: JSON.stringify({ query }),
       });
 
-      // ── Store result globally instead of passing via location.state ──────
+      //Store result globally instead of passing via location.state 
       setPipelineResult(result);
       navigate("/deviation/ai-recommendation");
     } catch (err) {
@@ -209,7 +191,7 @@ export function NewDeviation() {
     }
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  //Render      
 
   return (
     <div className="relative h-full w-full">

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { apiFetch } from "../mocks/api";
-import { StepProgressBar } from "../components/qms/StepProgressBar";
+import { StepProgressBar } from "../components/eventIntake/StepProgressBar";
 import {
   Card,
   CardContent,
@@ -34,7 +34,7 @@ export function RootCause() {
   const navigate = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
 
-  // ── Read from store ───────────────────────────────────────────────────────
+  // Read from store 
   const result = useWorkflowStore((s) => s.pipelineResult);
   const mergePipelineResult = useWorkflowStore((s) => s.mergePipelineResult);
 

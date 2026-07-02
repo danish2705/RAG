@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { apiFetch } from "../mocks/api";
-import { StepProgressBar } from "../components/qms/StepProgressBar";
+import { StepProgressBar } from "../components/eventIntake/StepProgressBar";
 import {
   Card,
   CardContent,
@@ -34,13 +34,11 @@ import {
   type ImpactAssessmentProvenance,
 } from "../types/dataProvenance";
 import { AIAssistant } from "../components/chat/ai-assistant";
-
-// ── Shared types ──────────────────────────────────────────────────────────────
 import type { ImpactSeverity, RCAApiResponse } from "../types/pipeline";
 import { useWorkflowStore } from "../store/workflowStore";
+import { PARAMETER_LABELS } from "../mocks/mockImpactAssessment";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
+//Helpers
 function getSeverityBadgeClass(severity: string): string {
   switch (severity.toLowerCase()) {
     case "critical":
@@ -54,20 +52,12 @@ function getSeverityBadgeClass(severity: string): string {
   }
 }
 
-const PARAMETER_LABELS: Record<string, string> = {
-  product_impact: "Product Impact",
-  patient_impact: "Patient Impact",
-  data_integrity_impact: "Data Integrity Impact",
-  compliance_impact: "Compliance Impact",
-};
-
-// ── Component ─────────────────────────────────────────────────────────────────
-
+//Component
 export function ImpactAssessment() {
   const navigate = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
 
-  // ── Read from store ───────────────────────────────────────────────────────
+  //Read from store
   const result = useWorkflowStore((s) => s.pipelineResult);
   const mergePipelineResult = useWorkflowStore((s) => s.mergePipelineResult);
 
@@ -101,7 +91,7 @@ export function ImpactAssessment() {
   const [isGeneratingRCA, setIsGeneratingRCA] = useState(false);
   const [rcaError, setRcaError] = useState<string | null>(null);
 
-  // ── Guard ─────────────────────────────────────────────────────────────────
+  //Guard
   if (!impactParsed || !classificationParsed) {
     return (
       <div className="p-6 w-full">
@@ -123,8 +113,7 @@ export function ImpactAssessment() {
     );
   }
 
-  // ── Field update helpers ──────────────────────────────────────────────────
-
+  //Field update helpers 
   const updateSeverity = (index: number, value: string) => {
     setAssessments((prev) => {
       const updated = [...prev];
@@ -147,8 +136,7 @@ export function ImpactAssessment() {
     });
   };
 
-  // ── Provenance builder ────────────────────────────────────────────────────
-
+  //Provenance builder
   const buildImpactProvenance = (
     confirmed: boolean,
   ): ImpactAssessmentProvenance => {
@@ -188,8 +176,7 @@ export function ImpactAssessment() {
     };
   };
 
-  // ── Navigation helpers ────────────────────────────────────────────────────
-
+  //Navigation helpers
   const navigateToRCA = (
     rcaStage: RCAApiResponse["stages"]["rca"],
     impactProvenance: ImpactAssessmentProvenance,
@@ -285,7 +272,7 @@ export function ImpactAssessment() {
 
   const confidenceScore = impactParsed.confidence_score;
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  //Render      
   return (
     <div className="relative h-full w-full">
       <div

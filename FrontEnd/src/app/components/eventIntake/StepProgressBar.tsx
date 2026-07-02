@@ -22,12 +22,10 @@ function getSteps(classification?: Classification) {
 const STEP_ROUTES: Record<string, number> = {
   "/deviation": 0,
   "/deviation/ai-recommendation": 1,
-  "/deviation/immediate-correction": 2,
   "/deviation/impact-assessment": 2,
-  "/deviation/historical-analysis": 2,
   "/deviation/root-cause": 3,
   "/deviation/capa": 4,
-  "/deviation/summary": 4,
+  "/deviation/summary": 5,
 };
 
 const CAPA_STEP_INDEX = 4;

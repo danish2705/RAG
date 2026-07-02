@@ -41,60 +41,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-
-// ── Type ─────────────────────────────────────────────────────────────────
-
-interface ImpactParameter {
-  severity: "None" | "Minor" | "Major" | "Critical";
-  rationale: string;
-}
-
-interface ClassificationParsed {
-  classification: "Deviation" | "Change Control" | "Hybrid";
-  rationale: string[];
-  confidence_score: number;
-}
-
-interface ImpactAssessmentParsed {
-  impact_assessment: {
-    product_impact: ImpactParameter;
-    patient_impact: ImpactParameter;
-    data_integrity_impact: ImpactParameter;
-    compliance_impact: ImpactParameter;
-  };
-  confidence_score: number;
-}
-
-interface RCAResult {
-  sequence_of_events: string[];
-  immediate_cause: string;
-  primary_root_cause: string;
-  contributing_factors: string[];
-  evidence: string[];
-  impact_assessment: string;
-  confidence_score: number;
-}
-
-interface CAPAResult {
-  capa_required: boolean;
-  corrective_actions: string[];
-  preventive_actions: string[];
-  effectiveness_check: string;
-  due_date: string;
-  confidence_score: number;
-}
-
-interface DeviationCase {
-  id: number;
-  query: string;
-  saved_by: string;
-  classification: ClassificationParsed | null;
-  impact_assessment: ImpactAssessmentParsed | null;
-  rca: RCAResult | null;
-  capa: CAPAResult | null;
-  status: string;
-  created_at: string;
-}
+import { DeviationCase } from "../types/Records";
+import { PARAMETER_LABELS } from "../mocks/mockRecords";
 
 // ── Helper ───────────────────────────────────────────────────────────────
 
@@ -115,7 +63,9 @@ function getAlternatingRowClass(index: number): string {
 }
 
 function getRowBorderClass(index: number): string {
-  return index % 2 === 1 ? "border-l-4 border-l-blue-500" : "border-l-4 border-l-transparent";
+  return index % 2 === 1
+    ? "border-l-4 border-l-blue-500"
+    : "border-l-4 border-l-transparent";
 }
 
 function getSeverityBadgeClass(severity: string): string {
@@ -150,12 +100,6 @@ function ConfidenceBar({ score }: { score: number }) {
   );
 }
 
-const PARAMETER_LABELS: Record<string, string> = {
-  product_impact: "Product Impact",
-  patient_impact: "Patient Impact",
-  data_integrity_impact: "Data Integrity Impact",
-  compliance_impact: "Compliance Impact",
-};
 
 // ── View Modal ─────────────────────────────────────────────────────────────
 
@@ -457,7 +401,7 @@ function CaseViewModal({
 
 // ── Main Page ─────────────────────────────────────────────────────────────
 
-export function DbLog() {
+export function Records() {
   const navigate = useNavigate();
   const [cases, setCases] = useState<DeviationCase[]>([]);
   const [loading, setLoading] = useState(true);
@@ -687,7 +631,9 @@ export function DbLog() {
                       key={c.id}
                       className={`transition-colors ${getAlternatingRowClass(index)}`}
                     >
-                      <TableCell className={`font-mono text-sm text-muted-foreground ${getRowBorderClass(index)}`}>
+                      <TableCell
+                        className={`font-mono text-sm text-muted-foreground ${getRowBorderClass(index)}`}
+                      >
                         #{String(c.id).padStart(4, "0")}
                       </TableCell>
                       <TableCell className="text-sm font-medium text-foreground">

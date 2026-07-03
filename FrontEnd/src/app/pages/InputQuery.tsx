@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router";
-import { apiFetch } from "../../styles/api";
+import { apiFetch } from "../../utils/api";
 import { StepProgressBar } from "../components/eventIntake/StepProgressBar";
 import {
   Card,

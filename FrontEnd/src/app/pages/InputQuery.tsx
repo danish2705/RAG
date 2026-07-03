@@ -1,15 +1,32 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router";
-import { apiFetch } from "../mocks/api";
+import { apiFetch } from "../../styles/api";
 import { StepProgressBar } from "../components/eventIntake/StepProgressBar";
-import { Card, CardContent, CardHeader, CardTitle, } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Label } from "../components/ui/label";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Button } from "../components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, } from "../components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 import { Upload, Sparkles, X, Loader2, AlertCircle } from "lucide-react";
-import { siteOptions, eventTypeOptions, sourceSystemOptions, MAX_FILE_SIZE_BYTES, ALLOWED_FILE_TYPES,} from "../mocks/mockInputQuery";
+import {
+  siteOptions,
+  eventTypeOptions,
+  sourceSystemOptions,
+  MAX_FILE_SIZE_BYTES,
+  ALLOWED_FILE_TYPES,
+} from "../mocks/mockInputQuery";
 import { AIAssistant } from "../components/chat/ai-assistant";
 import type { PipelineResult } from "../types/pipeline";
 import { useWorkflowStore } from "../store/workflowStore";

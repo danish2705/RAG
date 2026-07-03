@@ -1,8 +1,3 @@
-// ── Data Provenance Types ─────────────────────────────────────────────────
-// Every field that can be AI-generated OR human-modified carries this wrapper.
-// "ai"       → value came directly from the AI pipeline, never touched by a human.
-// "modified" → a human overrode the AI value; originalValue holds what AI said.
-
 export type DataSource = "ai" | "modified";
 
 export interface DataField<T> {
@@ -13,7 +8,7 @@ export interface DataField<T> {
   modifiedAt?: string; // ISO timestamp
 }
 
-// ── Stage-level provenance wrappers ───────────────────────────────────────
+// Stage-level provenance wrappers 
 
 export interface ClassificationProvenance {
   classification: DataField<"Deviation" | "Change Control" | "Hybrid">;
@@ -55,8 +50,7 @@ export interface CAPAProvenance {
   confidence_score: number;
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────
-
+// Helpers 
 /** Wrap a value as AI-generated */
 export function aiField<T>(value: T): DataField<T> {
   return { value, source: "ai" };

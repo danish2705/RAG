@@ -1,51 +1,19 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router";
 import { apiFetch } from "../mocks/api";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "../components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../components/ui/table";
-import {
-  AlertTriangle,
-  Eye,
-  Loader2,
-  Sparkles,
-  Database,
-  ArrowUpDown,
-  Search,
-} from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, } from "../components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, } from "../components/ui/table";
+import { AlertTriangle, Eye, Loader2, Sparkles, Database, ArrowUpDown, Search, } from "lucide-react";
 import { AIAssistant } from "../components/chat/ai-assistant";
 import { Input } from "../components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, } from "../components/ui/select";
 import { DeviationCase } from "../types/Records";
-import { PARAMETER_LABELS } from "../mocks/mockRecords";
+import { PARAMETER_LABELS } from "../mocks/mockImpactAssessment";
 
-// ── Helper ───────────────────────────────────────────────────────────────
-
+// Helper 
 function getClassificationBadgeClass(type: string): string {
   if (type === "Deviation")
     return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
@@ -100,9 +68,7 @@ function ConfidenceBar({ score }: { score: number }) {
   );
 }
 
-
-// ── View Modal ─────────────────────────────────────────────────────────────
-
+// View Modal 
 function CaseViewModal({
   record,
   onClose,
@@ -399,8 +365,7 @@ function CaseViewModal({
   );
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────
-
+// Main Page 
 export function Records() {
   const navigate = useNavigate();
   const [cases, setCases] = useState<DeviationCase[]>([]);

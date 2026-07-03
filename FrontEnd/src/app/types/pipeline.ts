@@ -1,7 +1,3 @@
-// ── pipeline.ts ──────────────────────────────────────────────────────────────
-// Single source of truth for all AI pipeline types.
-// Import from here in every page instead of redefining locally.
-
 import type {
   ClassificationProvenance,
   ImpactAssessmentProvenance,
@@ -9,8 +5,7 @@ import type {
   CAPAProvenance,
 } from "./dataProvenance";
 
-// ── Primitives ────────────────────────────────────────────────────────────────
-
+// Primitives 
 export type StageName = "classification" | "rca" | "capa";
 export type HaltedStage = StageName | "impact_assessment";
 
@@ -33,8 +28,7 @@ export interface GateResult {
   routedTo: "manual_review_queue" | null;
 }
 
-// ── Impact ────────────────────────────────────────────────────────────────────
-
+// Impact 
 export type ImpactSeverity = "None" | "Minor" | "Major" | "Critical";
 
 export interface ImpactParameter {
@@ -52,8 +46,7 @@ export interface ImpactAssessmentParsed {
   confidence_score: number;
 }
 
-// ── Stage results ─────────────────────────────────────────────────────────────
-
+// Stage results 
 export type ClassificationType = "Deviation" | "Change Control" | "Hybrid";
 
 export interface ClassificationParsed {
@@ -81,8 +74,7 @@ export interface CAPAResult {
   confidence_score: number;
 }
 
-// ── Stage wrappers (raw API shape) ────────────────────────────────────────────
-
+// Stage wrappers (raw API shape)
 export interface StageWrapper<T> {
   rawText: string;
   parsed: T | null;
@@ -95,8 +87,7 @@ export type ImpactAssessmentStage = StageWrapper<ImpactAssessmentParsed>;
 export type RCAStage = StageWrapper<RCAResult>;
 export type CAPAStage = StageWrapper<CAPAResult>;
 
-// ── Full pipeline result ──────────────────────────────────────────────────────
-
+// Full pipeline result 
 export interface PipelineResult {
   status: "halted_for_human_review" | "completed_pending_human_review";
   haltedAt: HaltedStage | null;
@@ -118,8 +109,7 @@ export interface PipelineResult {
   };
 }
 
-// ── API response shapes (subset of PipelineResult returned per endpoint) ──────
-
+// API response shapes (subset of PipelineResult returned per endpoint) 
 export interface ImpactAssessmentApiResponse extends Pick<
   PipelineResult,
   "status" | "haltedAt" | "auditTrail" | "query"

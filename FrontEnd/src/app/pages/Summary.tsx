@@ -2,33 +2,17 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { apiFetch } from "../mocks/api";
 import { StepProgressBar } from "../components/eventIntake/StepProgressBar";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "../components/ui/dialog";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Loader2,
-  Sparkles,
-  User,
-} from "lucide-react";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, } from "../components/ui/dialog";
+import { AlertTriangle, CheckCircle2, Loader2, Sparkles, User, } from "lucide-react";
 import type { DataField } from "../types/dataProvenance";
 import { AIAssistant } from "../components/chat/ai-assistant";
 import { useWorkflowStore } from "../store/workflowStore";
+import { PARAMETER_LABELS } from "../mocks/mockImpactAssessment";
 
 // Helpers
 function getClassificationBadgeClass(type: string): string {
@@ -72,13 +56,6 @@ function ConfidenceBar({ score }: { score: number }) {
     </div>
   );
 }
-
-const PARAMETER_LABELS: Record<string, string> = {
-  product_impact: "Product Impact",
-  patient_impact: "Patient Impact",
-  data_integrity_impact: "Data Integrity Impact",
-  compliance_impact: "Compliance Impact",
-};
 
 function ModifiedBadge<T>({
   field,

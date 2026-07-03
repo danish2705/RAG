@@ -4,28 +4,11 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { FileText, Download, Search } from 'lucide-react';
 import { AIAssistant } from '../components/chat/ai-assistant';
+import { reports } from '../mocks/mockReports';
 
 export function Reports() {
   const [searchQuery, setSearchQuery] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
-  const reports = [
-    {
-      name: 'Root Cause Analysis Report',
-      description: 'Aggregated root cause data and trends across all quality events'
-    },
-    {
-      name: 'CAPA Effectiveness Report',
-      description: 'CAPA completion rates and effectiveness metrics over time'
-    },
-    {
-      name: 'Pending Changes Report',
-      description: 'Outstanding change control items requiring attention'
-    },
-    {
-      name: 'Change Impact Analysis',
-      description: 'Impact assessment trends and risk distribution'
-    },
-  ];
 
   const filteredReports = reports.filter(report =>
     report.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

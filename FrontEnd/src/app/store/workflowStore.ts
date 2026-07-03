@@ -1,15 +1,3 @@
-// ── workflowStore.ts ──────────────────────────────────────────────────────────
-// Global store for the multi-step deviation workflow.
-//
-// WHY: Previously each page received `PipelineResult` via React Router's
-// `location.state`. That breaks on page refresh, direct URL access, or browser
-// back+forward navigation. This store survives all of those within the session.
-//
-// USAGE:
-//   Write  → const set = useWorkflowStore(s => s.setPipelineResult);
-//   Read   → const result = useWorkflowStore(s => s.pipelineResult);
-//   Clear  → const clear = useWorkflowStore(s => s.clearWorkflow);  (call on Summary save)
-
 import { useSyncExternalStore } from "react";
 import type { PipelineResult } from "../types/pipeline";
 

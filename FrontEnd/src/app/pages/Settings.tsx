@@ -1,19 +1,8 @@
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, } from "../components/ui/card";
 import { Label } from "../components/ui/label";
 import { Switch } from "../components/ui/switch";
 import { Button } from "../components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, } from "../components/ui/select";
 import { AIAssistant } from "../components/chat/ai-assistant";
 import { useState } from "react";
 import { CheckCircle, X } from "lucide-react";

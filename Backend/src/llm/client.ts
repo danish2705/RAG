@@ -10,20 +10,10 @@ interface ChatCompletionResponse {
   choices?: ChatCompletionChoice[];
 }
 
-/**
- * Calls the chat-completions endpoint (HF router, OpenAI-compatible).
- * Equivalent to call_llm() in the notebook.
- *
- * Note: the notebook called requests.post(..., verify=False), which disables
- * TLS certificate verification. That is intentionally NOT replicated here —
- * for a GxP system talking to an external API, certificate verification
- * should stay on. If you hit TLS errors, fix the root cause (CA bundle),
- * don't disable verification.
- */
 export async function callLLM(userPrompt: string, systemPrompt: string): Promise<string> {
   if (!config.llm.apiKey) {
     throw new Error(
-      "LLM_API_KEY is not set. Put it in your .env file (never hardcode it in source)."
+      "LLM_API_KEY is not set. Put it in your .env file."
     );
   }
 

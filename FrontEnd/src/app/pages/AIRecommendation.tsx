@@ -1,19 +1,51 @@
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { apiFetch } from "../mocks/api";
+import { apiFetch } from "../../styles/api";
 import { StepProgressBar } from "../components/eventIntake/StepProgressBar";
-import { Card, CardContent, CardHeader, CardTitle, } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Textarea } from "../components/ui/textarea";
 import { Sparkles, Info, AlertTriangle, Loader2, Save } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, } from "../components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
 import { Label } from "../components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, } from "../components/ui/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, } from "../components/ui/tooltip";
-import { aiField, markModified, type ClassificationProvenance, type DataField, } from "../types/dataProvenance";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../components/ui/tooltip";
+import {
+  aiField,
+  markModified,
+  type ClassificationProvenance,
+  type DataField,
+} from "../types/dataProvenance";
 import { AIAssistant } from "../components/chat/ai-assistant";
-import type { ClassificationParsed, ClassificationType, ImpactAssessmentApiResponse, } from "../types/pipeline";
+import type {
+  ClassificationParsed,
+  ClassificationType,
+  ImpactAssessmentApiResponse,
+} from "../types/pipeline";
 import { useWorkflowStore } from "../store/workflowStore";
 
 //Helpers
@@ -82,7 +114,7 @@ export function AIRecommendation() {
       </div>
     );
   }
-  
+
   const rationaleLines = useMemo(
     () => parseRationaleLines(editedRationale),
     [editedRationale],

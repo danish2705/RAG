@@ -1,15 +1,9 @@
 import { config } from "../config.js";
 
-// Batch size per HF API call. Keeps request payloads reasonable and avoids
-// hitting any single-request size/time limits on the provider side.
 const BATCH_SIZE = 32;
 
-/**
- * Calls Hugging Face's router feature-extraction endpoint to embed a batch
- * of texts in one HTTP request. Replaces the local @xenova/transformers
- * model - no ONNX runtime, no local CPU inference, nothing to download.
- */
-async function embedBatch(texts: string[]): Promise<number[][]> {
+// Calls Hugging Face's router API for embeddings (sentence-transformers models) in a single batch.
+ async function embedBatch(texts: string[]): Promise<number[][]> {
   if (!config.embeddings.apiKey) {
     throw new Error(
       "API_KEY is not set - required for the embeddings API call (reuses the same HF token as the LLM).",
@@ -22,8 +16,6 @@ async function embedBatch(texts: string[]): Promise<number[][]> {
       Authorization: `Bearer ${config.embeddings.apiKey}`,
       "Content-Type": "application/json",
     },
-    // { inputs: [...] } with pooling handled by the underlying model
-    // (sentence-transformers models already return one pooled vector per input).
     body: JSON.stringify({ inputs: texts, options: { wait_for_model: true } }),
   });
 
@@ -43,11 +35,6 @@ async function embedBatch(texts: string[]): Promise<number[][]> {
   return data as number[][];
 }
 
-/**
- * Equivalent to model.encode(texts) in the notebook, now backed by the HF
- * router API instead of a local model. Returns one embedding vector per
- * input string, same order as the input.
- */
 export async function embedTexts(texts: string[]): Promise<number[][]> {
   const vectors: number[][] = [];
 

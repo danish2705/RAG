@@ -26,9 +26,7 @@ export interface RetrieveContextResult {
 /**
  * Loads both knowledge bases from local disk (kb-data/deviation and
  * kb-data/changecontrol) and builds their vector indexes.
- *
- * Call this once at startup (server.ts / cli.ts both do this).
- */
+  */
 export function initKnowledgeBase(): Promise<void> {
   if (!initPromise) {
     initPromise = (async () => {

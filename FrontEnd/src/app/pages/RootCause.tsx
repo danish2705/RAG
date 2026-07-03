@@ -1,15 +1,31 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { apiFetch } from "../mocks/api";
+import { apiFetch } from "../../styles/api";
 import { StepProgressBar } from "../components/eventIntake/StepProgressBar";
-import { Card, CardContent, CardHeader, CardTitle, } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { AlertTriangle, Loader2, Save, Sparkles } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, } from "../components/ui/dialog";
-import { aiField, markModified, type RCAProvenance, } from "../types/dataProvenance";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
+import {
+  aiField,
+  markModified,
+  type RCAProvenance,
+} from "../types/dataProvenance";
 import { AIAssistant } from "../components/chat/ai-assistant";
 import type { RCAResult, CAPAApiResponse } from "../types/pipeline";
 import { useWorkflowStore } from "../store/workflowStore";
@@ -18,7 +34,7 @@ export function RootCause() {
   const navigate = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
 
-  // Read from store 
+  // Read from store
   const result = useWorkflowStore((s) => s.pipelineResult);
   const mergePipelineResult = useWorkflowStore((s) => s.mergePipelineResult);
 

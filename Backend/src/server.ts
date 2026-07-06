@@ -8,7 +8,11 @@ import {
   runRCAOnly,
   runCAPAOnly,
 } from "./pipeline/orchestrator.js";
-import { ClassificationSchema } from "./llm/schemas.js";
+import {
+  ClassificationSchema,
+  ImpactAssessmentSchema,
+  RCASchema,
+} from "./llm/schemas.js";
 import cors from "cors";
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
@@ -107,6 +111,7 @@ app.post(
 interface RCARequestBody {
   query?: unknown;
   classification?: unknown;
+  impactAssessment?: unknown;
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -116,7 +121,8 @@ app.post(
   "/api/deviations/rca",
   requireReady,
   async (req: Request, res: Response): Promise<void> => {
-    const { query, classification } = (req.body ?? {}) as RCARequestBody;
+    const { query, classification, impactAssessment } = (req.body ??
+      {}) as RCARequestBody;
 
     if (typeof query !== "string" || query.trim().length === 0) {
       res.status(400).json({
@@ -134,12 +140,24 @@ app.post(
       return;
     }
 
+    const parsedImpactAssessment =
+      ImpactAssessmentSchema.safeParse(impactAssessment);
+    if (!parsedImpactAssessment.success) {
+      res.status(400).json({
+        error:
+          "Request body must include a valid 'impactAssessment' object (the approved Stage 2 result).",
+        details: parsedImpactAssessment.error.flatten(),
+      });
+      return;
+    }
+
     try {
       const { contextText } = await retrieveContext(query);
       const result = await runRCAOnly(
         query,
         contextText,
         parsedClassification.data,
+        parsedImpactAssessment.data,
       );
       res.json({ query, ...result });
     } catch (err) {
@@ -151,6 +169,8 @@ app.post(
 
 interface CAPARequestBody {
   query?: unknown;
+  classification?: unknown;
+  impactAssessment?: unknown;
   rca?: unknown;
 }
 
@@ -160,7 +180,8 @@ interface CAPARequestBody {
 app.post(
   "/api/deviations/capa",
   async (req: Request, res: Response): Promise<void> => {
-    const { query, rca } = (req.body ?? {}) as CAPARequestBody;
+    const { query, classification, impactAssessment, rca } = (req.body ??
+      {}) as CAPARequestBody;
 
     if (typeof query !== "string" || query.trim().length === 0) {
       res.status(400).json({
@@ -169,8 +190,43 @@ app.post(
       return;
     }
 
+    const parsedClassification = ClassificationSchema.safeParse(classification);
+    if (!parsedClassification.success) {
+      res.status(400).json({
+        error: "Request body must include a valid 'classification' object.",
+        details: parsedClassification.error.flatten(),
+      });
+      return;
+    }
+
+    const parsedImpactAssessment =
+      ImpactAssessmentSchema.safeParse(impactAssessment);
+    if (!parsedImpactAssessment.success) {
+      res.status(400).json({
+        error:
+          "Request body must include a valid 'impactAssessment' object (the approved Stage 2 result).",
+        details: parsedImpactAssessment.error.flatten(),
+      });
+      return;
+    }
+
+    const parsedRCA = RCASchema.safeParse(rca);
+    if (!parsedRCA.success) {
+      res.status(400).json({
+        error:
+          "Request body must include a valid 'rca' object (the approved Stage 3 result).",
+        details: parsedRCA.error.flatten(),
+      });
+      return;
+    }
+
     try {
-      const result = await runCAPAOnly(query, (rca ?? null) as never);
+      const result = await runCAPAOnly(
+        query,
+        parsedClassification.data,
+        parsedImpactAssessment.data,
+        parsedRCA.data,
+      );
       res.json({ query, ...result });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

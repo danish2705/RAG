@@ -41,7 +41,11 @@ export const RCASchema = z.object({
   primary_root_cause: z.string().min(1),
   contributing_factors: z.array(z.string()),
   evidence: z.array(z.string()),
-  impact_assessment: z.string(),
+  // Renamed from "impact_assessment" -> "impact_summary" to avoid colliding
+  // with the Stage 2 ImpactAssessmentResult (a structured object with
+  // per-parameter severity levels). This field is just a short prose
+  // recap of impact, written by the RCA stage itself.
+  impact_summary: z.string(),
   confidence_score: z.number().min(0).max(100),
 });
 

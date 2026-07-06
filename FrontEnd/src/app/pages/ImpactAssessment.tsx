@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { apiFetch } from "../../utils/api";
-import { StepProgressBar } from "../components/eventIntake/StepProgressBar";
+import {
+  DecisionAction,
+  ModifiedBadge,
+  OverrideDialog,
+  OverrideBar,
+  RejectDialog,
+  StepProgressBar,
+} from "../components/eventIntake";
 import {
   Card,
   CardContent,
@@ -17,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-import { AlertTriangle, Sparkles, Loader2, Save } from "lucide-react";
+import { AlertTriangle, Sparkles } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -26,8 +33,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
-import { Label } from "../components/ui/label";
-import { Badge } from "../components/ui/badge";
 import {
   aiField,
   markModified,
@@ -270,6 +275,18 @@ export function ImpactAssessment() {
     setShowOverrideDialog(true);
   };
 
+  const handleCancelOverride = () => {
+    setIsOverrideEditing(false);
+    setAssessments((prev) =>
+      prev.map((a) => ({
+        ...a,
+        severity: a.originalSeverity,
+        description: a.originalDescription,
+        severityChangedWithoutDescription: false,
+      })),
+    );
+  };
+
   const handleOverrideConfirm = () => {
     if (!overrideJustification.trim()) return;
     setShowOverrideDialog(false);
@@ -299,38 +316,12 @@ export function ImpactAssessment() {
           }
         />
 
-        <div className="mb-6 flex items-center justify-end gap-3">
-          {isOverrideEditing && (
-            <>
-              <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
-                Editing
-              </Badge>
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-border text-muted-foreground hover:text-foreground"
-                onClick={() => {
-                  setIsOverrideEditing(false);
-                  setAssessments((prev) =>
-                    prev.map((a) => ({
-                      ...a,
-                      severity: a.originalSeverity,
-                      description: a.originalDescription,
-                      severityChangedWithoutDescription: false,
-                    })),
-                  );
-                }}
-              >
-                Cancel Override
-              </Button>
-            </>
-          )}
-          {overrideConfirmed && !isOverrideEditing && (
-            <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
-              Overriden
-            </Badge>
-          )}
-        </div>
+        <OverrideBar
+          isOverrideEditing={isOverrideEditing}
+          overrideConfirmed={overrideConfirmed}
+          onCancelOverride={handleCancelOverride}
+          overriddenLabel="Overriden"
+        />
 
         <div className="space-y-6">
           {/* Confidence */}
@@ -378,11 +369,7 @@ export function ImpactAssessment() {
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between text-lg">
                       {assessment.category}
-                      {!isOverrideEditing && isAnyModified && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200 select-none">
-                          <Sparkles className="h-3 w-3" /> Modified
-                        </span>
-                      )}
+                      {!isOverrideEditing && isAnyModified && <ModifiedBadge />}
                     </CardTitle>
                   </CardHeader>
 
@@ -468,69 +455,21 @@ export function ImpactAssessment() {
           </div>
 
           {/* Decision Required */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Decision Required</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {rcaError && (
-                <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-                  <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="font-medium">Root cause analysis failed</p>
-                    <p className="mt-1">{rcaError}</p>
-                  </div>
-                </div>
-              )}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button
-                  onClick={handleAccept}
-                  disabled={isGeneratingRCA || isOverrideEditing}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
-                >
-                  {isGeneratingRCA ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Generating Root Cause Analysis...
-                    </>
-                  ) : (
-                    "Accept & Continue to Root Cause Analysis"
-                  )}
-                </Button>
-                {isOverrideEditing ? (
-                  <Button
-                    onClick={handleSaveChanges}
-                    disabled={isGeneratingRCA}
-                    className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Changes
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleOverrideClick}
-                    variant="outline"
-                    disabled={isGeneratingRCA}
-                    className="flex-1"
-                  >
-                    Override Assessment
-                  </Button>
-                )}
-                <Button
-                  onClick={() => setShowRejectDialog(true)}
-                  disabled={isGeneratingRCA}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                >
-                  Reject Assessment
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-3 text-center">
-                Your decision will be logged in the audit trail. Accepting or
-                overriding runs root cause analysis — it only starts now, not
-                before you decide.
-              </p>
-            </CardContent>
-          </Card>
+          <DecisionAction
+            acceptLabel="Accept & Continue to Root Cause Analysis"
+            acceptLoadingLabel="Generating Root Cause Analysis..."
+            onAccept={handleAccept}
+            isOverrideEditing={isOverrideEditing}
+            overrideLabel="Override Assessment"
+            onOverrideClick={handleOverrideClick}
+            onSaveChanges={handleSaveChanges}
+            rejectLabel="Reject Assessment"
+            onReject={() => setShowRejectDialog(true)}
+            isLoading={isGeneratingRCA}
+            error={rcaError}
+            errorTitle="Root cause analysis failed"
+            footerText="Your decision will be logged in the audit trail. Accepting or overriding runs root cause analysis — it only starts now, not before you decide."
+          />
         </div>
 
         {/* Description required warning dialog */}
@@ -577,92 +516,30 @@ export function ImpactAssessment() {
         </Dialog>
 
         {/* Override justification dialog */}
-        <Dialog open={showOverrideDialog} onOpenChange={setShowOverrideDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Override Impact Assessment</DialogTitle>
-              <DialogDescription>
-                Please provide a justification for overriding the assessment.
-                This will be recorded in the audit trail.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="overrideJustification">Justification *</Label>
-                <Textarea
-                  id="overrideJustification"
-                  placeholder="Explain why you are overriding the impact assessment..."
-                  rows={4}
-                  value={overrideJustification}
-                  onChange={(e) => setOverrideJustification(e.target.value)}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowOverrideDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleOverrideConfirm}
-                disabled={!overrideJustification.trim() || isGeneratingRCA}
-              >
-                {isGeneratingRCA ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Running...
-                  </>
-                ) : (
-                  "Confirm Override"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <OverrideDialog
+          open={showOverrideDialog}
+          onOpenChange={setShowOverrideDialog}
+          title="Override Impact Assessment"
+          subjectLabel="the assessment"
+          value={overrideJustification}
+          onChange={setOverrideJustification}
+          onCancel={() => setShowOverrideDialog(false)}
+          onConfirm={handleOverrideConfirm}
+          isLoading={isGeneratingRCA}
+        />
 
         {/* Reject dialog */}
-        <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Reject Impact Assessment</DialogTitle>
-              <DialogDescription>
-                Please provide a reason for rejecting this assessment. This will
-                be recorded in the audit trail.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="rejectJustification">
-                  Reason for Rejection *
-                </Label>
-                <Textarea
-                  id="rejectJustification"
-                  placeholder="Explain why you are rejecting the impact assessment..."
-                  rows={4}
-                  value={rejectJustification}
-                  onChange={(e) => setRejectJustification(e.target.value)}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowRejectDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleReject}
-                disabled={!rejectJustification.trim()}
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                Confirm Rejection
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <RejectDialog
+          open={showRejectDialog}
+          onOpenChange={setShowRejectDialog}
+          title="Reject Impact Assessment"
+          description="Please provide a reason for rejecting this assessment. This will be recorded in the audit trail."
+          subjectLabel="the impact assessment"
+          value={rejectJustification}
+          onChange={setRejectJustification}
+          onCancel={() => setShowRejectDialog(false)}
+          onConfirm={handleReject}
+        />
 
         <div className="fixed top-16 right-0 bottom-0 z-40">
           <AIAssistant

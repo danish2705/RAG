@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { apiFetch } from "../../utils/api";
-import { StepProgressBar } from "../components/eventIntake/StepProgressBar";
+import {
+  DecisionAction,
+  ModifiedStatus,
+  OverrideDialog,
+  OverrideBar,
+  RejectDialog,
+  StepProgressBar,
+} from "../components/eventIntake";
 import {
   Card,
   CardContent,
@@ -9,18 +16,9 @@ import {
   CardTitle,
 } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
-import { AlertTriangle, Loader2, Save, Sparkles } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../components/ui/dialog";
+import { AlertTriangle, Sparkles } from "lucide-react";
 import {
   aiField,
   markModified,
@@ -258,23 +256,6 @@ export function RootCause() {
     }
   };
 
-  const FieldBadge = ({
-    original,
-    current,
-  }: {
-    original: string;
-    current: string;
-  }) => {
-    const isModified = overrideConfirmed && current !== original;
-    if (!isModified) return null;
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border select-none bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800">
-        <Sparkles className="h-3 w-3" />
-        Modified
-      </span>
-    );
-  };
-
   return (
     <div className="relative h-full w-full">
       <div
@@ -286,28 +267,12 @@ export function RootCause() {
           }
         />
 
-        <div className="mb-6 flex items-center justify-end gap-3">
-          {isOverrideEditing && (
-            <>
-              <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
-                Editing
-              </Badge>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCancelOverride}
-                disabled={isGeneratingCAPA}
-              >
-                Cancel Override
-              </Button>
-            </>
-          )}
-          {overrideConfirmed && !isOverrideEditing && (
-            <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-sm px-3 py-1">
-              Overridden
-            </Badge>
-          )}
-        </div>
+        <OverrideBar
+          isOverrideEditing={isOverrideEditing}
+          overrideConfirmed={overrideConfirmed}
+          onCancelOverride={handleCancelOverride}
+          cancelDisabled={isGeneratingCAPA}
+        />
 
         <div className="space-y-6">
           {/* Confidence */}
@@ -357,7 +322,8 @@ export function RootCause() {
                     Underlying Root Cause
                   </Label>
                   {!isOverrideEditing && (
-                    <FieldBadge
+                    <ModifiedStatus
+                      enabled={overrideConfirmed}
                       original={rcaParsed.primary_root_cause}
                       current={primaryRootCause}
                     />
@@ -381,7 +347,8 @@ export function RootCause() {
                     Immediate Cause (direct trigger)
                   </Label>
                   {!isOverrideEditing && (
-                    <FieldBadge
+                    <ModifiedStatus
+                      enabled={overrideConfirmed}
                       original={rcaParsed.immediate_cause}
                       current={immediateCause}
                     />
@@ -416,7 +383,8 @@ export function RootCause() {
                     One factor per line
                   </Label>
                   {!isOverrideEditing && (
-                    <FieldBadge
+                    <ModifiedStatus
+                      enabled={overrideConfirmed}
                       original={(rcaParsed.contributing_factors ?? []).join(
                         "\n",
                       )}
@@ -451,7 +419,8 @@ export function RootCause() {
                 <div className="flex items-center gap-2">
                   <Label htmlFor="evidence">One item per line</Label>
                   {!isOverrideEditing && (
-                    <FieldBadge
+                    <ModifiedStatus
+                      enabled={overrideConfirmed}
                       original={(rcaParsed.evidence ?? []).join("\n")}
                       current={evidence}
                     />
@@ -472,159 +441,48 @@ export function RootCause() {
           </Card>
 
           {/* Decision Required */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Decision Required</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {capaError && (
-                <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-                  <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="font-medium">CAPA generation failed</p>
-                    <p className="mt-1">{capaError}</p>
-                  </div>
-                </div>
-              )}
-              <div className="flex gap-4">
-                <Button
-                  onClick={handleAccept}
-                  disabled={isGeneratingCAPA || isOverrideEditing}
-                  className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white"
-                >
-                  {isGeneratingCAPA ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Generating CAPA...
-                    </>
-                  ) : (
-                    "Accept & Continue to CAPA"
-                  )}
-                </Button>
-                {isOverrideEditing ? (
-                  <Button
-                    onClick={handleSaveChanges}
-                    disabled={isGeneratingCAPA}
-                    className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Changes
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleOverrideClick}
-                    variant="outline"
-                    disabled={isGeneratingCAPA}
-                    className="flex-1"
-                  >
-                    Override Root Cause
-                  </Button>
-                )}
-                <Button
-                  onClick={() => setShowRejectDialog(true)}
-                  disabled={isGeneratingCAPA}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                >
-                  Reject Root Cause
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-3 text-center">
-                Your decision will be logged in the audit trail. Accepting or
-                overriding generates CAPA recommendations — it only starts now,
-                not before you decide.
-              </p>
-            </CardContent>
-          </Card>
+          <DecisionAction
+            acceptLabel="Accept & Continue to CAPA"
+            acceptLoadingLabel="Generating CAPA..."
+            onAccept={handleAccept}
+            isOverrideEditing={isOverrideEditing}
+            overrideLabel="Override Root Cause"
+            onOverrideClick={handleOverrideClick}
+            onSaveChanges={handleSaveChanges}
+            rejectLabel="Reject Root Cause"
+            onReject={() => setShowRejectDialog(true)}
+            isLoading={isGeneratingCAPA}
+            error={capaError}
+            errorTitle="CAPA generation failed"
+            footerText="Your decision will be logged in the audit trail. Accepting or overriding generates CAPA recommendations — it only starts now, not before you decide."
+          />
         </div>
 
         {/* Override Dialog */}
-        <Dialog open={showOverrideDialog} onOpenChange={setShowOverrideDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Override Root Cause</DialogTitle>
-              <DialogDescription>
-                Please provide a justification for overriding the root cause
-                analysis. This will be recorded in the audit trail.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="overrideJustification">Justification *</Label>
-                <Textarea
-                  id="overrideJustification"
-                  placeholder="Explain why you are overriding the root cause analysis..."
-                  rows={4}
-                  value={overrideJustification}
-                  onChange={(e) => setOverrideJustification(e.target.value)}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowOverrideDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleOverrideConfirm}
-                disabled={!overrideJustification.trim() || isGeneratingCAPA}
-              >
-                {isGeneratingCAPA ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Running...
-                  </>
-                ) : (
-                  "Confirm Override"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <OverrideDialog
+          open={showOverrideDialog}
+          onOpenChange={setShowOverrideDialog}
+          title="Override Root Cause"
+          subjectLabel="the root cause analysis"
+          value={overrideJustification}
+          onChange={setOverrideJustification}
+          onCancel={() => setShowOverrideDialog(false)}
+          onConfirm={handleOverrideConfirm}
+          isLoading={isGeneratingCAPA}
+        />
 
         {/* Reject Dialog */}
-        <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Reject Root Cause</DialogTitle>
-              <DialogDescription>
-                Please provide a reason for rejecting this root cause analysis.
-                You will be redirected to the deviation form. This will be
-                recorded in the audit trail.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="rejectJustification">
-                  Reason for Rejection *
-                </Label>
-                <Textarea
-                  id="rejectJustification"
-                  placeholder="Explain why you are rejecting the root cause analysis..."
-                  rows={4}
-                  value={rejectJustification}
-                  onChange={(e) => setRejectJustification(e.target.value)}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowRejectDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleReject}
-                disabled={!rejectJustification.trim()}
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                Confirm Rejection
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <RejectDialog
+          open={showRejectDialog}
+          onOpenChange={setShowRejectDialog}
+          title="Reject Root Cause"
+          description="Please provide a reason for rejecting this root cause analysis. You will be redirected to the deviation form. This will be recorded in the audit trail."
+          subjectLabel="the root cause analysis"
+          value={rejectJustification}
+          onChange={setRejectJustification}
+          onCancel={() => setShowRejectDialog(false)}
+          onConfirm={handleReject}
+        />
 
         <div className="fixed top-16 right-0 bottom-0 z-40">
           <AIAssistant

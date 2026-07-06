@@ -1,7 +1,14 @@
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { apiFetch } from "../../utils/api";
-import { StepProgressBar } from "../components/eventIntake/StepProgressBar";
+import {
+  DecisionAction,
+  ModifiedStatus,
+  OverrideDialog,
+  OverrideBar,
+  RejectDialog,
+  StepProgressBar,
+} from "../components/eventIntake";
 import {
   Card,
   CardContent,
@@ -11,16 +18,7 @@ import {
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Textarea } from "../components/ui/textarea";
-import { Sparkles, Info, AlertTriangle, Loader2, Save } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../components/ui/dialog";
-import { Label } from "../components/ui/label";
+import { Sparkles, Info, AlertTriangle } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -118,12 +116,6 @@ export function AIRecommendation() {
   const rationaleLines = useMemo(
     () => parseRationaleLines(editedRationale),
     [editedRationale],
-  );
-
-  const classificationChanged = editedClassification !== parsed.classification;
-  const rationaleChanged = useMemo(
-    () => editedRationale.trim() !== (parsed.rationale ?? []).join("\n").trim(),
-    [editedRationale, parsed.rationale],
   );
 
   //Provenance builder
@@ -245,6 +237,12 @@ export function AIRecommendation() {
   const handleOverrideClick = useCallback(() => setIsOverrideEditing(true), []);
   const handleSaveChanges = useCallback(() => setShowOverrideDialog(true), []);
 
+  const handleCancelOverride = useCallback(() => {
+    setIsOverrideEditing(false);
+    setEditedClassification(parsed.classification);
+    setEditedRationale((parsed.rationale ?? []).join("\n"));
+  }, [parsed]);
+
   const handleOverrideConfirm = useCallback(() => {
     if (!overrideJustification.trim()) return;
     setShowOverrideDialog(false);
@@ -275,32 +273,13 @@ export function AIRecommendation() {
             result?.stages?.classification?.parsed?.classification
           }
         />
-        <div className="mb-6 flex items-center gap-3 justify-end">
-          {isOverrideEditing && (
-            <>
-              <Badge className="ml-auto bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800 text-sm px-3 py-1">
-                Editing
-              </Badge>
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-border text-muted-foreground hover:text-foreground"
-                onClick={() => {
-                  setIsOverrideEditing(false);
-                  setEditedClassification(parsed.classification);
-                  setEditedRationale((parsed.rationale ?? []).join("\n"));
-                }}
-              >
-                Cancel Override
-              </Button>
-            </>
-          )}
-          {overrideConfirmed && !isOverrideEditing && (
-            <Badge className="ml-auto bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800 text-sm px-3 py-1">
-              Overriden
-            </Badge>
-          )}
-        </div>
+
+        <OverrideBar
+          isOverrideEditing={isOverrideEditing}
+          overrideConfirmed={overrideConfirmed}
+          onCancelOverride={handleCancelOverride}
+          overriddenLabel="Overriden"
+        />
 
         <div className="space-y-6">
           {/* Main card */}
@@ -345,12 +324,11 @@ export function AIRecommendation() {
                     >
                       {currentClassification}
                     </Badge>
-                    {overrideConfirmed && classificationChanged ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border select-none bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800">
-                        <Sparkles className="h-3 w-3" />
-                        Modified
-                      </span>
-                    ) : null}
+                    <ModifiedStatus
+                      enabled={overrideConfirmed && !isOverrideEditing}
+                      original={parsed.classification}
+                      current={editedClassification}
+                    />
                   </>
                 )}
               </div>
@@ -401,14 +379,13 @@ export function AIRecommendation() {
                   <p className="text-sm font-medium text-foreground">
                     AI Rationale
                   </p>
-                  {!isOverrideEditing &&
-                  overrideConfirmed &&
-                  rationaleChanged ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border select-none bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800">
-                      <Sparkles className="h-3 w-3" />
-                      Modified
-                    </span>
-                  ) : null}
+                  {!isOverrideEditing && (
+                    <ModifiedStatus
+                      enabled={overrideConfirmed}
+                      original={(parsed.rationale ?? []).join("\n").trim()}
+                      current={editedRationale.trim()}
+                    />
+                  )}
                 </div>
                 {isOverrideEditing ? (
                   <div className="space-y-1">
@@ -440,159 +417,48 @@ export function AIRecommendation() {
           </Card>
 
           {/* Decision buttons */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Decision Required</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {assessError && (
-                <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-500/10 dark:border-red-800 p-3 text-sm text-red-700 dark:text-red-400">
-                  <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="font-medium">Impact assessment failed</p>
-                    <p className="mt-1">{assessError}</p>
-                  </div>
-                </div>
-              )}
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button
-                  onClick={handleAccept}
-                  disabled={isAssessing || isOverrideEditing}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
-                >
-                  {isAssessing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Running Impact Assessment...
-                    </>
-                  ) : (
-                    "Accept Classification"
-                  )}
-                </Button>
-                {isOverrideEditing ? (
-                  <Button
-                    onClick={handleSaveChanges}
-                    disabled={isAssessing}
-                    className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Changes
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleOverrideClick}
-                    variant="outline"
-                    disabled={isAssessing}
-                    className="flex-1 border-border text-foreground hover:bg-muted"
-                  >
-                    Override Classification
-                  </Button>
-                )}
-                <Button
-                  onClick={() => setShowRejectDialog(true)}
-                  disabled={isAssessing}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                >
-                  Reject Classification
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-3 text-center">
-                Your decision will be logged in the audit trail. Accepting or
-                overriding runs a fresh impact assessment — it only starts now,
-                not before you decide.
-              </p>
-            </CardContent>
-          </Card>
+          <DecisionAction
+            acceptLabel="Accept Classification"
+            acceptLoadingLabel="Running Impact Assessment..."
+            onAccept={handleAccept}
+            isOverrideEditing={isOverrideEditing}
+            overrideLabel="Override Classification"
+            onOverrideClick={handleOverrideClick}
+            onSaveChanges={handleSaveChanges}
+            rejectLabel="Reject Classification"
+            onReject={() => setShowRejectDialog(true)}
+            isLoading={isAssessing}
+            error={assessError}
+            errorTitle="Impact assessment failed"
+            footerText="Your decision will be logged in the audit trail. Accepting or overriding runs a fresh impact assessment — it only starts now, not before you decide."
+          />
         </div>
 
         {/* Override dialog */}
-        <Dialog open={showOverrideDialog} onOpenChange={setShowOverrideDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Override AI Classification</DialogTitle>
-              <DialogDescription>
-                Please provide a justification for overriding the AI
-                recommendation. This will be recorded in the audit trail.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="justification">Justification *</Label>
-                <Textarea
-                  id="justification"
-                  placeholder="Explain why you are overriding the AI classification..."
-                  rows={4}
-                  value={overrideJustification}
-                  onChange={(e) => setOverrideJustification(e.target.value)}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowOverrideDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleOverrideConfirm}
-                disabled={!overrideJustification.trim() || isAssessing}
-              >
-                {isAssessing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Running...
-                  </>
-                ) : (
-                  "Confirm Override"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <OverrideDialog
+          open={showOverrideDialog}
+          onOpenChange={setShowOverrideDialog}
+          title="Override AI Classification"
+          subjectLabel="the AI recommendation"
+          value={overrideJustification}
+          onChange={setOverrideJustification}
+          onCancel={() => setShowOverrideDialog(false)}
+          onConfirm={handleOverrideConfirm}
+          isLoading={isAssessing}
+        />
 
         {/* Reject dialog */}
-        <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Reject AI Classification</DialogTitle>
-              <DialogDescription>
-                Please provide a reason for rejecting this AI classification.
-                You will be returned to the event intake form. This will be
-                recorded in the audit trail.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="rejectJustification">
-                  Reason for Rejection *
-                </Label>
-                <Textarea
-                  id="rejectJustification"
-                  placeholder="Explain why you are rejecting the AI classification..."
-                  rows={4}
-                  value={rejectJustification}
-                  onChange={(e) => setRejectJustification(e.target.value)}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowRejectDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleReject}
-                disabled={!rejectJustification.trim()}
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                Confirm Rejection
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <RejectDialog
+          open={showRejectDialog}
+          onOpenChange={setShowRejectDialog}
+          title="Reject AI Classification"
+          description="Please provide a reason for rejecting this AI classification. You will be returned to the event intake form. This will be recorded in the audit trail."
+          subjectLabel="the AI classification"
+          value={rejectJustification}
+          onChange={setRejectJustification}
+          onCancel={() => setShowRejectDialog(false)}
+          onConfirm={handleReject}
+        />
         <div className="fixed top-16 right-0 bottom-0 z-40">
           <AIAssistant
             isOpen={chatOpen}

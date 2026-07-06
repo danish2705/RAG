@@ -1,15 +1,29 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { StepProgressBar } from "../components/eventIntake/StepProgressBar";
-import { Card, CardContent, CardHeader, CardTitle, } from "../components/ui/card";
+import {
+  AlertBanner,
+  DecisionAction,
+  ModifiedStatus,
+  OverrideDialog,
+  OverrideBar,
+  RejectDialog,
+  StepProgressBar,
+} from "../components/eventIntake";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
-import { AlertBanner } from "../components/eventIntake/AlertBanner";
-import { AlertTriangle, Save, Sparkles } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, } from "../components/ui/dialog";
-import { aiField, markModified, type CAPAProvenance, } from "../types/dataProvenance";
+import { AlertTriangle, Sparkles } from "lucide-react";
+import {
+  aiField,
+  markModified,
+  type CAPAProvenance,
+} from "../types/dataProvenance";
 import { AIAssistant } from "../components/chat/ai-assistant";
 import type { CAPAResult } from "../types/pipeline";
 import { useWorkflowStore } from "../store/workflowStore";
@@ -210,23 +224,6 @@ export function Capa() {
     }
   };
 
-  const FieldBadge = ({
-    original,
-    current,
-  }: {
-    original: string;
-    current: string;
-  }) => {
-    const isModified = overrideConfirmed && current !== original;
-    if (!isModified) return null;
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border select-none bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800">
-        <Sparkles className="h-3 w-3" />
-        Modified
-      </span>
-    );
-  };
-
   //Render
   return (
     <div className="relative h-full w-full">
@@ -240,28 +237,12 @@ export function Capa() {
           capaAccepted={capaAccepted}
         />
 
-        <div className="mb-6 flex items-center justify-end gap-3">
-          {isOverrideEditing && (
-            <>
-              <Badge className="bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800 text-sm px-3 py-1">
-                Editing
-              </Badge>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCancelOverride}
-                disabled={capaAccepted}
-              >
-                Cancel Override
-              </Button>
-            </>
-          )}
-          {overrideConfirmed && !isOverrideEditing && (
-            <Badge className="bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800 text-sm px-3 py-1">
-              Overridden
-            </Badge>
-          )}
-        </div>
+        <OverrideBar
+          isOverrideEditing={isOverrideEditing}
+          overrideConfirmed={overrideConfirmed}
+          onCancelOverride={handleCancelOverride}
+          cancelDisabled={capaAccepted}
+        />
 
         <div className="space-y-6">
           {/* Confidence */}
@@ -334,7 +315,8 @@ export function Capa() {
                     recurring?) — one action per line
                   </Label>
                   {!isOverrideEditing && (
-                    <FieldBadge
+                    <ModifiedStatus
+                      enabled={overrideConfirmed}
                       original={capaParsed.corrective_actions.join("\n")}
                       current={correctiveAction}
                     />
@@ -379,7 +361,8 @@ export function Capa() {
                     one action per line
                   </Label>
                   {!isOverrideEditing && (
-                    <FieldBadge
+                    <ModifiedStatus
+                      enabled={overrideConfirmed}
                       original={capaParsed.preventive_actions.join("\n")}
                       current={preventiveAction}
                     />
@@ -415,7 +398,8 @@ export function Capa() {
                     Effectiveness Check
                   </Label>
                   {!isOverrideEditing && (
-                    <FieldBadge
+                    <ModifiedStatus
+                      enabled={overrideConfirmed}
                       original={capaParsed.effectiveness_check}
                       current={effectivenessCheck}
                     />
@@ -436,7 +420,8 @@ export function Capa() {
                 <div className="flex items-center gap-2">
                   <Label htmlFor="dueDate">Due Date</Label>
                   {!isOverrideEditing && (
-                    <FieldBadge
+                    <ModifiedStatus
+                      enabled={overrideConfirmed}
                       original={capaParsed.due_date}
                       current={dueDate}
                     />
@@ -457,57 +442,23 @@ export function Capa() {
           </Card>
 
           {/* Decision Required */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Decision Required</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-4">
-                <Button
-                  onClick={handleAccept}
-                  disabled={decisionMade}
-                  className={`flex-1 bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 ${
-                    capaAccepted ? "ring-2 ring-offset-2 ring-green-500" : ""
-                  }`}
-                >
-                  Accept CAPA
-                </Button>
-                {isOverrideEditing ? (
-                  <Button
-                    onClick={handleSaveChanges}
-                    disabled={capaAccepted}
-                    className="flex-1 bg-orange-600 hover:bg-orange-700 text-white disabled:opacity-50"
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Changes
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleOverrideClick}
-                    variant="outline"
-                    disabled={decisionMade}
-                    className={`flex-1 disabled:opacity-50 ${
-                      overrideConfirmed
-                        ? "ring-2 ring-offset-2 ring-orange-500"
-                        : ""
-                    }`}
-                  >
-                    Override CAPA
-                  </Button>
-                )}
-                <Button
-                  onClick={() => setShowRejectDialog(true)}
-                  disabled={decisionMade}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
-                >
-                  Reject CAPA
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-3 text-center">
-                Your decision will be logged in the audit trail
-              </p>
-            </CardContent>
-          </Card>
+          <DecisionAction
+            acceptLabel="Accept CAPA"
+            onAccept={handleAccept}
+            acceptDisabled={decisionMade}
+            acceptSelected={capaAccepted}
+            isOverrideEditing={isOverrideEditing}
+            overrideLabel="Override CAPA"
+            onOverrideClick={handleOverrideClick}
+            onSaveChanges={handleSaveChanges}
+            overrideDisabled={decisionMade}
+            overrideSelected={overrideConfirmed}
+            saveChangesDisabled={capaAccepted}
+            rejectLabel="Reject CAPA"
+            onReject={() => setShowRejectDialog(true)}
+            rejectDisabled={decisionMade}
+            footerText="Your decision will be logged in the audit trail"
+          />
 
           <div className="flex justify-end">
             <Button
@@ -521,86 +472,29 @@ export function Capa() {
         </div>
 
         {/* Override Dialog */}
-        <Dialog open={showOverrideDialog} onOpenChange={setShowOverrideDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Override CAPA</DialogTitle>
-              <DialogDescription>
-                Please provide a justification for overriding the CAPA. This
-                will be recorded in the audit trail.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="overrideJustification">Justification *</Label>
-                <Textarea
-                  id="overrideJustification"
-                  placeholder="Explain why you are overriding the CAPA..."
-                  rows={4}
-                  value={overrideJustification}
-                  onChange={(e) => setOverrideJustification(e.target.value)}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowOverrideDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleOverrideConfirm}
-                disabled={!overrideJustification.trim()}
-              >
-                Confirm Override
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <OverrideDialog
+          open={showOverrideDialog}
+          onOpenChange={setShowOverrideDialog}
+          title="Override CAPA"
+          subjectLabel="the CAPA"
+          value={overrideJustification}
+          onChange={setOverrideJustification}
+          onCancel={() => setShowOverrideDialog(false)}
+          onConfirm={handleOverrideConfirm}
+        />
 
         {/* Reject Dialog */}
-        <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Reject CAPA</DialogTitle>
-              <DialogDescription>
-                Please provide a reason for rejecting this CAPA. You will be
-                redirected to the deviation form. This will be recorded in the
-                audit trail.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="rejectJustification">
-                  Reason for Rejection *
-                </Label>
-                <Textarea
-                  id="rejectJustification"
-                  placeholder="Explain why you are rejecting the CAPA..."
-                  rows={4}
-                  value={rejectJustification}
-                  onChange={(e) => setRejectJustification(e.target.value)}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowRejectDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleReject}
-                disabled={!rejectJustification.trim()}
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                Confirm Rejection
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <RejectDialog
+          open={showRejectDialog}
+          onOpenChange={setShowRejectDialog}
+          title="Reject CAPA"
+          description="Please provide a reason for rejecting this CAPA. You will be redirected to the deviation form. This will be recorded in the audit trail."
+          subjectLabel="the CAPA"
+          value={rejectJustification}
+          onChange={setRejectJustification}
+          onCancel={() => setShowRejectDialog(false)}
+          onConfirm={handleReject}
+        />
       </div>
 
       <div className="fixed top-16 right-0 bottom-0 z-40">

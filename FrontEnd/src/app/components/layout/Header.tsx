@@ -55,7 +55,7 @@ const PAGE_META: Record<
     title: "Dashboard",
     subtitle: "Overview of quality events and metrics",
   },
-  "/db-log": {
+  "/records": {
     title: "Records",
     subtitle: "All saved deviation and change control cases",
   },

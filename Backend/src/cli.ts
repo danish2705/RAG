@@ -52,11 +52,15 @@ async function main(): Promise<void> {
     return;
   }
 
+  const approvedImpactAssessment =
+    impactResult.stages.impactAssessment!.parsed!;
+
   console.log("\n--- Stage 3: RCA (simulating human approval) ---");
   const rcaResult = await runRCAOnly(
     query,
     contextText,
     approvedClassification,
+    approvedImpactAssessment,
   );
   console.log(JSON.stringify(rcaResult, null, 2));
 
@@ -68,7 +72,12 @@ async function main(): Promise<void> {
   const approvedRCA = rcaResult.stages.rca!.parsed!;
 
   console.log("\n--- Stage 4: CAPA (simulating human approval) ---");
-  const capaResult = await runCAPAOnly(query, approvedRCA);
+  const capaResult = await runCAPAOnly(
+    query,
+    approvedClassification,
+    approvedImpactAssessment,
+    approvedRCA,
+  );
   console.log(JSON.stringify(capaResult, null, 2));
 }
 

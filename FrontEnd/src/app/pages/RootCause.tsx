@@ -133,7 +133,7 @@ export function RootCause() {
           ? markModified(aiField(rcaParsed.evidence), curEvidence)
           : aiField(rcaParsed.evidence),
       sequence_of_events: rcaParsed.sequence_of_events,
-      impact_assessment: rcaParsed.impact_assessment,
+      impact_summary: rcaParsed.impact_summary,
       confidence_score: rcaParsed.confidence_score,
     };
   };
@@ -170,17 +170,31 @@ export function RootCause() {
 
   const runCAPA = async (rcaProvenance: RCAProvenance) => {
     setCapaError(null);
-    setIsGeneratingCAPA(true);
 
     const approvedRCA = buildApprovedRCA();
+    const approvedClassification = result.stages?.classification?.parsed;
+    const approvedImpactAssessment = result.stages?.impactAssessment?.parsed;
 
+    if (!approvedClassification || !approvedImpactAssessment) {
+      setCapaError(
+        "Missing approved classification or impact assessment data — please go back and complete those steps before generating CAPA.",
+      );
+      return;
+    }
+
+    setIsGeneratingCAPA(true);
     try {
       const capaResult: CAPAApiResponse = await apiFetch(
         "/api/deviations/capa",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: result.query, rca: approvedRCA }),
+          body: JSON.stringify({
+            query: result.query,
+            classification: approvedClassification,
+            impactAssessment: approvedImpactAssessment,
+            rca: approvedRCA,
+          }),
         },
       );
       navigateToCAPA(capaResult.stages.capa, rcaProvenance, approvedRCA);

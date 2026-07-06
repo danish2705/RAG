@@ -176,25 +176,30 @@ export function ImpactAssessment() {
     };
   };
 
+  //Approved impact assessment builder — reflects any override edits in
+  //`assessments`, in the shape the backend's ImpactAssessmentSchema expects.
+  const buildApprovedImpactAssessment = () => ({
+    ...impactParsed,
+    impact_assessment: Object.fromEntries(
+      assessments.map((a) => [
+        a.key,
+        { severity: a.severity, rationale: a.description },
+      ]),
+    ) as typeof impactParsed.impact_assessment,
+  });
+
   //Navigation helpers
   const navigateToRCA = (
     rcaStage: RCAApiResponse["stages"]["rca"],
     impactProvenance: ImpactAssessmentProvenance,
+    approvedImpactAssessment: ReturnType<typeof buildApprovedImpactAssessment>,
   ) => {
     mergePipelineResult({
       stages: {
         ...result!.stages,
         impactAssessment: {
           ...result!.stages.impactAssessment!,
-          parsed: {
-            ...impactParsed,
-            impact_assessment: Object.fromEntries(
-              assessments.map((a) => [
-                a.key,
-                { severity: a.severity, rationale: a.description },
-              ]),
-            ) as typeof impactParsed.impact_assessment,
-          },
+          parsed: approvedImpactAssessment,
         },
         rca: rcaStage,
       },
@@ -209,6 +214,7 @@ export function ImpactAssessment() {
   const runRCA = async (impactProvenance: ImpactAssessmentProvenance) => {
     setRcaError(null);
     setIsGeneratingRCA(true);
+    const approvedImpactAssessment = buildApprovedImpactAssessment();
     try {
       const rcaResult: RCAApiResponse = await apiFetch("/api/deviations/rca", {
         method: "POST",
@@ -216,9 +222,14 @@ export function ImpactAssessment() {
         body: JSON.stringify({
           query: result!.query,
           classification: classificationParsed,
+          impactAssessment: approvedImpactAssessment,
         }),
       });
-      navigateToRCA(rcaResult.stages.rca, impactProvenance);
+      navigateToRCA(
+        rcaResult.stages.rca,
+        impactProvenance,
+        approvedImpactAssessment,
+      );
     } catch (err) {
       setRcaError(
         err instanceof Error
@@ -234,7 +245,11 @@ export function ImpactAssessment() {
     const impactProvenance = buildImpactProvenance(overrideConfirmed);
     const existingRCA = result!.stages?.rca;
     if (!overrideConfirmed && existingRCA?.parsed) {
-      navigateToRCA(existingRCA, impactProvenance);
+      navigateToRCA(
+        existingRCA,
+        impactProvenance,
+        buildApprovedImpactAssessment(),
+      );
       return;
     }
     void runRCA(impactProvenance);

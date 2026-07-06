@@ -5,7 +5,7 @@ import type {
   CAPAProvenance,
 } from "./dataProvenance";
 
-// Primitives 
+// Primitives
 export type StageName = "classification" | "rca" | "capa";
 export type HaltedStage = StageName | "impact_assessment";
 
@@ -28,7 +28,7 @@ export interface GateResult {
   routedTo: "manual_review_queue" | null;
 }
 
-// Impact 
+// Impact
 export type ImpactSeverity = "None" | "Minor" | "Major" | "Critical";
 
 export interface ImpactParameter {
@@ -46,7 +46,7 @@ export interface ImpactAssessmentParsed {
   confidence_score: number;
 }
 
-// Stage results 
+// Stage results
 export type ClassificationType = "Deviation" | "Change Control" | "Hybrid";
 
 export interface ClassificationParsed {
@@ -61,7 +61,7 @@ export interface RCAResult {
   primary_root_cause: string;
   contributing_factors: string[];
   evidence: string[];
-  impact_assessment: string;
+  impact_summary: string;
   confidence_score: number;
 }
 
@@ -87,7 +87,7 @@ export type ImpactAssessmentStage = StageWrapper<ImpactAssessmentParsed>;
 export type RCAStage = StageWrapper<RCAResult>;
 export type CAPAStage = StageWrapper<CAPAResult>;
 
-// Full pipeline result 
+// Full pipeline result
 export interface PipelineResult {
   status: "halted_for_human_review" | "completed_pending_human_review";
   haltedAt: HaltedStage | null;
@@ -109,7 +109,7 @@ export interface PipelineResult {
   };
 }
 
-// API response shapes (subset of PipelineResult returned per endpoint) 
+// API response shapes (subset of PipelineResult returned per endpoint)
 export interface ImpactAssessmentApiResponse extends Pick<
   PipelineResult,
   "status" | "haltedAt" | "auditTrail" | "query"

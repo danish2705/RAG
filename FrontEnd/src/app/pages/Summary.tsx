@@ -185,7 +185,7 @@ export function Summary() {
       setIsSaved(true);
       setTimeout(() => {
         clearWorkflow();
-        navigate("/db-log");
+        navigate("/records");
       }, 800);
     } catch (err) {
       setSaveError(

@@ -25,7 +25,7 @@ export interface RCAResult {
   primary_root_cause: string;
   contributing_factors: string[];
   evidence: string[];
-  impact_assessment: string;
+  impact_summary: string;
   confidence_score: number;
 }
 
@@ -49,6 +49,3 @@ export interface DeviationCase {
   status: string;
   created_at: string;
 }
-
-
-

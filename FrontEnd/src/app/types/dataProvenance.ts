@@ -8,7 +8,7 @@ export interface DataField<T> {
   modifiedAt?: string; // ISO timestamp
 }
 
-// Stage-level provenance wrappers 
+// Stage-level provenance wrappers
 
 export interface ClassificationProvenance {
   classification: DataField<"Deviation" | "Change Control" | "Hybrid">;
@@ -37,7 +37,7 @@ export interface RCAProvenance {
   contributing_factors: DataField<string[]>;
   evidence: DataField<string[]>;
   sequence_of_events: string[];
-  impact_assessment: string;
+  impact_summary: string;
   confidence_score: number;
 }
 
@@ -50,7 +50,7 @@ export interface CAPAProvenance {
   confidence_score: number;
 }
 
-// Helpers 
+// Helpers
 /** Wrap a value as AI-generated */
 export function aiField<T>(value: T): DataField<T> {
   return { value, source: "ai" };

@@ -10,7 +10,10 @@ import { runRCAStage, type RCAStageResult } from "./rca.js";
 import { runCAPAStage, type CAPAStageResult } from "./capa.js";
 import { evaluateGate, type GateResult } from "./confidenceGate.js";
 import { createAuditTrail, type AuditEntry } from "../utils/auditLogger.js";
-import type { ClassificationResult } from "../llm/schemas.js";
+import type {
+  ClassificationResult,
+  ImpactAssessmentResult,
+} from "../llm/schemas.js";
 
 export type PipelineStatus =
   | "halted_for_human_review"
@@ -126,11 +129,18 @@ export async function runImpactAssessmentOnly(
 /**
  * Stage 3 ONLY: root cause analysis. Call only after impact assessment has
  * been accepted/overridden by a human.
+ *
+ * `approvedImpactAssessment` is the Stage 2 result the human confirmed
+ * (identical to what Stage 2 returned, unless they overrode it — in which
+ * case the frontend should send the overridden values). RCA is passed the
+ * FULL upstream chain (classification + impact assessment), not just the
+ * immediately-previous stage, so investigation depth scales with severity.
  */
 export async function runRCAOnly(
   query: string,
   contextText: string,
   approvedClassification: ClassificationResult,
+  approvedImpactAssessment: ImpactAssessmentResult,
 ): Promise<PipelineResult> {
   const audit = createAuditTrail();
   const stages: PipelineStages = {};
@@ -139,6 +149,7 @@ export async function runRCAOnly(
     query,
     contextText,
     approvedClassification,
+    approvedImpactAssessment,
   );
   const rcaGate = evaluateGate("rca", rcaResult.parsed, rcaResult.error);
   stages.rca = { ...rcaResult, gate: rcaGate };
@@ -155,15 +166,26 @@ export async function runRCAOnly(
  * Stage 4 ONLY: CAPA recommendations. Call only after RCA has been
  * accepted/overridden by a human. Even a fully-passed chain is advisory
  * only — never auto-approved/closed.
+ *
+ * Receives the FULL approved chain — classification, impact assessment,
+ * and RCA — not just RCA alone, so recommended actions can be sized to
+ * severity and traced back to the specific root cause.
  */
 export async function runCAPAOnly(
   query: string,
+  approvedClassification: ClassificationResult,
+  approvedImpactAssessment: ImpactAssessmentResult,
   approvedRCA: RCAStageResult["parsed"],
 ): Promise<PipelineResult> {
   const audit = createAuditTrail();
   const stages: PipelineStages = {};
 
-  const capaResult = await runCAPAStage(query, approvedRCA);
+  const capaResult = await runCAPAStage(
+    query,
+    approvedClassification,
+    approvedImpactAssessment,
+    approvedRCA,
+  );
   const capaGate = evaluateGate("capa", capaResult.parsed, capaResult.error);
   stages.capa = { ...capaResult, gate: capaGate };
   audit.record({ ...capaGate });

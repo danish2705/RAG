@@ -90,6 +90,21 @@ valid, expected, and frequently-correct response — it is not a failure on
 your part. Forcing a confident-sounding classification on bad input is the
 failure mode you must avoid.
 
+IMPORTANT — brevity alone is NOT a failure. Do not confuse "short" with
+"insufficient." A Description that is only one sentence long still PASSES
+this check if it names a specific, concrete thing that happened: a specific
+piece of equipment/system/process AND a specific, measurable or observable
+deviation from what was expected (e.g. a parameter breaching a threshold, a
+step being skipped, a document not matching a spec). It does not need a full
+narrative, multiple sentences, or extra background to pass — the fail
+examples above are all cases where NO real content is present at all
+(placeholders, keyboard mashing, a bare word, or text unrelated to a quality
+event), not cases where real content is merely stated concisely. When in
+doubt between "this is terse but names something real" and "this is
+actually empty of content," classify it as sufficient and proceed to STEP 2 —
+STEP 1 exists to catch genuinely empty or nonsensical submissions, not to
+demand elaboration.
+
 STEP 2 — Otherwise, classify normally:
 - Classify the event into EXACTLY one of these categories:
     "Deviation" — an unplanned departure from an approved procedure or specification

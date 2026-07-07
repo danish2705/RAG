@@ -262,34 +262,6 @@ export function Summary() {
         </Dialog>
 
         <div className="mb-6 flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="flex items-center gap-1 text-muted-foreground hover:text-foreground px-2"
-            onClick={() => navigate("/deviation/capa")}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            Back
-          </Button>
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground">Summary</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Review the complete record before saving
-            </p>
-          </div>
           {isSaved && (
             <Badge className="ml-auto bg-green-100 text-green-700 border-green-200 text-sm px-3 py-1">
               <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Saved — redirecting…
@@ -302,7 +274,8 @@ export function Summary() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                Classification <Sparkles className="h-5 w-5 text-blue-600" />
+                <Sparkles className="h-5 w-5 text-blue-600" />
+                Classification 
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">

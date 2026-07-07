@@ -11,6 +11,11 @@ import { Records } from "./pages/Records";
 import { AuditTrail } from "./pages/AuditTrail";
 import { Reports } from "./pages/Reports";
 import { Settings } from "./pages/Settings";
+import { ChangeImpactAssessment } from "./pages/ChangeImpactAssessment";
+import { RiskCriticality } from "./pages/RiskCriticality";
+import { ValidationTesting } from "./pages/ValidationTesting";
+import { ImplementationControl } from "./pages/ImplementationControl";
+import { ChangecontrolSummary } from "./pages/ChangecontrolSummary";
 
 export const router = createBrowserRouter([
   {
@@ -24,6 +29,11 @@ export const router = createBrowserRouter([
       { path: "deviation/root-cause", Component: RootCause },
       { path: "deviation/capa", Component: Capa },
       { path: "deviation/summary", Component: Summary },
+      { path: "change-control/change-impact-assessment", Component: ChangeImpactAssessment },
+      { path: "change-control/risk-criticality", Component: RiskCriticality },
+      { path: "change-control/validation-testing", Component: ValidationTesting },
+      { path: "change-control/implementation", Component: ImplementationControl },
+      { path: "change-control/summary", Component: ChangecontrolSummary },
       { path: "records", Component: Records },
       { path: "audit-trail", Component: AuditTrail },
       { path: "reports", Component: Reports },

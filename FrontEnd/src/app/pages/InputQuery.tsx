@@ -1,7 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router";
 import { apiFetch } from "../../utils/api";
-import { StepProgressBar } from "../components/eventIntake/StepProgressBar";
 import {
   Card,
   CardContent,
@@ -193,7 +192,6 @@ export function NewDeviation() {
       <div
         className={`h-full p-6 overflow-y-auto transition-[margin] duration-200 ${chatOpen ? "mr-80" : ""}`}
       >
-        <StepProgressBar />
 
         {submitError && (
           <div className="mb-6 flex items-start gap-2 rounded-lg border border-red-200 bg-red-500/10 dark:border-red-800 p-4 text-sm text-red-700 dark:text-red-400">

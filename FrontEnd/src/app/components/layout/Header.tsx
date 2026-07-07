@@ -51,6 +51,31 @@ const PAGE_META: Record<
     subtitle: "Review and save the complete quality event record",
     back: "/deviation/capa",
   },
+  "/change-control/change-impact-assessment": {
+    title: "Impact Assessment",
+    subtitle: "Evaluate the impact of the change control event",
+    back: "/deviation/ai-recommendation",
+  },
+  "/change-control/risk-criticality": {
+    title: "Risk & Criticality Evaluation",
+    subtitle: "Assess the risk and criticality of the change control event",
+    back: "/change-control/change-impact-assessment",
+  },
+  "/change-control/validation-testing": {
+    title: "Validation & Testing Strategy",
+    subtitle: "Define the validation and testing strategy for the change control event",
+    back: "/change-control/risk-criticality",
+  },
+  "/change-control/implementation": {
+    title: "Implementation & Control Actions",
+    subtitle: "Plan the implementation and control actions for the change control event", 
+    back: "/change-control/validation-testing",
+  },
+  "/change-control/summary": {
+    title: "Summary",
+    subtitle: "Review and save the complete change control record",
+    back: "/change-control/implementation",
+  },
   "/": {
     title: "Dashboard",
     subtitle: "Overview of quality events and metrics",

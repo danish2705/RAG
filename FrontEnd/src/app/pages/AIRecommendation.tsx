@@ -64,6 +64,12 @@ function getClassificationBadgeClass(type: string): string {
   return "bg-muted text-muted-foreground border-border";
 }
 
+function getImpactAssessmentRoute(classification: ClassificationType): string {
+  return classification === "Change Control"
+    ? "/change-control/change-impact-assessment"
+    : "/deviation/impact-assessment";
+}
+
 //Component
 export function AIRecommendation() {
   const navigate = useNavigate();
@@ -177,7 +183,7 @@ export function AIRecommendation() {
           },
         });
 
-        navigate("/deviation/impact-assessment");
+        navigate(getImpactAssessmentRoute(approvedClassification.classification));
       } catch (err) {
         setAssessError(
           err instanceof Error
@@ -217,7 +223,7 @@ export function AIRecommendation() {
           classification: classificationProvenance,
         },
       });
-      navigate("/deviation/impact-assessment");
+      navigate(getImpactAssessmentRoute(approvedClassification.classification));
       return;
     }
 

@@ -1,10 +1,10 @@
 import { callLLM } from "../llm/client.js";
-import { IMPACT_ASSESSMENT_PROMPT } from "../llm/prompts.js";
+import { IMPACT_ASSESSMENT_PROMPT } from "../llm/prompts/deviation.js";
 import {
   ImpactAssessmentSchema,
   type ImpactAssessmentResult,
   type ClassificationResult,
-} from "../llm/schemas.js";
+} from "../llm/schemas/deviation.js";
 import { extractJson } from "../utils/jsonExtractor.js";
 
 export interface ImpactAssessmentStageResult {

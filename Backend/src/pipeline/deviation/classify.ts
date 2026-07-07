@@ -1,10 +1,10 @@
-import { callLLM } from "../llm/client.js";
-import { CLASSIFICATION_PROMPT } from "../llm/prompts.js";
+import { callLLM } from "../../llm/client.js";
+import { CLASSIFICATION_PROMPT } from "../../llm/prompts/deviation.js";
 import {
   ClassificationSchema,
   type ClassificationResult,
-} from "../llm/schemas.js";
-import { extractJson } from "../utils/jsonExtractor.js";
+} from "../../llm/schemas/deviation.js";
+import { extractJson } from "../../utils/jsonExtractor.js";
 
 export interface ClassificationStageResult {
   rawText: string;

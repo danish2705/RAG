@@ -8,12 +8,12 @@ import {
 } from "./impactAssessment.js";
 import { runRCAStage, type RCAStageResult } from "./rca.js";
 import { runCAPAStage, type CAPAStageResult } from "./capa.js";
-import { evaluateGate, type GateResult } from "./confidenceGate.js";
-import { createAuditTrail, type AuditEntry } from "../utils/auditLogger.js";
+import { evaluateGate, type GateResult } from "../confidenceGate.js";
+import { createAuditTrail, type AuditEntry } from "../../utils/auditLogger.js";
 import type {
   ClassificationResult,
   ImpactAssessmentResult,
-} from "../llm/schemas.js";
+} from "../../llm/schemas/deviation.js";
 
 export type PipelineStatus =
   | "halted_for_human_review"

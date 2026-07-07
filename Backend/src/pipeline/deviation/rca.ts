@@ -1,12 +1,12 @@
-import { callLLM } from "../llm/client.js";
-import { RCA_PROMPT } from "../llm/prompts.js";
+import { callLLM } from "../../llm/client.js";
+import { RCA_PROMPT } from "../../llm/prompts/deviation.js";
 import {
   RCASchema,
   type RCAResult,
   type ClassificationResult,
   type ImpactAssessmentResult,
-} from "../llm/schemas.js";
-import { extractJson } from "../utils/jsonExtractor.js";
+} from "../../llm/schemas/deviation.js";
+import { extractJson } from "../../utils/jsonExtractor.js";
 
 export interface RCAStageResult {
   rawText: string;

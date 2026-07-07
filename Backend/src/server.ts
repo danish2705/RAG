@@ -7,12 +7,25 @@ import {
   runImpactAssessmentOnly,
   runRCAOnly,
   runCAPAOnly,
-} from "./pipeline/orchestrator.js";
+} from "./pipeline/deviation/orchestrator.js";
 import {
   ClassificationSchema,
   ImpactAssessmentSchema,
   RCASchema,
-} from "./llm/schemas.js";
+} from "./llm/schemas/deviation.js";
+import {
+  runChangeImpactAssessmentOnly,
+  runRiskCriticalityOnly,
+  runValidationTestingOnly,
+  runImplementationControlOnly,
+  runFinalSummaryOnly,
+} from "./pipeline/changeControl/orchestrator.js";
+import {
+  ChangeImpactAssessmentSchema,
+  RiskCriticalitySchema,
+  ValidationTestingSchema,
+  ImplementationControlSchema,
+} from "./llm/schemas/changeControl.js";
 import cors from "cors";
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
@@ -235,6 +248,318 @@ app.post(
   },
 );
 
+// ═════════════════════════════════════════════════════════════════════════
+// CHANGE CONTROL PIPELINE (Stage 0 classification is shared — see
+// /api/inputQuery above. These 5 routes only run after a human has
+// accepted/overridden that "Change Control" classification.)
+// ═════════════════════════════════════════════════════════════════════════
+
+interface ChangeImpactAssessmentRequestBody {
+  query?: unknown;
+  classification?: unknown;
+}
+
+// STAGE 1: Change Impact Assessment.
+app.post(
+  "/api/change-control/impact-assessment",
+  requireReady,
+  async (req: Request, res: Response): Promise<void> => {
+    const { query, classification } = (req.body ??
+      {}) as ChangeImpactAssessmentRequestBody;
+
+    if (typeof query !== "string" || query.trim().length === 0) {
+      res.status(400).json({
+        error: "Request body must include a non-empty 'query' string.",
+      });
+      return;
+    }
+
+    const parsedClassification = ClassificationSchema.safeParse(classification);
+    if (!parsedClassification.success) {
+      res.status(400).json({
+        error:
+          "Request body must include a valid 'classification' object (the approved Stage 0 result).",
+        details: parsedClassification.error.flatten(),
+      });
+      return;
+    }
+
+    try {
+      const { contextText } = await retrieveContext(query);
+      const result = await runChangeImpactAssessmentOnly(
+        query,
+        contextText,
+        parsedClassification.data,
+      );
+      res.json({ query, ...result });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      res.status(500).json({ error: message });
+    }
+  },
+);
+
+interface RiskCriticalityRequestBody {
+  query?: unknown;
+  changeImpactAssessment?: unknown;
+}
+
+// STAGE 2: Risk & Criticality Evaluation.
+app.post(
+  "/api/change-control/risk-criticality",
+  requireReady,
+  async (req: Request, res: Response): Promise<void> => {
+    const { query, changeImpactAssessment } = (req.body ??
+      {}) as RiskCriticalityRequestBody;
+
+    if (typeof query !== "string" || query.trim().length === 0) {
+      res.status(400).json({
+        error: "Request body must include a non-empty 'query' string.",
+      });
+      return;
+    }
+
+    const parsedImpact = ChangeImpactAssessmentSchema.safeParse(
+      changeImpactAssessment,
+    );
+    if (!parsedImpact.success) {
+      res.status(400).json({
+        error:
+          "Request body must include a valid 'changeImpactAssessment' object (the approved Stage 1 result).",
+        details: parsedImpact.error.flatten(),
+      });
+      return;
+    }
+
+    try {
+      const result = await runRiskCriticalityOnly(query, parsedImpact.data);
+      res.json({ query, ...result });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      res.status(500).json({ error: message });
+    }
+  },
+);
+
+interface ValidationTestingRequestBody {
+  query?: unknown;
+  changeImpactAssessment?: unknown;
+  riskCriticality?: unknown;
+}
+
+// STAGE 3: Validation & Testing Strategy.
+app.post(
+  "/api/change-control/validation-testing",
+  requireReady,
+  async (req: Request, res: Response): Promise<void> => {
+    const { query, changeImpactAssessment, riskCriticality } = (req.body ??
+      {}) as ValidationTestingRequestBody;
+
+    if (typeof query !== "string" || query.trim().length === 0) {
+      res.status(400).json({
+        error: "Request body must include a non-empty 'query' string.",
+      });
+      return;
+    }
+
+    const parsedImpact = ChangeImpactAssessmentSchema.safeParse(
+      changeImpactAssessment,
+    );
+    if (!parsedImpact.success) {
+      res.status(400).json({
+        error:
+          "Request body must include a valid 'changeImpactAssessment' object (the approved Stage 1 result).",
+        details: parsedImpact.error.flatten(),
+      });
+      return;
+    }
+
+    const parsedRisk = RiskCriticalitySchema.safeParse(riskCriticality);
+    if (!parsedRisk.success) {
+      res.status(400).json({
+        error:
+          "Request body must include a valid 'riskCriticality' object (the approved Stage 2 result).",
+        details: parsedRisk.error.flatten(),
+      });
+      return;
+    }
+
+    try {
+      const result = await runValidationTestingOnly(
+        query,
+        parsedImpact.data,
+        parsedRisk.data,
+      );
+      res.json({ query, ...result });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      res.status(500).json({ error: message });
+    }
+  },
+);
+
+interface ImplementationControlRequestBody {
+  query?: unknown;
+  changeImpactAssessment?: unknown;
+  riskCriticality?: unknown;
+  validationTesting?: unknown;
+}
+
+// STAGE 4: Implementation & Control Actions.
+app.post(
+  "/api/change-control/implementation-control",
+  requireReady,
+  async (req: Request, res: Response): Promise<void> => {
+    const {
+      query,
+      changeImpactAssessment,
+      riskCriticality,
+      validationTesting,
+    } = (req.body ?? {}) as ImplementationControlRequestBody;
+
+    if (typeof query !== "string" || query.trim().length === 0) {
+      res.status(400).json({
+        error: "Request body must include a non-empty 'query' string.",
+      });
+      return;
+    }
+
+    const parsedImpact = ChangeImpactAssessmentSchema.safeParse(
+      changeImpactAssessment,
+    );
+    if (!parsedImpact.success) {
+      res.status(400).json({
+        error:
+          "Request body must include a valid 'changeImpactAssessment' object (the approved Stage 1 result).",
+        details: parsedImpact.error.flatten(),
+      });
+      return;
+    }
+
+    const parsedRisk = RiskCriticalitySchema.safeParse(riskCriticality);
+    if (!parsedRisk.success) {
+      res.status(400).json({
+        error:
+          "Request body must include a valid 'riskCriticality' object (the approved Stage 2 result).",
+        details: parsedRisk.error.flatten(),
+      });
+      return;
+    }
+
+    const parsedValidation =
+      ValidationTestingSchema.safeParse(validationTesting);
+    if (!parsedValidation.success) {
+      res.status(400).json({
+        error:
+          "Request body must include a valid 'validationTesting' object (the approved Stage 3 result).",
+        details: parsedValidation.error.flatten(),
+      });
+      return;
+    }
+
+    try {
+      const result = await runImplementationControlOnly(
+        query,
+        parsedImpact.data,
+        parsedRisk.data,
+        parsedValidation.data,
+      );
+      res.json({ query, ...result });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      res.status(500).json({ error: message });
+    }
+  },
+);
+
+interface FinalSummaryRequestBody {
+  query?: unknown;
+  changeImpactAssessment?: unknown;
+  riskCriticality?: unknown;
+  validationTesting?: unknown;
+  implementationControl?: unknown;
+}
+
+// STAGE 5: Final Change Control Summary.
+app.post(
+  "/api/change-control/final-summary",
+  async (req: Request, res: Response): Promise<void> => {
+    const {
+      query,
+      changeImpactAssessment,
+      riskCriticality,
+      validationTesting,
+      implementationControl,
+    } = (req.body ?? {}) as FinalSummaryRequestBody;
+
+    if (typeof query !== "string" || query.trim().length === 0) {
+      res.status(400).json({
+        error: "Request body must include a non-empty 'query' string.",
+      });
+      return;
+    }
+
+    const parsedImpact = ChangeImpactAssessmentSchema.safeParse(
+      changeImpactAssessment,
+    );
+    if (!parsedImpact.success) {
+      res.status(400).json({
+        error:
+          "Request body must include a valid 'changeImpactAssessment' object (the approved Stage 1 result).",
+        details: parsedImpact.error.flatten(),
+      });
+      return;
+    }
+
+    const parsedRisk = RiskCriticalitySchema.safeParse(riskCriticality);
+    if (!parsedRisk.success) {
+      res.status(400).json({
+        error:
+          "Request body must include a valid 'riskCriticality' object (the approved Stage 2 result).",
+        details: parsedRisk.error.flatten(),
+      });
+      return;
+    }
+
+    const parsedValidation =
+      ValidationTestingSchema.safeParse(validationTesting);
+    if (!parsedValidation.success) {
+      res.status(400).json({
+        error:
+          "Request body must include a valid 'validationTesting' object (the approved Stage 3 result).",
+        details: parsedValidation.error.flatten(),
+      });
+      return;
+    }
+
+    const parsedImplementation = ImplementationControlSchema.safeParse(
+      implementationControl,
+    );
+    if (!parsedImplementation.success) {
+      res.status(400).json({
+        error:
+          "Request body must include a valid 'implementationControl' object (the approved Stage 4 result).",
+        details: parsedImplementation.error.flatten(),
+      });
+      return;
+    }
+
+    try {
+      const result = await runFinalSummaryOnly(
+        query,
+        parsedImpact.data,
+        parsedRisk.data,
+        parsedValidation.data,
+        parsedImplementation.data,
+      );
+      res.json({ query, ...result });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      res.status(500).json({ error: message });
+    }
+  },
+);
+
 // ─────────────────────────────────────────────────────────────────────────
 // SAVE: Persist a completed pipeline result to the DB.
 // ─────────────────────────────────────────────────────────────────────────
@@ -300,6 +625,87 @@ app.get("/api/cases", async (_req: Request, res: Response): Promise<void> => {
     res.status(500).json({ error: message });
   }
 });
+
+// ─────────────────────────────────────────────────────────────────────────
+// SAVE (Change Control): Persist a completed Change Control case to the DB.
+// Requires a `change_control_cases` table — see migration note below.
+// ─────────────────────────────────────────────────────────────────────────
+app.post(
+  "/api/change-control/save",
+  async (req: Request, res: Response): Promise<void> => {
+    const {
+      query,
+      classification,
+      change_impact_assessment,
+      risk_criticality,
+      validation_testing,
+      implementation_control,
+      final_summary,
+      status,
+      halted_at,
+      saved_by,
+    } = req.body;
+
+    try {
+      const result = await pool.query(
+        `INSERT INTO change_control_cases
+          (query, classification, change_impact_assessment, risk_criticality,
+           validation_testing, implementation_control, final_summary,
+           status, halted_at, saved_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         RETURNING id`,
+        [
+          query,
+          JSON.stringify(classification),
+          JSON.stringify(change_impact_assessment),
+          JSON.stringify(risk_criticality),
+          JSON.stringify(validation_testing),
+          JSON.stringify(implementation_control),
+          JSON.stringify(final_summary),
+          status,
+          halted_at,
+          saved_by,
+        ],
+      );
+      res.json({ id: result.rows[0].id });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      res.status(500).json({ error: message });
+    }
+  },
+);
+
+// ─────────────────────────────────────────────────────────────────────────
+// GET ALL CASES (Change Control): for the DB Log page.
+// ─────────────────────────────────────────────────────────────────────────
+app.get(
+  "/api/change-control/cases",
+  async (_req: Request, res: Response): Promise<void> => {
+    try {
+      const result = await pool.query(
+        `SELECT
+           id,
+           query,
+           saved_by,
+           classification,
+           change_impact_assessment,
+           risk_criticality,
+           validation_testing,
+           implementation_control,
+           final_summary,
+           status,
+           halted_at,
+           created_at
+         FROM change_control_cases
+         ORDER BY created_at DESC`,
+      );
+      res.json(result.rows);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      res.status(500).json({ error: message });
+    }
+  },
+);
 
 app.get("/healthz", (_req: Request, res: Response) =>
   res.json({ status: "ok", ready: isReady }),

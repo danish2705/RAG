@@ -4,7 +4,7 @@ import {
   runImpactAssessmentOnly,
   runRCAOnly,
   runCAPAOnly,
-} from "./pipeline/orchestrator.js";
+} from "./pipeline/deviation/orchestrator.js";
 
 // Equivalent to the notebook's last cell: print(run_agent(query))
 const query = `

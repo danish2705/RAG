@@ -1,6 +1,14 @@
 import { config } from "../config.js";
 
-export type StageName = "classification" | "rca" | "capa";
+export type StageName =
+  | "classification"
+  | "rca"
+  | "capa"
+  | "change_impact_assessment"
+  | "risk_criticality"
+  | "validation_testing"
+  | "implementation_control"
+  | "final_summary";
 
 export type GateReasonCode =
   | "invalid_output"
@@ -61,7 +69,7 @@ const BLOCKING_CLASSIFICATIONS = new Set<string>([
 export function evaluateGate(
   stageName: StageName,
   parsed: GatedStageOutput | null,
-  validationError: Error | null = null
+  validationError: Error | null = null,
 ): GateResult {
   const reasons: GateReason[] = [];
 

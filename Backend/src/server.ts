@@ -79,9 +79,7 @@ interface ImpactAssessmentRequestBody {
   classification?: unknown;
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// STAGE 2: Impact / severity assessment.
-// ─────────────────────────────────────────────────────────────────────────
+//Impact / severity assessment.
 app.post(
   "/api/deviations/impact-assessment",
   requireReady,
@@ -127,9 +125,7 @@ interface RCARequestBody {
   impactAssessment?: unknown;
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// STAGE 3: Root cause analysis.
-// ─────────────────────────────────────────────────────────────────────────
+//Root cause analysis.
 app.post(
   "/api/deviations/rca",
   requireReady,
@@ -187,9 +183,7 @@ interface CAPARequestBody {
   rca?: unknown;
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// STAGE 4: CAPA recommendations.
-// ─────────────────────────────────────────────────────────────────────────
+//CAPA recommendations.
 app.post(
   "/api/deviations/capa",
   async (req: Request, res: Response): Promise<void> => {
@@ -248,18 +242,13 @@ app.post(
   },
 );
 
-// ═════════════════════════════════════════════════════════════════════════
-// CHANGE CONTROL PIPELINE (Stage 0 classification is shared — see
-// /api/inputQuery above. These 5 routes only run after a human has
-// accepted/overridden that "Change Control" classification.)
-// ═════════════════════════════════════════════════════════════════════════
-
+//CHANGE CONTROL PIPELINE
 interface ChangeImpactAssessmentRequestBody {
   query?: unknown;
   classification?: unknown;
 }
 
-// STAGE 1: Change Impact Assessment.
+//Change Impact Assessment
 app.post(
   "/api/change-control/impact-assessment",
   requireReady,
@@ -304,7 +293,7 @@ interface RiskCriticalityRequestBody {
   changeImpactAssessment?: unknown;
 }
 
-// STAGE 2: Risk & Criticality Evaluation.
+//Risk & Criticality Evaluation
 app.post(
   "/api/change-control/risk-criticality",
   requireReady,
@@ -347,7 +336,7 @@ interface ValidationTestingRequestBody {
   riskCriticality?: unknown;
 }
 
-// STAGE 3: Validation & Testing Strategy.
+//Validation & Testing Strategy
 app.post(
   "/api/change-control/validation-testing",
   requireReady,
@@ -405,7 +394,7 @@ interface ImplementationControlRequestBody {
   validationTesting?: unknown;
 }
 
-// STAGE 4: Implementation & Control Actions.
+//Implementation & Control Actions.
 app.post(
   "/api/change-control/implementation-control",
   requireReady,
@@ -480,7 +469,7 @@ interface FinalSummaryRequestBody {
   implementationControl?: unknown;
 }
 
-// STAGE 5: Final Change Control Summary.
+//Final Change Control Summary.
 app.post(
   "/api/change-control/final-summary",
   async (req: Request, res: Response): Promise<void> => {
@@ -560,9 +549,7 @@ app.post(
   },
 );
 
-// ─────────────────────────────────────────────────────────────────────────
-// SAVE: Persist a completed pipeline result to the DB.
-// ─────────────────────────────────────────────────────────────────────────
+//SAVE
 app.post("/api/save", async (req: Request, res: Response): Promise<void> => {
   const {
     query,
@@ -599,9 +586,7 @@ app.post("/api/save", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-// ─────────────────────────────────────────────────────────────────────────
 // GET ALL CASES: Returns all saved deviation cases for the DB Log page.
-// ─────────────────────────────────────────────────────────────────────────
 app.get("/api/cases", async (_req: Request, res: Response): Promise<void> => {
   try {
     const result = await pool.query(
@@ -626,10 +611,7 @@ app.get("/api/cases", async (_req: Request, res: Response): Promise<void> => {
   }
 });
 
-// ─────────────────────────────────────────────────────────────────────────
 // SAVE (Change Control): Persist a completed Change Control case to the DB.
-// Requires a `change_control_cases` table — see migration note below.
-// ─────────────────────────────────────────────────────────────────────────
 app.post(
   "/api/change-control/save",
   async (req: Request, res: Response): Promise<void> => {
@@ -675,9 +657,7 @@ app.post(
   },
 );
 
-// ─────────────────────────────────────────────────────────────────────────
 // GET ALL CASES (Change Control): for the DB Log page.
-// ─────────────────────────────────────────────────────────────────────────
 app.get(
   "/api/change-control/cases",
   async (_req: Request, res: Response): Promise<void> => {

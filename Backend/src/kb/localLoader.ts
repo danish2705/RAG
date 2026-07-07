@@ -47,7 +47,16 @@ export async function loadKnowledgeBase(
   const docs: SourceDoc[] = [];
   for (const filePath of filePaths) {
     const content = await loadPdfFromDisk(filePath);
-    docs.push({ content, source: filePath, type: docType });
+    // Use a path relative to kb.localPath (not the absolute filesystem path)
+    // as doc_key, so it stays stable across machines/users who each have
+    // kb-data mounted under a different absolute path (e.g. different
+    // Windows usernames). Otherwise the same PDF gets a different doc_key
+    // per person and buildIndex() re-embeds it as if it were new content.
+    const relativeSource = path
+      .relative(config.kb.localPath, filePath)
+      .split(path.sep)
+      .join("/"); // normalize Windows backslashes so the key is identical cross-platform too
+    docs.push({ content, source: relativeSource, type: docType });
   }
 
   return docs;

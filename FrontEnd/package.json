@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "vite"
+    "dev": "vite",
+    "lint": "eslint . --ext .ts,.tsx"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -69,7 +70,12 @@
   "devDependencies": {
     "@tailwindcss/vite": "4.1.12",
     "@types/node": "^26.1.0",
+    "@typescript-eslint/eslint-plugin": "^8.63.0",
+    "@typescript-eslint/parser": "^8.63.0",
     "@vitejs/plugin-react": "4.7.0",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "tailwindcss": "4.1.12",
     "vite": "6.3.5"
   },

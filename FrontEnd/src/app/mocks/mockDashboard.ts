@@ -1,5 +1,16 @@
-import { LayoutGrid, AlertTriangle, GitBranch, Layers, RefreshCw, BarChart2, CheckCircle, } from "lucide-react";
-import type { RecentRecord, SeverityColors, StatusColors, } from "../types/dashboard";
+import {
+  LayoutGrid,
+  AlertTriangle,
+  GitBranch,
+  RefreshCw,
+  BarChart2,
+  CheckCircle,
+} from "lucide-react";
+import type {
+  RecentRecord,
+  SeverityColors,
+  StatusColors,
+} from "../types/dashboard";
 
 export const recentRecords: RecentRecord[] = [
   {
@@ -62,12 +73,6 @@ export const eventTypeCards = [
     value: "28",
     sub: "Change control records year-to-date",
     icon: GitBranch,
-  },
-  {
-    label: "Total Hybrid",
-    value: "8",
-    sub: "Records spanning deviation and change",
-    icon: Layers,
   },
 ];
 

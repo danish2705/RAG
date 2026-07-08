@@ -15,7 +15,8 @@ export type GateReasonCode =
   | "missing_confidence_score"
   | "low_confidence"
   | "blocking_classification"
-  | "insufficient_evidence";
+  | "insufficient_evidence"
+  | "insufficient_input";
 
 export interface GateReason {
   code: GateReasonCode;
@@ -117,5 +118,25 @@ export function evaluateGate(
     passed,
     reasons,
     routedTo: passed ? null : "manual_review_queue",
+  };
+}
+
+/**
+ * Builds a GateResult directly for the "insufficient_input" case — used
+ * when the classification stage returned { insufficient_input: true, reason }
+ * instead of a real ClassificationResult. This is NOT run through
+ * evaluateGate() because that function assumes a GatedStageOutput shape;
+ * insufficient_input is a deliberately different, valid response shape from
+ * the LLM (see prompts/deviation.ts STEP 1), not a parse/validation error.
+ */
+export function buildInsufficientInputGate(
+  stageName: StageName,
+  reason: string,
+): GateResult {
+  return {
+    stage: stageName,
+    passed: false,
+    reasons: [{ code: "insufficient_input", detail: reason }],
+    routedTo: "manual_review_queue",
   };
 }

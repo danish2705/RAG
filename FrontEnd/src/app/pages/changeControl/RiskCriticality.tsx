@@ -1,7 +1,7 @@
-import { StepProgressBar } from "../components/eventIntake";
-import { useWorkflowStore } from "../store/workflowStore";
+import { StepProgressBar } from "../../components/eventIntake";
+import { useWorkflowStore } from "../../store/workflowStore";
 
-export function ValidationTesting() {
+export function RiskCriticality() {
   const result = useWorkflowStore((s) => s.pipelineResult);
 
   return (
@@ -12,7 +12,7 @@ export function ValidationTesting() {
 
       <div className="mt-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-          Validation Testing Strategy
+          Risk Criticality Evaluation
         </h1>
       </div>
     </div>

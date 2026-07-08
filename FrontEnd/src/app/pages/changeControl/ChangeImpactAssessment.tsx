@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { apiFetch } from "../../utils/api";
+import { apiFetch } from "../../../utils/api";
 import {
   DecisionAction,
   ModifiedBadge,
@@ -8,22 +8,22 @@ import {
   OverrideBar,
   RejectDialog,
   StepProgressBar,
-} from "../components/eventIntake";
+} from "../../components/eventIntake";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { Textarea } from "../components/ui/textarea";
+} from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Textarea } from "../../components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../components/ui/select";
+} from "../../components/ui/select";
 import { AlertTriangle, Sparkles } from "lucide-react";
 import {
   Dialog,
@@ -32,22 +32,22 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../components/ui/dialog";
+} from "../../components/ui/dialog";
 import {
   aiField,
   markModified,
   type ChangeImpactAssessmentProvenance,
-} from "../types/dataProvenance";
-import { AIAssistant } from "../components/chat/ai-assistant";
+} from "../../types/dataProvenance";
+import { AIAssistant } from "../../components/chat/ai-assistant";
 import type {
   ChangeImpactAssessmentParsed,
   GxpClassification,
   RiskLevel,
   RCAApiResponse,
   RiskCriticalityApiResponse,
-} from "../types/pipeline";
-import { useWorkflowStore } from "../store/workflowStore";
-import { CHANGE_IMPACT_FIELD_LABELS } from "../mocks/mockImpactAssessment";
+} from "../../types/pipeline";
+import { useWorkflowStore } from "../../store/workflowStore";
+import { CHANGE_IMPACT_FIELD_LABELS } from "../../mocks/mockImpactAssessment";
 
 //Helpers
 function parseLines(text: string): string[] {

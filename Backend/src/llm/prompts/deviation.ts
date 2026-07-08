@@ -57,6 +57,18 @@ of any other field, or because the fields contradict each other. Ask:
   (c) Do the fields agree with each other, or do they contradict (e.g. the
       Description talks about something completely unrelated to the stated
       Event Type or Source System)?
+      IMPORTANT — this only means TOTALLY unrelated topics (e.g. Event Type
+      says "Temperature Excursion" but Description talks about a printer
+      jam). It does NOT mean "the Event Type field doesn't perfectly match
+      whether this turns out to be a Deviation or a Change Control." A
+      Description about a speed adjustment under an Event Type of
+      "Equipment Malfunction" is NOT a contradiction — a malfunction
+      plausibly explains or relates to a speed change either way, and
+      whether that speed change was planned (Change Control) or unplanned
+      (Deviation) is EXACTLY the kind of judgment call STEP 2 exists to
+      make, not a reason to fail STEP 1. Only fail on (c) when the fields
+      describe entirely different subject matter with no plausible
+      connection at all.
   (d) Is the content topically related to GMP/quality/manufacturing events at
       all, or is any required field unrelated, nonsensical, random characters,
       or a placeholder?
@@ -92,24 +104,107 @@ failure mode you must avoid.
 
 IMPORTANT — brevity alone is NOT a failure. Do not confuse "short" with
 "insufficient." A Description that is only one sentence long still PASSES
-this check if it names a specific, concrete thing that happened: a specific
-piece of equipment/system/process AND a specific, measurable or observable
-deviation from what was expected (e.g. a parameter breaching a threshold, a
-step being skipped, a document not matching a spec). It does not need a full
-narrative, multiple sentences, or extra background to pass — the fail
-examples above are all cases where NO real content is present at all
-(placeholders, keyboard mashing, a bare word, or text unrelated to a quality
-event), not cases where real content is merely stated concisely. When in
+this check if it names a specific, concrete thing that happened OR was
+proposed. This applies equally to both kinds of events, and the bar looks
+different for each:
+  - For a DEVIATION-shaped description: a specific piece of
+    equipment/system/process AND a specific, measurable or observable
+    deviation from what was expected (e.g. a parameter breaching a
+    threshold, a step being skipped, a document not matching a spec).
+  - For a CHANGE-CONTROL-shaped description: naming the TYPE/CATEGORY of
+    change (e.g. "a raw material was changed," "a process parameter was
+    updated," "new equipment was installed," "an SOP was revised") IS
+    sufficient on its own — it does NOT need to name the exact specific
+    item (which raw material, which parameter, which SOP number) to pass.
+    A human reviewer can supply that specific detail later; STEP 1 only
+    needs to confirm the submission describes a real category of change to
+    a real thing (a material, process, system, equipment, or document),
+    not that every identifying detail is present.
+Examples that PASS (do not mark insufficient_input for inputs like these):
+  - "Raw materials were changed during medicine production." — names a
+    real category of change (raw material) to a real GxP-relevant process.
+  - "The supplier for an excipient was switched." — same reasoning.
+  - "raw materials changed for medicines prodcution" — same reasoning as
+    the first example, DESPITE the typos ("prodcution") and informal
+    phrasing. See the rule on typos immediately below.
+
+Spelling, grammar, typos, and informal phrasing are NEVER grounds for
+insufficient_input, ever, under any circumstance, even in combination with
+other borderline factors. If you can confidently infer the intended meaning
+despite a misspelling (e.g. "prodcution" → "production", "mooved" →
+"moved", "recieved" → "received"), silently read it as intended and
+evaluate THAT meaning — do not flag the submission as vague or unclear
+because of how it was spelled or worded, and do not let a typo tip an
+otherwise-passing submission into failing. Only fall back to
+insufficient_input if, even after correcting for obvious typos, the
+underlying content itself is missing, contradictory, or nonsensical per
+(a)-(d) above. Do not mention spelling, grammar, or typos anywhere in your
+rationale or in an insufficient_input reason, even as one factor among
+several — correct for it silently and judge, and write about, only the
+underlying substance.
+
+Genuine ambiguity about whether something is a Deviation or a Change
+Control (e.g. it's unclear from the description whether a change was
+planned or unplanned) is ALSO never grounds for insufficient_input. This is
+expected, normal, and exactly what STEP 2's tie-breaker rule and the
+confidence_score exist to handle — make your best-judgment classification,
+explain the ambiguity in the rationale, and reflect the uncertainty with a
+LOWER confidence_score instead of refusing to classify. A low-confidence,
+clearly-reasoned classification is always more useful to a human reviewer
+than a refusal to classify at all.
+
+It does not need a full narrative, multiple sentences, or extra background
+to pass — the fail examples above are all cases where NO real content is
+present at all (placeholders, keyboard mashing, a bare word, or text
+unrelated to a quality event), not cases where real content is merely
+stated concisely or without every specific identifier filled in. When in
 doubt between "this is terse but names something real" and "this is
 actually empty of content," classify it as sufficient and proceed to STEP 2 —
 STEP 1 exists to catch genuinely empty or nonsensical submissions, not to
-demand elaboration.
+demand elaboration or exact specificity.
 
 STEP 2 — Otherwise, classify normally:
 - Classify the event into EXACTLY one of these categories:
     "Deviation" — an unplanned departure from an approved procedure or specification
     "Change Control" — a planned or proposed change to a process, system, or document
-    "Hybrid" — the event contains both a deviation AND a change control element
+- The DESCRIPTION field is the primary judge for this classification — it
+  carries the actual narrative of what happened or was proposed, and your
+  classification should be grounded mainly in what it says. The other
+  fields (Site, Source System, Event Type, Impacted Batch/Lot, Impacted
+  System, Immediate Actions Taken) are SUPPORTING CONTEXT ONLY — use them
+  to add or slightly adjust confidence, never to override what the
+  Description itself clearly describes.
+  As general reference points for how the supporting fields can nudge
+  confidence (not override the Description):
+    - Event Types like "Temperature Excursion," "Equipment Malfunction,"
+      "Data Integrity Issue," "Documentation Error," "Process Deviation,"
+      or "Material Discrepancy" typically describe unplanned occurrences.
+    - Event Types like "Material Change," "Process/Equipment Change," or
+      "System/Documentation Change" are DELIBERATELY NEUTRAL — they do not
+      by themselves indicate Deviation or Change Control. For these, rely
+      almost entirely on the Description to determine the direction (e.g.
+      "Material Change" + a Description about a planned supplier switch →
+      Change Control; "Material Change" + a Description about an
+      unapproved substitution that was discovered after the fact →
+      Deviation).
+    - Source System, Impacted Batch/Lot, Impacted System, and Immediate
+      Actions Taken can each nudge confidence slightly in the same way.
+  When the supporting fields agree with the Description, that agreement
+  should raise your confidence_score. When a supporting field disagrees
+  with what the Description clearly describes, trust the Description,
+  note the mismatch in the rationale, and lower the confidence_score
+  slightly to reflect it — never let a supporting field override or
+  contradict a clear Description, and never treat this kind of mismatch as
+  insufficient_input.
+- There is no third "mixed" or "hybrid" category. If a submission genuinely
+  contains elements of both, classify it as whichever is the DOMINANT or
+  TRIGGERING element — the thing that actually started this record. As a
+  rule of thumb: if a change was planned/proposed and something went wrong
+  as a result, classify as "Deviation" (the unplanned departure is the
+  reportable event). If a change is simply being proposed/implemented with
+  no unplanned departure yet, classify as "Change Control". Explain this
+  judgment call in the rationale so a human reviewer can see why you picked
+  one over the other.
 - Provide a clear rationale as a list of bullet points explaining WHY you chose this classification
 - Provide a confidence_score
 
@@ -150,7 +245,7 @@ complete the other fields look.
 
 Required JSON structure (return ONLY this, no extra text):
 {
-  "classification": "Deviation | Change Control | Hybrid",
+  "classification": "Deviation | Change Control",
   "rationale": [
     "Bullet point reason 1",
     "Bullet point reason 2",
@@ -225,8 +320,8 @@ approved "Impact Assessment" (from Stage 2, confirmed by a human reviewer —
 severity ratings across product, patient, data integrity, and compliance
 impact). Analyze the event and provide a root cause analysis.
 
-Use the Classification to understand what kind of event this is (a Deviation,
-Change Control, or Hybrid investigation calls for different lines of inquiry).
+Use the Classification to understand what kind of event this is (a Deviation
+vs. Change Control investigation calls for different lines of inquiry).
 Use the Impact Assessment to calibrate how much rigor the investigation
 needs — a Critical or Major rating on any of the four impact parameters
 means contributing_factors and evidence must be investigated more thoroughly

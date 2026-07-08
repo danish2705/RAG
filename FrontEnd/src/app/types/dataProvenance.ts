@@ -11,7 +11,7 @@ export interface DataField<T> {
 // Stage-level provenance wrappers
 
 export interface ClassificationProvenance {
-  classification: DataField<"Deviation" | "Change Control" | "Hybrid">;
+  classification: DataField<"Deviation" | "Change Control">;
   rationale: DataField<string[]>;
   confidence_score: number;
 }
@@ -27,6 +27,25 @@ export interface ImpactAssessmentProvenance {
     patient_impact: ImpactParameterProvenance;
     data_integrity_impact: ImpactParameterProvenance;
     compliance_impact: ImpactParameterProvenance;
+  };
+  confidence_score: number;
+}
+
+// Change Control — Stage 1: Change Impact Assessment
+export interface ChangeImpactAssessmentProvenance {
+  impacted_systems: DataField<string[]>;
+  gxp_classification: {
+    value: DataField<"Direct Impact" | "Indirect Impact" | "No Impact">;
+    rationale: DataField<string>;
+  };
+  data_validation_impact: {
+    validated_state_affected: DataField<boolean>;
+    rationale: DataField<string>;
+  };
+  downstream_dependencies: DataField<string[]>;
+  risk_scoring: {
+    level: DataField<"Low" | "Moderate" | "High">;
+    rationale: DataField<string>;
   };
   confidence_score: number;
 }

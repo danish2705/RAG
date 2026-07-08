@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { apiFetch } from "../../utils/api";
+import { apiFetch } from "../../../utils/api";
 import {
   DecisionAction,
   ModifiedStatus,
@@ -8,16 +8,16 @@ import {
   OverrideBar,
   RejectDialog,
   StepProgressBar,
-} from "../components/eventIntake";
+} from "../../components/eventIntake";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
-import { Textarea } from "../components/ui/textarea";
+} from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
+import { Textarea } from "../../components/ui/textarea";
 import { Sparkles, Info, AlertTriangle } from "lucide-react";
 import {
   Select,
@@ -25,27 +25,27 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../components/ui/select";
+} from "../../components/ui/select";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "../components/ui/tooltip";
+} from "../../components/ui/tooltip";
 import {
   aiField,
   markModified,
   type ClassificationProvenance,
   type DataField,
-} from "../types/dataProvenance";
-import { AIAssistant } from "../components/chat/ai-assistant";
+} from "../../types/dataProvenance";
+import { AIAssistant } from "../../components/chat/ai-assistant";
 import type {
   ClassificationParsed,
   ClassificationType,
   ImpactAssessmentApiResponse,
   ChangeImpactAssessmentApiResponse,
-} from "../types/pipeline";
-import { useWorkflowStore } from "../store/workflowStore";
+} from "../../types/pipeline";
+import { useWorkflowStore } from "../../store/workflowStore";
 
 //Helpers
 function parseRationaleLines(text: string): string[] {
@@ -60,8 +60,6 @@ function getClassificationBadgeClass(type: string): string {
     return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
   if (type === "Change Control")
     return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
-  if (type === "Hybrid")
-    return "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800";
   return "bg-muted text-muted-foreground border-border";
 }
 
@@ -75,6 +73,7 @@ export function AIRecommendation() {
 
   const classificationStage = result?.stages?.classification;
   const parsed = classificationStage?.parsed;
+  const insufficientInput = classificationStage?.insufficientInput;
 
   const [isOverrideEditing, setIsOverrideEditing] = useState(false);
   const [editedClassification, setEditedClassification] =
@@ -92,8 +91,8 @@ export function AIRecommendation() {
   const [assessError, setAssessError] = useState<string | null>(null);
   const [overrideConfirmed, setOverrideConfirmed] = useState(false);
 
-  //Guard
-  if (!result || !parsed) {
+  //Guard: truly nothing submitted yet
+  if (!result) {
     return (
       <div className="p-6 w-full">
         <Card>
@@ -104,6 +103,51 @@ export function AIRecommendation() {
             </p>
             <p className="text-sm text-muted-foreground mt-1">
               Please go back and submit a quality event first.
+            </p>
+            <Button className="mt-4" onClick={() => navigate("/deviation")}>
+              Go Back
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  //Guard: the AI explicitly flagged this submission as too vague/off-topic
+  //to classify (a real, expected outcome — not a system error).
+  if (insufficientInput) {
+    return (
+      <div className="p-6 w-full">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <AlertTriangle className="h-10 w-10 text-yellow-500 mx-auto mb-3" />
+            <p className="text-muted-foreground font-medium">
+              This submission couldn&apos;t be classified.
+            </p>
+            <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
+              {insufficientInput.reason}
+            </p>
+            <Button className="mt-4" onClick={() => navigate("/deviation")}>
+              Go Back and Add More Detail
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  //Guard: some other unexpected failure (e.g. a genuine parse error)
+  if (!parsed) {
+    return (
+      <div className="p-6 w-full">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <AlertTriangle className="h-10 w-10 text-yellow-500 mx-auto mb-3" />
+            <p className="text-muted-foreground font-medium">
+              Classification failed unexpectedly.
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Please go back and try submitting the event again.
             </p>
             <Button className="mt-4" onClick={() => navigate("/deviation")}>
               Go Back
@@ -372,7 +416,6 @@ export function AIRecommendation() {
                       <SelectItem value="Change Control">
                         Change Control
                       </SelectItem>
-                      <SelectItem value="Hybrid">Hybrid</SelectItem>
                     </SelectContent>
                   </Select>
                 ) : (

@@ -4,12 +4,12 @@ import type {
   RCAProvenance,
   CAPAProvenance,
   // NEW: You may need to add this to your dataProvenance file eventually
-  // RiskCriticalityProvenance, 
+  // RiskCriticalityProvenance,
 } from "./dataProvenance";
 
-// Primitives 
+// Primitives
 // NEW: Added risk_criticality to StageName if you plan to use gates for it
-export type StageName = "classification" | "rca" | "capa" | "risk_criticality"; 
+export type StageName = "classification" | "rca" | "capa" | "risk_criticality";
 export type HaltedStage = StageName | "impact_assessment";
 
 export type GateReasonCode =
@@ -17,7 +17,8 @@ export type GateReasonCode =
   | "missing_confidence_score"
   | "low_confidence"
   | "blocking_classification"
-  | "insufficient_evidence";
+  | "insufficient_evidence"
+  | "insufficient_input";
 
 export interface GateReason {
   code: GateReasonCode;
@@ -31,7 +32,7 @@ export interface GateResult {
   routedTo: "manual_review_queue" | null;
 }
 
-// Impact 
+// Impact
 export type ImpactSeverity = "None" | "Minor" | "Major" | "Critical";
 
 export interface ImpactParameter {
@@ -50,7 +51,10 @@ export interface ImpactAssessmentParsed {
 }
 
 // Change Control — stage 1: Change Impact Assessment
-export type GxpClassification = "Direct Impact" | "Indirect Impact" | "No Impact";
+export type GxpClassification =
+  | "Direct Impact"
+  | "Indirect Impact"
+  | "No Impact";
 export type RiskLevel = "Low" | "Moderate" | "High";
 
 export interface ChangeImpactAssessmentParsed {
@@ -87,8 +91,8 @@ export interface RiskCriticalityParsed {
   confidence_score: number;
 }
 
-// Stage results 
-export type ClassificationType = "Deviation" | "Change Control" | "Hybrid";
+// Stage results
+export type ClassificationType = "Deviation" | "Change Control";
 
 export interface ClassificationParsed {
   classification: ClassificationType;
@@ -124,15 +128,24 @@ export interface StageWrapper<T> {
   gate: GateResult;
 }
 
-export type ClassificationStage = StageWrapper<ClassificationParsed>;
+export type ClassificationStage = StageWrapper<ClassificationParsed> & {
+  /**
+   * Set only when the classification LLM call decided the submission
+   * itself was too vague/contradictory/off-topic to classify (STEP 1 of
+   * the prompt). This is a valid, expected outcome, distinct from `error` —
+   * check this BEFORE treating a null `parsed` as "no result at all".
+   */
+  insufficientInput?: { insufficient_input: true; reason: string } | null;
+};
 export type ImpactAssessmentStage = StageWrapper<ImpactAssessmentParsed>;
-export type ChangeImpactAssessmentStage = StageWrapper<ChangeImpactAssessmentParsed>;
+export type ChangeImpactAssessmentStage =
+  StageWrapper<ChangeImpactAssessmentParsed>;
 // NEW: Added StageWrapper for RiskCriticality
-export type RiskCriticalityStage = StageWrapper<RiskCriticalityParsed>; 
+export type RiskCriticalityStage = StageWrapper<RiskCriticalityParsed>;
 export type RCAStage = StageWrapper<RCAResult>;
 export type CAPAStage = StageWrapper<CAPAResult>;
 
-// Full pipeline result 
+// Full pipeline result
 export interface PipelineResult {
   status: "halted_for_human_review" | "completed_pending_human_review";
   haltedAt: HaltedStage | null;
@@ -141,11 +154,11 @@ export interface PipelineResult {
     impactAssessment?: ImpactAssessmentStage;
     /** Change Control only — stage 1: Change Impact Assessment */
     changeImpactAssessment?: ChangeImpactAssessmentStage;
-    
+
     // NEW: Added riskCriticality to the stages object to fix the TS(2339) error
     /** Change Control only — stage 2: Risk & Criticality Evaluation */
-    riskCriticality?: RiskCriticalityStage; 
-    
+    riskCriticality?: RiskCriticalityStage;
+
     rca?: RCAStage;
     capa?: CAPAStage;
   };
@@ -159,11 +172,11 @@ export interface PipelineResult {
     rca?: RCAProvenance;
     capa?: CAPAProvenance;
     // NEW: If you use data provenance here, add this line too
-    // riskCriticality?: RiskCriticalityProvenance; 
+    // riskCriticality?: RiskCriticalityProvenance;
   };
 }
 
-// API response shapes (subset of PipelineResult returned per endpoint) 
+// API response shapes (subset of PipelineResult returned per endpoint)
 export interface ImpactAssessmentApiResponse extends Pick<
   PipelineResult,
   "status" | "haltedAt" | "auditTrail" | "query"
@@ -174,7 +187,7 @@ export interface ImpactAssessmentApiResponse extends Pick<
 /** Change Control classification routes here instead of ImpactAssessmentApiResponse —
  * returns both the shared severity assessment and the Change Control–specific
  * stage 1 (Change Impact Assessment) content. */
-export interface ChangeControlImpactAssessmentApiResponse extends Pick<
+export interface ChangeImpactAssessmentApiResponse extends Pick<
   PipelineResult,
   "status" | "haltedAt" | "auditTrail" | "query"
 > {

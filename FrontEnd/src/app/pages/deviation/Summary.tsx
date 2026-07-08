@@ -1,24 +1,24 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { apiFetch } from "../../utils/api";
-import { StepProgressBar } from "../components/eventIntake/StepProgressBar";
+import { apiFetch } from "../../../utils/api";
+import { StepProgressBar } from "../../components/eventIntake/StepProgressBar";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
+} from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../components/ui/dialog";
+} from "../../components/ui/dialog";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -26,10 +26,10 @@ import {
   Sparkles,
   User,
 } from "lucide-react";
-import type { DataField } from "../types/dataProvenance";
-import { AIAssistant } from "../components/chat/ai-assistant";
-import { useWorkflowStore } from "../store/workflowStore";
-import { PARAMETER_LABELS } from "../mocks/mockImpactAssessment";
+import type { DataField } from "../../types/dataProvenance";
+import { AIAssistant } from "../../components/chat/ai-assistant";
+import { useWorkflowStore } from "../../store/workflowStore";
+import { PARAMETER_LABELS } from "../../mocks/mockImpactAssessment";
 
 // Helpers
 function getClassificationBadgeClass(type: string): string {
@@ -37,8 +37,6 @@ function getClassificationBadgeClass(type: string): string {
     return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
   if (type === "Change Control")
     return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
-  if (type === "Hybrid")
-    return "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800";
   return "bg-muted text-muted-foreground border-border";
 }
 
@@ -275,7 +273,7 @@ export function Summary() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-blue-600" />
-                Classification 
+                Classification
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">

@@ -3,6 +3,8 @@ import type {
   ImpactAssessmentProvenance,
   RCAProvenance,
   CAPAProvenance,
+  ChangeImpactAssessmentProvenance,
+  RiskCriticalityProvenance,
 } from "./dataProvenance";
 
 // Primitives
@@ -46,6 +48,40 @@ export interface ImpactAssessmentParsed {
   confidence_score: number;
 }
 
+// Change Control
+export type RiskLevel = "Low" | "Moderate" | "High";
+
+export interface ChangeImpactAssessmentParsed {
+  impacted_systems_processes_studies: string[];
+  gxp_classification: "Direct" | "Indirect";
+  validated_state_affected: boolean;
+  data_validation_impact_rationale: string;
+  downstream_dependencies: string[];
+  risk_scoring: RiskLevel;
+  rationale: string[];
+  confidence_score: number;
+}
+
+export interface RiskRatingParsed {
+  level: RiskLevel;
+  rationale: string;
+}
+
+export interface RegulatoryImpactParsed {
+  level: RiskLevel;
+  filings_or_submissions_affected: string[];
+  rationale: string;
+}
+
+export interface RiskCriticalityParsed {
+  patient_safety_product_quality_impact: RiskRatingParsed;
+  regulatory_impact: RegulatoryImpactParsed;
+  data_integrity_risk: RiskRatingParsed;
+  operational_disruption_risk: RiskRatingParsed;
+  risk_ranking_justification: string;
+  confidence_score: number;
+}
+
 // Stage results
 export type ClassificationType = "Deviation" | "Change Control" | "Hybrid";
 
@@ -86,6 +122,9 @@ export type ClassificationStage = StageWrapper<ClassificationParsed>;
 export type ImpactAssessmentStage = StageWrapper<ImpactAssessmentParsed>;
 export type RCAStage = StageWrapper<RCAResult>;
 export type CAPAStage = StageWrapper<CAPAResult>;
+export type ChangeImpactAssessmentStage =
+  StageWrapper<ChangeImpactAssessmentParsed>;
+export type RiskCriticalityStage = StageWrapper<RiskCriticalityParsed>;
 
 // Full pipeline result
 export interface PipelineResult {
@@ -96,6 +135,12 @@ export interface PipelineResult {
     impactAssessment?: ImpactAssessmentStage;
     rca?: RCAStage;
     capa?: CAPAStage;
+    changeImpactAssessment?: ChangeImpactAssessmentStage;
+    riskCriticality?: RiskCriticalityStage;
+    // Stage 3+ aren't fully modeled on the frontend yet — kept loose here so
+    // this page can hand the raw stage payload off to the next page without
+    // needing to know its shape.
+    validationTesting?: StageWrapper<Record<string, unknown>>;
   };
   auditTrail: GateResult[];
   query: string;
@@ -106,6 +151,8 @@ export interface PipelineResult {
     impactAssessment?: ImpactAssessmentProvenance;
     rca?: RCAProvenance;
     capa?: CAPAProvenance;
+    changeImpactAssessment?: ChangeImpactAssessmentProvenance;
+    riskCriticality?: RiskCriticalityProvenance;
   };
 }
 
@@ -115,6 +162,13 @@ export interface ImpactAssessmentApiResponse extends Pick<
   "status" | "haltedAt" | "auditTrail" | "query"
 > {
   stages: { impactAssessment?: ImpactAssessmentStage };
+}
+
+export interface ChangeImpactAssessmentApiResponse extends Pick<
+  PipelineResult,
+  "status" | "haltedAt" | "auditTrail" | "query"
+> {
+  stages: { changeImpactAssessment?: ChangeImpactAssessmentStage };
 }
 
 export interface RCAApiResponse extends Pick<
@@ -129,4 +183,20 @@ export interface CAPAApiResponse extends Pick<
   "status" | "haltedAt" | "auditTrail" | "query"
 > {
   stages: { capa?: CAPAStage };
+}
+
+export interface RiskCriticalityApiResponse extends Pick<
+  PipelineResult,
+  "status" | "haltedAt" | "auditTrail" | "query"
+> {
+  stages: { riskCriticality?: RiskCriticalityStage };
+}
+
+// Stage 3 (Validation & Testing) response shape — only the fields this page
+// needs to know about in order to hand off and navigate forward.
+export interface ValidationTestingApiResponse extends Pick<
+  PipelineResult,
+  "status" | "haltedAt" | "auditTrail" | "query"
+> {
+  stages: { validationTesting?: StageWrapper<Record<string, unknown>> };
 }

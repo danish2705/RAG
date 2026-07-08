@@ -43,6 +43,7 @@ import type {
   ClassificationParsed,
   ClassificationType,
   ImpactAssessmentApiResponse,
+  ChangeImpactAssessmentApiResponse,
 } from "../types/pipeline";
 import { useWorkflowStore } from "../store/workflowStore";
 
@@ -156,32 +157,59 @@ export function AIRecommendation() {
       setIsAssessing(true);
 
       try {
-        const impactResult: ImpactAssessmentApiResponse = await apiFetch(
-          "/api/deviations/impact-assessment",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              query: result.query,
-              classification: approvedClassification,
-            }),
-          },
-        );
+        if (approvedClassification.classification === "Change Control") {
+          const impactResult: ChangeImpactAssessmentApiResponse =
+            await apiFetch("/api/change-control/impact-assessment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                query: result.query,
+                classification: approvedClassification,
+              }),
+            });
 
-        mergePipelineResult({
-          stages: {
-            ...result.stages,
-            classification: {
-              ...result.stages.classification!,
-              parsed: approvedClassification,
+          mergePipelineResult({
+            stages: {
+              ...result.stages,
+              classification: {
+                ...result.stages.classification!,
+                parsed: approvedClassification,
+              },
+              changeImpactAssessment: impactResult.stages.changeImpactAssessment,
             },
-            impactAssessment: impactResult.stages.impactAssessment,
-          },
-          provenance: {
-            ...result.provenance,
-            classification: classificationProvenance,
-          },
-        });
+            provenance: {
+              ...result.provenance,
+              classification: classificationProvenance,
+            },
+          });
+        } else {
+          const impactResult: ImpactAssessmentApiResponse = await apiFetch(
+            "/api/deviations/impact-assessment",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                query: result.query,
+                classification: approvedClassification,
+              }),
+            },
+          );
+
+          mergePipelineResult({
+            stages: {
+              ...result.stages,
+              classification: {
+                ...result.stages.classification!,
+                parsed: approvedClassification,
+              },
+              impactAssessment: impactResult.stages.impactAssessment,
+            },
+            provenance: {
+              ...result.provenance,
+              classification: classificationProvenance,
+            },
+          });
+        }
 
         navigate(getImpactAssessmentRoute(approvedClassification.classification));
       } catch (err) {
@@ -207,8 +235,16 @@ export function AIRecommendation() {
         }
       : parsed;
     const classificationProvenance = buildClassificationProvenance(isOverride);
+
+    const existingChangeImpactAssessment =
+      result.stages?.changeImpactAssessment;
     const existingImpactAssessment = result.stages?.impactAssessment;
-    if (!isOverride && existingImpactAssessment?.parsed) {
+    const hasCachedImpact =
+      approvedClassification.classification === "Change Control"
+        ? existingChangeImpactAssessment?.parsed
+        : existingImpactAssessment?.parsed;
+
+    if (!isOverride && hasCachedImpact) {
       mergePipelineResult({
         stages: {
           ...result.stages,
@@ -216,7 +252,9 @@ export function AIRecommendation() {
             ...result.stages.classification!,
             parsed: approvedClassification,
           },
-          impactAssessment: existingImpactAssessment,
+          ...(approvedClassification.classification === "Change Control"
+            ? { changeImpactAssessment: existingChangeImpactAssessment }
+            : { impactAssessment: existingImpactAssessment }),
         },
         provenance: {
           ...result.provenance,

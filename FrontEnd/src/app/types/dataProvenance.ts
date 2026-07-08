@@ -50,6 +50,40 @@ export interface CAPAProvenance {
   confidence_score: number;
 }
 
+// Change Control
+export type RiskLevel = "Low" | "Moderate" | "High";
+
+export interface ChangeImpactAssessmentProvenance {
+  impacted_systems_processes_studies: DataField<string[]>;
+  gxp_classification: DataField<"Direct" | "Indirect">;
+  validated_state_affected: DataField<boolean>;
+  data_validation_impact_rationale: DataField<string>;
+  downstream_dependencies: DataField<string[]>;
+  risk_scoring: DataField<RiskLevel>;
+  rationale: DataField<string[]>;
+  confidence_score: number;
+}
+
+export interface RiskRatingProvenance {
+  level: DataField<RiskLevel>;
+  rationale: DataField<string>;
+}
+
+export interface RegulatoryImpactProvenance {
+  level: DataField<RiskLevel>;
+  filings_or_submissions_affected: DataField<string[]>;
+  rationale: DataField<string>;
+}
+
+export interface RiskCriticalityProvenance {
+  patient_safety_product_quality_impact: RiskRatingProvenance;
+  regulatory_impact: RegulatoryImpactProvenance;
+  data_integrity_risk: RiskRatingProvenance;
+  operational_disruption_risk: RiskRatingProvenance;
+  risk_ranking_justification: DataField<string>;
+  confidence_score: number;
+}
+
 // Helpers
 /** Wrap a value as AI-generated */
 export function aiField<T>(value: T): DataField<T> {

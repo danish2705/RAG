@@ -1,12 +1,12 @@
-import { callLLM } from "../llm/client.js";
-import { IMPACT_ASSESSMENT_PROMPT } from "../llm/prompts/deviation.js";
+// After (correct — matches rca.ts and every other sibling file)
+import { callLLM } from "../../llm/client.js";
+import { IMPACT_ASSESSMENT_PROMPT } from "../../llm/prompts/deviation.js";
 import {
   ImpactAssessmentSchema,
   type ImpactAssessmentResult,
   type ClassificationResult,
-} from "../llm/schemas/deviation.js";
-import { extractJson } from "../utils/jsonExtractor.js";
-
+} from "../../llm/schemas/deviation.js";
+import { extractJson } from "../../utils/jsonExtractor.js";
 export interface ImpactAssessmentStageResult {
   rawText: string;
   parsed: ImpactAssessmentResult | null;

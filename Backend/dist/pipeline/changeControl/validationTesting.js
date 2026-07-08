@@ -1,0 +1,31 @@
+import { callLLM } from "../../llm/client.js";
+import { VALIDATION_TESTING_PROMPT } from "../../llm/prompts/changeControl.js";
+import { ValidationTestingSchema, } from "../../llm/schemas/changeControl.js";
+import { extractJson } from "../../utils/jsonExtractor.js";
+/**
+ * Stage 3 of 5: validation & testing strategy. Runs only after a human has
+ * accepted/overridden Stage 2 (Risk & Criticality Evaluation). Receives the
+ * full upstream chain so validation rigor scales with approved risk.
+ */
+export async function runValidationTestingStage(query, approvedImpactAssessment, approvedRiskCriticality) {
+    const userPrompt = `
+Change Description:
+${query}
+
+Approved Change Impact Assessment (Stage 1, human-confirmed):
+${JSON.stringify(approvedImpactAssessment, null, 2)}
+
+Approved Risk & Criticality Evaluation (Stage 2, human-confirmed):
+${JSON.stringify(approvedRiskCriticality, null, 2)}
+`.trim();
+    const rawText = await callLLM(userPrompt, VALIDATION_TESTING_PROMPT);
+    try {
+        const json = extractJson(rawText);
+        const parsed = ValidationTestingSchema.parse(json);
+        return { rawText, parsed, error: null };
+    }
+    catch (error) {
+        return { rawText, parsed: null, error: error };
+    }
+}
+//# sourceMappingURL=validationTesting.js.map

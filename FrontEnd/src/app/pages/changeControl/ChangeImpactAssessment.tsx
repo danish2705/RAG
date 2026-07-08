@@ -48,6 +48,7 @@ import type {
 } from "../../types/pipeline";
 import { useWorkflowStore } from "../../store/workflowStore";
 import { CHANGE_IMPACT_FIELD_LABELS } from "../../mocks/mockImpactAssessment";
+import { nestedToFlatChangeImpactAssessment } from "../../../utils/changeImpactAdapter";
 
 //Helpers
 function parseLines(text: string): string[] {
@@ -109,7 +110,7 @@ export function ChangeImpactAssessment() {
     string[]
   >(changeImpactParsed?.downstream_dependencies ?? []);
   const [gxpValue, setGxpValue] = useState<GxpClassification>(
-    changeImpactParsed?.gxp_classification.value ?? "No Impact",
+    changeImpactParsed?.gxp_classification.value ?? "Indirect Impact",
   );
   const [gxpRationale, setGxpRationale] = useState(
     changeImpactParsed?.gxp_classification.rationale ?? "",
@@ -193,7 +194,8 @@ export function ChangeImpactAssessment() {
     const next = value === "true";
     setValidatedStateAffected(next);
     setValidationChangedWithoutRationale(
-      next !== changeImpactParsed.data_validation_impact.validated_state_affected,
+      next !==
+        changeImpactParsed.data_validation_impact.validated_state_affected,
     );
   };
 
@@ -341,7 +343,11 @@ export function ChangeImpactAssessment() {
   ) => {
     setSubmitError(null);
     setIsSubmitting(true);
-    const approvedChangeImpactAssessment = buildApprovedChangeImpactAssessment();
+    const approvedChangeImpactAssessment =
+      buildApprovedChangeImpactAssessment();
+    const flatChangeImpactAssessment = nestedToFlatChangeImpactAssessment(
+      approvedChangeImpactAssessment,
+    );
     try {
       const riskResult: RiskCriticalityApiResponse = await apiFetch(
         "/api/change-control/risk-criticality",
@@ -351,7 +357,7 @@ export function ChangeImpactAssessment() {
           body: JSON.stringify({
             query: result!.query,
             classification: classificationParsed,
-            changeImpactAssessment: approvedChangeImpactAssessment,
+            changeImpactAssessment: flatChangeImpactAssessment,
           }),
         },
       );
@@ -372,7 +378,8 @@ export function ChangeImpactAssessment() {
   };
 
   const handleAccept = () => {
-    const changeImpactProvenance = buildChangeImpactProvenance(overrideConfirmed);
+    const changeImpactProvenance =
+      buildChangeImpactProvenance(overrideConfirmed);
     const existingRiskCriticality = result!.stages?.riskCriticality;
     if (!overrideConfirmed && existingRiskCriticality?.parsed) {
       navigateToRiskCriticality(
@@ -517,7 +524,6 @@ export function ChangeImpactAssessment() {
 
           {/* Grid Container for Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
             {/* 1. GxP Classification */}
             <Card className="shadow-sm border-gray-200 flex flex-col h-full">
               <CardContent className="pt-6 flex flex-col flex-1">
@@ -535,14 +541,18 @@ export function ChangeImpactAssessment() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Direct Impact">Direct Impact</SelectItem>
-                        <SelectItem value="Indirect Impact">Indirect Impact</SelectItem>
-                        <SelectItem value="No Impact">No Impact</SelectItem>
+                        <SelectItem value="Direct Impact">
+                          Direct Impact
+                        </SelectItem>
+                        <SelectItem value="Indirect Impact">
+                          Indirect Impact
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     {gxpChangedWithoutRationale && (
                       <p className="text-xs text-orange-600 flex items-center gap-1">
-                        <AlertTriangle className="h-3 w-3" /> Update rationale below
+                        <AlertTriangle className="h-3 w-3" /> Update rationale
+                        below
                       </p>
                     )}
                     <Textarea
@@ -556,7 +566,9 @@ export function ChangeImpactAssessment() {
                 ) : (
                   <div className="flex flex-col flex-1">
                     <div>
-                      <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium ${getGxpBadgeClass(gxpValue)}`}>
+                      <span
+                        className={`inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium ${getGxpBadgeClass(gxpValue)}`}
+                      >
                         {gxpValue}
                       </span>
                     </div>
@@ -575,7 +587,9 @@ export function ChangeImpactAssessment() {
                   <h3 className="font-semibold text-[15px] text-gray-900 dark:text-gray-100">
                     {CHANGE_IMPACT_FIELD_LABELS.data_validation_impact}
                   </h3>
-                  {!isOverrideEditing && isValidationModified && <ModifiedBadge />}
+                  {!isOverrideEditing && isValidationModified && (
+                    <ModifiedBadge />
+                  )}
                 </div>
 
                 {isOverrideEditing ? (
@@ -588,19 +602,26 @@ export function ChangeImpactAssessment() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="true">Validated State Affected</SelectItem>
-                        <SelectItem value="false">Validated State Not Affected</SelectItem>
+                        <SelectItem value="true">
+                          Validated State Affected
+                        </SelectItem>
+                        <SelectItem value="false">
+                          Validated State Not Affected
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     {validationChangedWithoutRationale && (
                       <p className="text-xs text-orange-600 flex items-center gap-1">
-                        <AlertTriangle className="h-3 w-3" /> Update rationale below
+                        <AlertTriangle className="h-3 w-3" /> Update rationale
+                        below
                       </p>
                     )}
                     <Textarea
                       rows={4}
                       value={dataValidationRationale}
-                      onChange={(e) => updateDataValidationRationale(e.target.value)}
+                      onChange={(e) =>
+                        updateDataValidationRationale(e.target.value)
+                      }
                       placeholder="Explain the reason for this change..."
                       className={`resize-none text-sm ${validationChangedWithoutRationale ? "border-orange-400" : ""}`}
                     />
@@ -608,7 +629,9 @@ export function ChangeImpactAssessment() {
                 ) : (
                   <div className="flex flex-col flex-1">
                     <div>
-                      <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium ${getValidationImpactBadgeClass(validatedStateAffected)}`}>
+                      <span
+                        className={`inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium ${getValidationImpactBadgeClass(validatedStateAffected)}`}
+                      >
                         {validatedStateAffected ? "Affected" : "None"}
                       </span>
                     </div>
@@ -634,7 +657,9 @@ export function ChangeImpactAssessment() {
                   <Textarea
                     rows={4}
                     value={impactedSystems.join("\n")}
-                    onChange={(e) => setImpactedSystems(parseLines(e.target.value))}
+                    onChange={(e) =>
+                      setImpactedSystems(parseLines(e.target.value))
+                    }
                     placeholder="One system / process / study per line..."
                     className="resize-none text-sm"
                   />
@@ -642,7 +667,10 @@ export function ChangeImpactAssessment() {
                   <div className="flex flex-col gap-2 flex-1 mt-1">
                     {impactedSystems.length > 0 ? (
                       impactedSystems.map((item, idx) => (
-                        <div key={idx} className="flex items-start gap-2 text-[13px] text-muted-foreground">
+                        <div
+                          key={idx}
+                          className="flex items-start gap-2 text-[13px] text-muted-foreground"
+                        >
                           <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-gray-400 shrink-0" />
                           <span>{item}</span>
                         </div>
@@ -664,14 +692,18 @@ export function ChangeImpactAssessment() {
                   <h3 className="font-semibold text-[15px] text-gray-900 dark:text-gray-100">
                     {CHANGE_IMPACT_FIELD_LABELS.downstream_dependencies}
                   </h3>
-                  {!isOverrideEditing && isDependenciesModified && <ModifiedBadge />}
+                  {!isOverrideEditing && isDependenciesModified && (
+                    <ModifiedBadge />
+                  )}
                 </div>
 
                 {isOverrideEditing ? (
                   <Textarea
                     rows={4}
                     value={downstreamDependencies.join("\n")}
-                    onChange={(e) => setDownstreamDependencies(parseLines(e.target.value))}
+                    onChange={(e) =>
+                      setDownstreamDependencies(parseLines(e.target.value))
+                    }
                     placeholder="One dependency per line..."
                     className="resize-none text-sm"
                   />
@@ -679,7 +711,10 @@ export function ChangeImpactAssessment() {
                   <div className="flex flex-col gap-2 flex-1 mt-1">
                     {downstreamDependencies.length > 0 ? (
                       downstreamDependencies.map((item, idx) => (
-                        <div key={idx} className="flex items-start gap-2 text-[13px] text-muted-foreground">
+                        <div
+                          key={idx}
+                          className="flex items-start gap-2 text-[13px] text-muted-foreground"
+                        >
                           <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-gray-400 shrink-0" />
                           <span>{item}</span>
                         </div>
@@ -718,7 +753,8 @@ export function ChangeImpactAssessment() {
                     </Select>
                     {riskChangedWithoutRationale && (
                       <p className="text-xs text-orange-600 flex items-center gap-1">
-                        <AlertTriangle className="h-3 w-3" /> Update rationale below
+                        <AlertTriangle className="h-3 w-3" /> Update rationale
+                        below
                       </p>
                     )}
                     <Textarea
@@ -732,7 +768,9 @@ export function ChangeImpactAssessment() {
                 ) : (
                   <div className="flex flex-col flex-1">
                     <div>
-                      <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium ${getRiskLevelBadgeClass(riskLevel)}`}>
+                      <span
+                        className={`inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium ${getRiskLevelBadgeClass(riskLevel)}`}
+                      >
                         {riskLevel}
                       </span>
                     </div>
@@ -792,8 +830,8 @@ export function ChangeImpactAssessment() {
               ))}
             </ul>
             <p className="text-sm text-muted-foreground mt-3">
-              Please update the rationale for each changed field with the
-              reason for the new value before saving.
+              Please update the rationale for each changed field with the reason
+              for the new value before saving.
             </p>
             <DialogFooter>
               <Button

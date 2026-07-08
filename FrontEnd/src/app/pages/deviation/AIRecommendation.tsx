@@ -43,9 +43,30 @@ import type {
   ClassificationParsed,
   ClassificationType,
   ImpactAssessmentApiResponse,
-  ChangeImpactAssessmentApiResponse,
 } from "../../types/pipeline";
 import { useWorkflowStore } from "../../store/workflowStore";
+import {
+  flatToNestedChangeImpactAssessment,
+  type FlatChangeImpactAssessment,
+} from "../../../utils/changeImpactAdapter";
+
+// The backend returns the raw (flat) LLM output shape here — see
+// changeImpactAdapter.ts for why this differs from the frontend's
+// ChangeImpactAssessmentParsed / ChangeImpactAssessmentApiResponse type.
+interface RawChangeImpactAssessmentApiResponse {
+  status: "halted_for_human_review" | "completed_pending_human_review";
+  haltedAt: string | null;
+  auditTrail: unknown[];
+  query: string;
+  stages: {
+    changeImpactAssessment?: {
+      rawText: string;
+      parsed: FlatChangeImpactAssessment | null;
+      error: unknown;
+      gate: unknown;
+    };
+  };
+}
 
 //Helpers
 function parseRationaleLines(text: string): string[] {
@@ -199,8 +220,8 @@ export function AIRecommendation() {
 
       try {
         if (isChangeControl) {
-          const changeImpactResult: ChangeImpactAssessmentApiResponse =
-            await apiFetch("/api/change-control/change-impact-assessment", {
+          const changeImpactResult: RawChangeImpactAssessmentApiResponse =
+            await apiFetch("/api/change-control/impact-assessment", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -209,6 +230,8 @@ export function AIRecommendation() {
               }),
             });
 
+          const rawStage = changeImpactResult.stages.changeImpactAssessment;
+
           mergePipelineResult({
             stages: {
               ...result.stages,
@@ -216,8 +239,16 @@ export function AIRecommendation() {
                 ...result.stages.classification!,
                 parsed: approvedClassification,
               },
-              changeImpactAssessment:
-                changeImpactResult.stages.changeImpactAssessment,
+              changeImpactAssessment: rawStage
+                ? {
+                    rawText: rawStage.rawText,
+                    error: rawStage.error,
+                    gate: rawStage.gate as any,
+                    parsed: rawStage.parsed
+                      ? flatToNestedChangeImpactAssessment(rawStage.parsed)
+                      : null,
+                  }
+                : undefined,
             },
             provenance: {
               ...result.provenance,

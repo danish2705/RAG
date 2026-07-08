@@ -4,8 +4,10 @@ import type {
   ChangeImpactAssessmentProvenance,
   RCAProvenance,
   CAPAProvenance,
-  
+  // NEW: You may need to add this to your dataProvenance file eventually
+  // RiskCriticalityProvenance,
 } from "./dataProvenance";
+
 // Primitives
 // NEW: Added risk_criticality to StageName if you plan to use gates for it
 export type StageName = "classification" | "rca" | "capa" | "risk_criticality";
@@ -50,10 +52,11 @@ export interface ImpactAssessmentParsed {
 }
 
 // Change Control — stage 1: Change Impact Assessment
-export type GxpClassification =
-  | "Direct Impact"
-  | "Indirect Impact"
-  | "No Impact";
+// NOTE: Backend's ChangeImpactAssessmentSchema (llm/schemas/changeControl.ts)
+// only allows "Direct" | "Indirect" — there is no "No Impact" value on the
+// wire. Kept in sync here intentionally; don't add "No Impact" back without
+// also updating the backend schema + prompt.
+export type GxpClassification = "Direct Impact" | "Indirect Impact";
 export type RiskLevel = "Low" | "Moderate" | "High";
 
 export interface ChangeImpactAssessmentParsed {
@@ -171,9 +174,10 @@ export interface PipelineResult {
     changeImpactAssessment?: ChangeImpactAssessmentProvenance;
     rca?: RCAProvenance;
     capa?: CAPAProvenance;
-    
+    // NEW: If you use data provenance here, add this line too
+    // riskCriticality?: RiskCriticalityProvenance;
   };
-  }
+}
 
 // API response shapes (subset of PipelineResult returned per endpoint)
 export interface ImpactAssessmentApiResponse extends Pick<

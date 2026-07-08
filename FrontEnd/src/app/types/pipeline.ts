@@ -1,12 +1,11 @@
 import type {
   ClassificationProvenance,
   ImpactAssessmentProvenance,
+  ChangeImpactAssessmentProvenance,
   RCAProvenance,
   CAPAProvenance,
-  // NEW: You may need to add this to your dataProvenance file eventually
-  // RiskCriticalityProvenance,
+  
 } from "./dataProvenance";
-
 // Primitives
 // NEW: Added risk_criticality to StageName if you plan to use gates for it
 export type StageName = "classification" | "rca" | "capa" | "risk_criticality";
@@ -169,12 +168,12 @@ export interface PipelineResult {
   provenance?: {
     classification?: ClassificationProvenance;
     impactAssessment?: ImpactAssessmentProvenance;
+    changeImpactAssessment?: ChangeImpactAssessmentProvenance;
     rca?: RCAProvenance;
     capa?: CAPAProvenance;
-    // NEW: If you use data provenance here, add this line too
-    // riskCriticality?: RiskCriticalityProvenance;
+    
   };
-}
+  }
 
 // API response shapes (subset of PipelineResult returned per endpoint)
 export interface ImpactAssessmentApiResponse extends Pick<
@@ -209,4 +208,12 @@ export interface CAPAApiResponse extends Pick<
   "status" | "haltedAt" | "auditTrail" | "query"
 > {
   stages: { capa?: CAPAStage };
+}
+
+/** Change Control — stage 2: Risk & Criticality Evaluation */
+export interface RiskCriticalityApiResponse extends Pick<
+  PipelineResult,
+  "status" | "haltedAt" | "auditTrail" | "query"
+> {
+  stages: { riskCriticality?: RiskCriticalityStage };
 }

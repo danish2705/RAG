@@ -35,7 +35,7 @@ export interface ImpactAssessmentProvenance {
 export interface ChangeImpactAssessmentProvenance {
   impacted_systems: DataField<string[]>;
   gxp_classification: {
-    value: DataField<"Direct Impact" | "Indirect Impact" | "No Impact">;
+    value: DataField<"Direct Impact" | "Indirect Impact">;
     rationale: DataField<string>;
   };
   data_validation_impact: {

@@ -50,8 +50,6 @@ function getClassificationBadgeClass(type: string): string {
     return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
   if (type === "Change Control")
     return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
-  if (type === "Hybrid")
-    return "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800";
   return "bg-muted text-muted-foreground border-border";
 }
 
@@ -538,7 +536,6 @@ export function Records() {
               <SelectItem value="all">All Types</SelectItem>
               <SelectItem value="Deviation">Deviation</SelectItem>
               <SelectItem value="Change Control">Change Control</SelectItem>
-              <SelectItem value="Hybrid">Hybrid</SelectItem>
             </SelectContent>
           </Select>
 

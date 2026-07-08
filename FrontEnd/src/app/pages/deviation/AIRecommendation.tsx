@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { apiFetch } from "../../utils/api";
+import { apiFetch } from "../../../utils/api";
 import {
   DecisionAction,
   ModifiedStatus,
@@ -8,16 +8,16 @@ import {
   OverrideBar,
   RejectDialog,
   StepProgressBar,
-} from "../components/eventIntake";
+} from "../../components/eventIntake";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
-import { Textarea } from "../components/ui/textarea";
+} from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
+import { Textarea } from "../../components/ui/textarea";
 import { Sparkles, Info, AlertTriangle } from "lucide-react";
 import {
   Select,
@@ -25,27 +25,48 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../components/ui/select";
+} from "../../components/ui/select";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "../components/ui/tooltip";
+} from "../../components/ui/tooltip";
 import {
   aiField,
   markModified,
   type ClassificationProvenance,
   type DataField,
-} from "../types/dataProvenance";
-import { AIAssistant } from "../components/chat/ai-assistant";
+} from "../../types/dataProvenance";
+import { AIAssistant } from "../../components/chat/ai-assistant";
 import type {
   ClassificationParsed,
   ClassificationType,
   ImpactAssessmentApiResponse,
-  ChangeImpactAssessmentApiResponse,
-} from "../types/pipeline";
-import { useWorkflowStore } from "../store/workflowStore";
+} from "../../types/pipeline";
+import { useWorkflowStore } from "../../store/workflowStore";
+import {
+  flatToNestedChangeImpactAssessment,
+  type FlatChangeImpactAssessment,
+} from "../../../utils/changeImpactAdapter";
+
+// The backend returns the raw (flat) LLM output shape here — see
+// changeImpactAdapter.ts for why this differs from the frontend's
+// ChangeImpactAssessmentParsed / ChangeImpactAssessmentApiResponse type.
+interface RawChangeImpactAssessmentApiResponse {
+  status: "halted_for_human_review" | "completed_pending_human_review";
+  haltedAt: string | null;
+  auditTrail: unknown[];
+  query: string;
+  stages: {
+    changeImpactAssessment?: {
+      rawText: string;
+      parsed: FlatChangeImpactAssessment | null;
+      error: unknown;
+      gate: unknown;
+    };
+  };
+}
 
 //Helpers
 function parseRationaleLines(text: string): string[] {
@@ -60,15 +81,7 @@ function getClassificationBadgeClass(type: string): string {
     return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
   if (type === "Change Control")
     return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
-  if (type === "Hybrid")
-    return "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800";
   return "bg-muted text-muted-foreground border-border";
-}
-
-function getImpactAssessmentRoute(classification: ClassificationType): string {
-  return classification === "Change Control"
-    ? "/change-control/change-impact-assessment"
-    : "/deviation/impact-assessment";
 }
 
 //Component
@@ -81,6 +94,7 @@ export function AIRecommendation() {
 
   const classificationStage = result?.stages?.classification;
   const parsed = classificationStage?.parsed;
+  const insufficientInput = classificationStage?.insufficientInput;
 
   const [isOverrideEditing, setIsOverrideEditing] = useState(false);
   const [editedClassification, setEditedClassification] =
@@ -98,8 +112,8 @@ export function AIRecommendation() {
   const [assessError, setAssessError] = useState<string | null>(null);
   const [overrideConfirmed, setOverrideConfirmed] = useState(false);
 
-  //Guard
-  if (!result || !parsed) {
+  //Guard: truly nothing submitted yet
+  if (!result) {
     return (
       <div className="p-6 w-full">
         <Card>
@@ -110,6 +124,51 @@ export function AIRecommendation() {
             </p>
             <p className="text-sm text-muted-foreground mt-1">
               Please go back and submit a quality event first.
+            </p>
+            <Button className="mt-4" onClick={() => navigate("/deviation")}>
+              Go Back
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  //Guard: the AI explicitly flagged this submission as too vague/off-topic
+  //to classify (a real, expected outcome — not a system error).
+  if (insufficientInput) {
+    return (
+      <div className="p-6 w-full">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <AlertTriangle className="h-10 w-10 text-yellow-500 mx-auto mb-3" />
+            <p className="text-muted-foreground font-medium">
+              This submission couldn&apos;t be classified.
+            </p>
+            <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
+              {insufficientInput.reason}
+            </p>
+            <Button className="mt-4" onClick={() => navigate("/deviation")}>
+              Go Back and Add More Detail
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  //Guard: some other unexpected failure (e.g. a genuine parse error)
+  if (!parsed) {
+    return (
+      <div className="p-6 w-full">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <AlertTriangle className="h-10 w-10 text-yellow-500 mx-auto mb-3" />
+            <p className="text-muted-foreground font-medium">
+              Classification failed unexpectedly.
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Please go back and try submitting the event again.
             </p>
             <Button className="mt-4" onClick={() => navigate("/deviation")}>
               Go Back
@@ -156,9 +215,12 @@ export function AIRecommendation() {
       setAssessError(null);
       setIsAssessing(true);
 
+      const isChangeControl =
+        approvedClassification.classification === "Change Control";
+
       try {
-        if (approvedClassification.classification === "Change Control") {
-          const impactResult: ChangeImpactAssessmentApiResponse =
+        if (isChangeControl) {
+          const changeImpactResult: RawChangeImpactAssessmentApiResponse =
             await apiFetch("/api/change-control/impact-assessment", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -168,6 +230,8 @@ export function AIRecommendation() {
               }),
             });
 
+          const rawStage = changeImpactResult.stages.changeImpactAssessment;
+
           mergePipelineResult({
             stages: {
               ...result.stages,
@@ -175,13 +239,24 @@ export function AIRecommendation() {
                 ...result.stages.classification!,
                 parsed: approvedClassification,
               },
-              changeImpactAssessment: impactResult.stages.changeImpactAssessment,
+              changeImpactAssessment: rawStage
+                ? {
+                    rawText: rawStage.rawText,
+                    error: rawStage.error,
+                    gate: rawStage.gate as any,
+                    parsed: rawStage.parsed
+                      ? flatToNestedChangeImpactAssessment(rawStage.parsed)
+                      : null,
+                  }
+                : undefined,
             },
             provenance: {
               ...result.provenance,
               classification: classificationProvenance,
             },
           });
+
+          navigate("/change-control/change-impact-assessment");
         } else {
           const impactResult: ImpactAssessmentApiResponse = await apiFetch(
             "/api/deviations/impact-assessment",
@@ -209,9 +284,9 @@ export function AIRecommendation() {
               classification: classificationProvenance,
             },
           });
-        }
 
-        navigate(getImpactAssessmentRoute(approvedClassification.classification));
+          navigate("/deviation/impact-assessment");
+        }
       } catch (err) {
         setAssessError(
           err instanceof Error
@@ -235,34 +310,50 @@ export function AIRecommendation() {
         }
       : parsed;
     const classificationProvenance = buildClassificationProvenance(isOverride);
+    const isChangeControl =
+      approvedClassification.classification === "Change Control";
 
-    const existingChangeImpactAssessment =
-      result.stages?.changeImpactAssessment;
-    const existingImpactAssessment = result.stages?.impactAssessment;
-    const hasCachedImpact =
-      approvedClassification.classification === "Change Control"
-        ? existingChangeImpactAssessment?.parsed
-        : existingImpactAssessment?.parsed;
-
-    if (!isOverride && hasCachedImpact) {
-      mergePipelineResult({
-        stages: {
-          ...result.stages,
-          classification: {
-            ...result.stages.classification!,
-            parsed: approvedClassification,
+    if (isChangeControl) {
+      const existingChangeImpactAssessment =
+        result.stages?.changeImpactAssessment;
+      if (!isOverride && existingChangeImpactAssessment?.parsed) {
+        mergePipelineResult({
+          stages: {
+            ...result.stages,
+            classification: {
+              ...result.stages.classification!,
+              parsed: approvedClassification,
+            },
+            changeImpactAssessment: existingChangeImpactAssessment,
           },
-          ...(approvedClassification.classification === "Change Control"
-            ? { changeImpactAssessment: existingChangeImpactAssessment }
-            : { impactAssessment: existingImpactAssessment }),
-        },
-        provenance: {
-          ...result.provenance,
-          classification: classificationProvenance,
-        },
-      });
-      navigate(getImpactAssessmentRoute(approvedClassification.classification));
-      return;
+          provenance: {
+            ...result.provenance,
+            classification: classificationProvenance,
+          },
+        });
+        navigate("/change-control/change-impact-assessment");
+        return;
+      }
+    } else {
+      const existingImpactAssessment = result.stages?.impactAssessment;
+      if (!isOverride && existingImpactAssessment?.parsed) {
+        mergePipelineResult({
+          stages: {
+            ...result.stages,
+            classification: {
+              ...result.stages.classification!,
+              parsed: approvedClassification,
+            },
+            impactAssessment: existingImpactAssessment,
+          },
+          provenance: {
+            ...result.provenance,
+            classification: classificationProvenance,
+          },
+        });
+        navigate("/deviation/impact-assessment");
+        return;
+      }
     }
 
     void runImpactAssessment(approvedClassification, classificationProvenance);
@@ -356,7 +447,6 @@ export function AIRecommendation() {
                       <SelectItem value="Change Control">
                         Change Control
                       </SelectItem>
-                      <SelectItem value="Hybrid">Hybrid</SelectItem>
                     </SelectContent>
                   </Select>
                 ) : (

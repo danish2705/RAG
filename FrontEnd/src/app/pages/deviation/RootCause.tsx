@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { apiFetch } from "../../utils/api";
+import { apiFetch } from "../../../utils/api";
 import {
   DecisionAction,
   ModifiedStatus,
@@ -8,25 +8,25 @@ import {
   OverrideBar,
   RejectDialog,
   StepProgressBar,
-} from "../components/eventIntake";
+} from "../../components/eventIntake";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { Label } from "../components/ui/label";
-import { Textarea } from "../components/ui/textarea";
+} from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Label } from "../../components/ui/label";
+import { Textarea } from "../../components/ui/textarea";
 import { AlertTriangle, Sparkles } from "lucide-react";
 import {
   aiField,
   markModified,
   type RCAProvenance,
-} from "../types/dataProvenance";
-import { AIAssistant } from "../components/chat/ai-assistant";
-import type { RCAResult, CAPAApiResponse } from "../types/pipeline";
-import { useWorkflowStore } from "../store/workflowStore";
+} from "../../types/dataProvenance";
+import { AIAssistant } from "../../components/chat/ai-assistant";
+import type { RCAResult, CAPAApiResponse } from "../../types/pipeline";
+import { useWorkflowStore } from "../../store/workflowStore";
 
 export function RootCause() {
   const navigate = useNavigate();

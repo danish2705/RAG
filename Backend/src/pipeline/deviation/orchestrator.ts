@@ -8,7 +8,11 @@ import {
 } from "./impactAssessment.js";
 import { runRCAStage, type RCAStageResult } from "./rca.js";
 import { runCAPAStage, type CAPAStageResult } from "./capa.js";
-import { evaluateGate, type GateResult } from "../confidenceGate.js";
+import {
+  evaluateGate,
+  buildInsufficientInputGate,
+  type GateResult,
+} from "../confidenceGate.js";
 import { createAuditTrail, type AuditEntry } from "../../utils/auditLogger.js";
 import type {
   ClassificationResult,
@@ -57,6 +61,24 @@ export async function runClassificationOnly(
   const stages: PipelineStages = {};
 
   const classificationResult = await runClassificationStage(query, contextText);
+
+  // insufficient_input is a distinct, valid outcome — NOT a parse error.
+  // Handle it before evaluateGate, which assumes a real classification shape.
+  if (classificationResult.insufficientInput) {
+    const insufficientGate = buildInsufficientInputGate(
+      "classification",
+      classificationResult.insufficientInput.reason,
+    );
+    stages.classification = { ...classificationResult, gate: insufficientGate };
+    audit.record({ ...insufficientGate });
+    return finalize(
+      "halted_for_human_review",
+      "classification",
+      stages,
+      audit.all(),
+    );
+  }
+
   const classificationGate = evaluateGate(
     "classification",
     classificationResult.parsed,

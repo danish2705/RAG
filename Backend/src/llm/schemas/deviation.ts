@@ -13,12 +13,24 @@ const ImpactParameter = z.object({
 // (ImpactAssessmentSchema below) that only runs after a human approves
 // this classification — see pipeline/impactAssessment.ts.
 export const ClassificationSchema = z.object({
-  classification: z.enum(["Deviation", "Change Control", "Hybrid"]),
+  classification: z.enum(["Deviation", "Change Control"]),
   rationale: z.array(z.string().min(1)).min(1),
   confidence_score: z.number().min(0).max(100),
 });
 
 export type ClassificationResult = z.infer<typeof ClassificationSchema>;
+
+// Returned by the classification LLM call instead of ClassificationSchema
+// when STEP 1 (relevance/coherence check) fails — the submission itself
+// is too vague, contradictory, or off-topic to classify at all. This is a
+// DIFFERENT, equally-valid response shape, not a parsing failure — it must
+// be checked for explicitly before falling back to ClassificationSchema.
+export const InsufficientInputSchema = z.object({
+  insufficient_input: z.literal(true),
+  reason: z.string().min(1),
+});
+
+export type InsufficientInputResult = z.infer<typeof InsufficientInputSchema>;
 
 // Stage 2: impact/severity assessment. Only invoked after a human has
 // accepted (or overridden) the Stage 1 classification above.

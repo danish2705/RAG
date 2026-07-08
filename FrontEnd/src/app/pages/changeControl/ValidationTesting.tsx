@@ -1,5 +1,5 @@
-import { StepProgressBar } from "../components/eventIntake";
-import { useWorkflowStore } from "../store/workflowStore";
+import { StepProgressBar } from "../../components/eventIntake";
+import { useWorkflowStore } from "../../store/workflowStore";
 
 export function ValidationTesting() {
   const result = useWorkflowStore((s) => s.pipelineResult);

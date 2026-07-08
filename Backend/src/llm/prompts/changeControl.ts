@@ -35,9 +35,9 @@ ${GUARDRAILS}
 
 ${SHARED_CONTEXT}
 
-You have already been told this event is classified as "Change Control" (or
-the Change Control side of a Hybrid) by an upstream, human-approved
-classification. Do not re-classify. Your job is ONLY:
+You have already been told this event is classified as "Change Control" by
+an upstream, human-approved classification. Do not re-classify. Your job is
+ONLY:
 
 1. impacted_systems_processes_studies: list every system, process,
    validated study, or document this change touches, as named in the

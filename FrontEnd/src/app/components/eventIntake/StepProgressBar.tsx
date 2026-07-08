@@ -87,14 +87,29 @@ export function StepProgressBar({
     />
   );
 
-  // Classification decides which flow's steps apply — not the URL, since
-  // the Intake and Classification pages are shared by both flows and live
-  // under "/deviation/*" regardless of what the event turns out to be.
-  if (classification === "Deviation") return <div className="mb-6">{deviationBar}</div>;
-  if (classification === "Change Control") return <div className="mb-6">{changeControlBar}</div>;
+  // Explicit classification takes priority
+  if (classification === "Deviation") {
+    return <div className="mb-6">{deviationBar}</div>;
+  }
 
-  // Not yet classified (Intake page) or "Hybrid": both paths are still
-  // live, so show both progress bars.
+  if (classification === "Change Control") {
+    return <div className="mb-6">{changeControlBar}</div>;
+  }
+
+  // If classification isn't available, infer from route
+  if (pathname.startsWith("/change-control")) {
+    return <div className="mb-6">{changeControlBar}</div>;
+  }
+
+  if (
+    pathname.startsWith("/deviation") &&
+    pathname !== "/deviation" &&
+    pathname !== "/deviation/ai-recommendation"
+  ) {
+    return <div className="mb-6">{deviationBar}</div>;
+  }
+
+  // Only show both bars on shared pages
   return (
     <div className="space-y-3 mb-6">
       <div>
@@ -103,6 +118,7 @@ export function StepProgressBar({
         </p>
         {deviationBar}
       </div>
+
       <div>
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 px-1">
           Change Control Path

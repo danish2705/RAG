@@ -4,8 +4,7 @@ import type {
   ChangeImpactAssessmentProvenance,
   RCAProvenance,
   CAPAProvenance,
-  // NEW: You may need to add this to your dataProvenance file eventually
-  // RiskCriticalityProvenance,
+  RiskCriticalityProvenance,
 } from "./dataProvenance";
 
 // Primitives
@@ -80,16 +79,28 @@ export interface ChangeImpactAssessmentParsed {
   confidence_score: number;
 }
 
-// NEW: Change Control — stage 2: Risk & Criticality Evaluation
+// Change Control — stage 2: Risk & Criticality Evaluation
+// NOTE: kept in exact 1:1 sync with backend's RiskCriticalitySchema
+// (llm/schemas/changeControl.ts) — unlike Stage 1, the backend already
+// returns nested {level, rationale} per category here, so there is no
+// flat/nested adapter needed for this stage.
+export interface RiskRatingParsed {
+  level: RiskLevel;
+  rationale: string;
+}
+
+export interface RegulatoryImpactParsed {
+  level: RiskLevel;
+  filings_or_submissions_affected: string[];
+  rationale: string;
+}
+
 export interface RiskCriticalityParsed {
-  patient_safety_impact: string;
-  regulatory_impact: string;
-  data_integrity_risk: string;
-  operational_disruption_risk: string;
-  risk_ranking: {
-    level: RiskLevel;
-    justification: string;
-  };
+  patient_safety_product_quality_impact: RiskRatingParsed;
+  regulatory_impact: RegulatoryImpactParsed;
+  data_integrity_risk: RiskRatingParsed;
+  operational_disruption_risk: RiskRatingParsed;
+  risk_ranking_justification: string;
   confidence_score: number;
 }
 
@@ -146,9 +157,6 @@ export type ChangeImpactAssessmentStage =
 export type RiskCriticalityStage = StageWrapper<RiskCriticalityParsed>;
 export type RCAStage = StageWrapper<RCAResult>;
 export type CAPAStage = StageWrapper<CAPAResult>;
-export type ChangeImpactAssessmentStage =
-  StageWrapper<ChangeImpactAssessmentParsed>;
-export type RiskCriticalityStage = StageWrapper<RiskCriticalityParsed>;
 
 // Full pipeline result
 export interface PipelineResult {
@@ -166,11 +174,9 @@ export interface PipelineResult {
 
     rca?: RCAStage;
     capa?: CAPAStage;
-    changeImpactAssessment?: ChangeImpactAssessmentStage;
-    riskCriticality?: RiskCriticalityStage;
-    // Stage 3+ aren't fully modeled on the frontend yet — kept loose here so
-    // this page can hand the raw stage payload off to the next page without
-    // needing to know its shape.
+    // Stage 3 isn't fully modeled on the frontend yet — kept loose so the
+    // Risk & Criticality page can hand its raw payload off without needing
+    // to know the shape ValidationTesting.tsx will eventually expect.
     validationTesting?: StageWrapper<Record<string, unknown>>;
   };
   auditTrail: GateResult[];
@@ -183,8 +189,7 @@ export interface PipelineResult {
     changeImpactAssessment?: ChangeImpactAssessmentProvenance;
     rca?: RCAProvenance;
     capa?: CAPAProvenance;
-    // NEW: If you use data provenance here, add this line too
-    // riskCriticality?: RiskCriticalityProvenance;
+    riskCriticality?: RiskCriticalityProvenance;
   };
 }
 
@@ -229,4 +234,12 @@ export interface RiskCriticalityApiResponse extends Pick<
   "status" | "haltedAt" | "auditTrail" | "query"
 > {
   stages: { riskCriticality?: RiskCriticalityStage };
+}
+
+/** Change Control — stage 3: Validation & Testing Strategy */
+export interface ValidationTestingApiResponse extends Pick<
+  PipelineResult,
+  "status" | "haltedAt" | "auditTrail" | "query"
+> {
+  stages: { validationTesting?: StageWrapper<Record<string, unknown>> };
 }

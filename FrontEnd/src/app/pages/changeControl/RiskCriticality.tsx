@@ -9,12 +9,7 @@ import {
   RejectDialog,
   StepProgressBar,
 } from "../../components/eventIntake";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../../components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Textarea } from "../../components/ui/textarea";
 import {
@@ -24,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../components/ui/select";
-import { AlertTriangle, ShieldAlert, Sparkles } from "lucide-react";
+import { AlertTriangle, Sparkles } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -45,32 +40,27 @@ import type {
   ValidationTestingApiResponse,
 } from "../../types/pipeline";
 import { useWorkflowStore } from "../../store/workflowStore";
-import { RISK_CATEGORY_LABELS } from "../../mocks/mockRiskCriticality";
-import { buildSampleChangeControlResult } from "../../mocks/mockChangeControlSample";
+import { nestedToFlatChangeImpactAssessment } from "../../../utils/changeImpactAdapter";
 
-// The four risk categories share the same {level, rationale} shape, except
-// "regulatory_impact" which also carries a list of affected filings/
-// submissions — handled via the optional `filings` fields below.
-type RiskCategoryKey =
-  | "patient_safety_product_quality_impact"
-  | "regulatory_impact"
-  | "data_integrity_risk"
-  | "operational_disruption_risk";
-
-interface CategoryState {
-  key: RiskCategoryKey;
-  category: string;
-  level: RiskLevel;
-  rationale: string;
-  originalLevel: RiskLevel;
-  originalRationale: string;
-  filings?: string[];
-  originalFilings?: string[];
-  levelChangedWithoutRationale: boolean;
-}
+//Field labels — mirrors CHANGE_IMPACT_FIELD_LABELS convention in mockImpactAssessment.ts
+const RISK_FIELD_LABELS = {
+  patient_safety_product_quality_impact:
+    "Patient Safety / Product Quality Impact",
+  regulatory_impact: "Regulatory Impact",
+  data_integrity_risk: "Data Integrity Risk",
+  operational_disruption_risk: "Operational Disruption Risk",
+} as const;
 
 //Helpers
-function getRiskBadgeClass(level: string): string {
+function parseLines(text: string): string[] {
+  return text
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+// Styling aligned with the sibling ChangeImpactAssessment.tsx badges
+function getRiskLevelBadgeClass(level: string): string {
   switch (level.toLowerCase()) {
     case "high":
       return "bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
@@ -79,66 +69,12 @@ function getRiskBadgeClass(level: string): string {
     case "low":
       return "bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800";
     default:
-      return "bg-muted text-muted-foreground border border-border";
+      return "bg-gray-100 text-gray-700 border border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700";
   }
 }
 
 function filingsToText(filings: string[]): string {
   return filings.join("\n");
-}
-
-function textToFilings(text: string): string[] {
-  return text
-    .split("\n")
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
-function buildCategoriesFromParsed(
-  riskParsed: RiskCriticalityParsed,
-): CategoryState[] {
-  return [
-    {
-      key: "patient_safety_product_quality_impact",
-      category: RISK_CATEGORY_LABELS.patient_safety_product_quality_impact,
-      level: riskParsed.patient_safety_product_quality_impact.level,
-      rationale: riskParsed.patient_safety_product_quality_impact.rationale,
-      originalLevel: riskParsed.patient_safety_product_quality_impact.level,
-      originalRationale:
-        riskParsed.patient_safety_product_quality_impact.rationale,
-      levelChangedWithoutRationale: false,
-    },
-    {
-      key: "regulatory_impact",
-      category: RISK_CATEGORY_LABELS.regulatory_impact,
-      level: riskParsed.regulatory_impact.level,
-      rationale: riskParsed.regulatory_impact.rationale,
-      originalLevel: riskParsed.regulatory_impact.level,
-      originalRationale: riskParsed.regulatory_impact.rationale,
-      filings: riskParsed.regulatory_impact.filings_or_submissions_affected,
-      originalFilings:
-        riskParsed.regulatory_impact.filings_or_submissions_affected,
-      levelChangedWithoutRationale: false,
-    },
-    {
-      key: "data_integrity_risk",
-      category: RISK_CATEGORY_LABELS.data_integrity_risk,
-      level: riskParsed.data_integrity_risk.level,
-      rationale: riskParsed.data_integrity_risk.rationale,
-      originalLevel: riskParsed.data_integrity_risk.level,
-      originalRationale: riskParsed.data_integrity_risk.rationale,
-      levelChangedWithoutRationale: false,
-    },
-    {
-      key: "operational_disruption_risk",
-      category: RISK_CATEGORY_LABELS.operational_disruption_risk,
-      level: riskParsed.operational_disruption_risk.level,
-      rationale: riskParsed.operational_disruption_risk.rationale,
-      originalLevel: riskParsed.operational_disruption_risk.level,
-      originalRationale: riskParsed.operational_disruption_risk.rationale,
-      levelChangedWithoutRationale: false,
-    },
-  ];
 }
 
 //Component
@@ -149,20 +85,58 @@ export function RiskCriticality() {
   //Read from store
   const result = useWorkflowStore((s) => s.pipelineResult);
   const mergePipelineResult = useWorkflowStore((s) => s.mergePipelineResult);
-  const setPipelineResult = useWorkflowStore((s) => s.setPipelineResult);
 
+  const classificationParsed = result?.stages?.classification?.parsed ?? null;
   const impactParsed = result?.stages?.changeImpactAssessment?.parsed ?? null;
   const riskParsed = result?.stages?.riskCriticality?.parsed ?? null;
 
-  const [isOverrideEditing, setIsOverrideEditing] = useState(false);
-  const [categories, setCategories] = useState<CategoryState[]>(() =>
-    riskParsed ? buildCategoriesFromParsed(riskParsed) : [],
+  //Editable form state, seeded from the AI-generated values
+  const [psLevel, setPsLevel] = useState<RiskLevel>(
+    riskParsed?.patient_safety_product_quality_impact.level ?? "Low",
   );
+  const [psRationale, setPsRationale] = useState(
+    riskParsed?.patient_safety_product_quality_impact.rationale ?? "",
+  );
+
+  const [regLevel, setRegLevel] = useState<RiskLevel>(
+    riskParsed?.regulatory_impact.level ?? "Low",
+  );
+  const [regFilings, setRegFilings] = useState<string[]>(
+    riskParsed?.regulatory_impact.filings_or_submissions_affected ?? [],
+  );
+  const [regRationale, setRegRationale] = useState(
+    riskParsed?.regulatory_impact.rationale ?? "",
+  );
+
+  const [diLevel, setDiLevel] = useState<RiskLevel>(
+    riskParsed?.data_integrity_risk.level ?? "Low",
+  );
+  const [diRationale, setDiRationale] = useState(
+    riskParsed?.data_integrity_risk.rationale ?? "",
+  );
+
+  const [odLevel, setOdLevel] = useState<RiskLevel>(
+    riskParsed?.operational_disruption_risk.level ?? "Low",
+  );
+  const [odRationale, setOdRationale] = useState(
+    riskParsed?.operational_disruption_risk.rationale ?? "",
+  );
+
   const [rankingJustification, setRankingJustification] = useState(
     riskParsed?.risk_ranking_justification ?? "",
   );
-  const [originalRankingJustification, setOriginalRankingJustification] =
-    useState(riskParsed?.risk_ranking_justification ?? "");
+
+  //"Changed the value but not the rationale" tracking
+  const [psChangedWithoutRationale, setPsChangedWithoutRationale] =
+    useState(false);
+  const [regChangedWithoutRationale, setRegChangedWithoutRationale] =
+    useState(false);
+  const [diChangedWithoutRationale, setDiChangedWithoutRationale] =
+    useState(false);
+  const [odChangedWithoutRationale, setOdChangedWithoutRationale] =
+    useState(false);
+
+  const [isOverrideEditing, setIsOverrideEditing] = useState(false);
   const [overrideConfirmed, setOverrideConfirmed] = useState(false);
 
   const [showOverrideDialog, setShowOverrideDialog] = useState(false);
@@ -171,28 +145,39 @@ export function RiskCriticality() {
   const [rejectJustification, setRejectJustification] = useState("");
 
   const [showRationaleWarning, setShowRationaleWarning] = useState(false);
-  const [warningCards, setWarningCards] = useState<string[]>([]);
+  const [warningFields, setWarningFields] = useState<string[]>([]);
 
-  const [isRunningValidation, setIsRunningValidation] = useState(false);
-  const [validationError, setValidationError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Re-hydrate the editable local state whenever a *new* risk evaluation
-  // lands in the store — this covers both the normal navigation flow AND
-  // the case where this page is already mounted (e.g. showing the "no data"
-  // fallback) and data arrives afterward without a remount, which a
-  // one-time useState initializer would otherwise miss and leave blank.
+  // Re-hydrate local editable state whenever a *new* risk evaluation lands
+  // in the store. A plain useState initializer only runs on first mount —
+  // if this page is already mounted (e.g. showing the "no data" fallback
+  // below) when the API response arrives, that initializer is missed and
+  // the form would stay blank forever without this effect.
   useEffect(() => {
     if (!riskParsed) return;
-    setCategories(buildCategoriesFromParsed(riskParsed));
+    setPsLevel(riskParsed.patient_safety_product_quality_impact.level);
+    setPsRationale(riskParsed.patient_safety_product_quality_impact.rationale);
+    setRegLevel(riskParsed.regulatory_impact.level);
+    setRegFilings(riskParsed.regulatory_impact.filings_or_submissions_affected);
+    setRegRationale(riskParsed.regulatory_impact.rationale);
+    setDiLevel(riskParsed.data_integrity_risk.level);
+    setDiRationale(riskParsed.data_integrity_risk.rationale);
+    setOdLevel(riskParsed.operational_disruption_risk.level);
+    setOdRationale(riskParsed.operational_disruption_risk.rationale);
     setRankingJustification(riskParsed.risk_ranking_justification);
-    setOriginalRankingJustification(riskParsed.risk_ranking_justification);
+    setPsChangedWithoutRationale(false);
+    setRegChangedWithoutRationale(false);
+    setDiChangedWithoutRationale(false);
+    setOdChangedWithoutRationale(false);
     setOverrideConfirmed(false);
     setIsOverrideEditing(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [riskParsed]);
 
   //Guard
-  if (!riskParsed || !impactParsed) {
+  if (!riskParsed || !impactParsed || !classificationParsed) {
     return (
       <div className="p-6 w-full">
         <Card>
@@ -201,7 +186,7 @@ export function RiskCriticality() {
             <p className="text-foreground font-medium">
               No risk &amp; criticality evaluation data found.
             </p>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Please go back and complete the Change Impact Assessment first.
             </p>
             <Button
@@ -212,14 +197,6 @@ export function RiskCriticality() {
             >
               Go Back
             </Button>
-            <div className="mt-3">
-              <Button
-                variant="outline"
-                onClick={() => setPipelineResult(buildSampleChangeControlResult())}
-              >
-                Load Sample Data (Preview)
-              </Button>
-            </div>
           </CardContent>
         </Card>
       </div>
@@ -227,136 +204,171 @@ export function RiskCriticality() {
   }
 
   //Field update helpers
-  const updateLevel = (index: number, value: string) => {
-    setCategories((prev) => {
-      const updated = [...prev];
-      const item = { ...updated[index], level: value as RiskLevel };
-      item.levelChangedWithoutRationale = value !== item.originalLevel;
-      updated[index] = item;
-      return updated;
-    });
+  const updatePsLevel = (value: string) => {
+    setPsLevel(value as RiskLevel);
+    setPsChangedWithoutRationale(
+      value !== riskParsed.patient_safety_product_quality_impact.level,
+    );
+  };
+  const updatePsRationale = (value: string) => {
+    setPsRationale(value);
+    if (value !== riskParsed.patient_safety_product_quality_impact.rationale) {
+      setPsChangedWithoutRationale(false);
+    }
   };
 
-  const updateRationale = (index: number, value: string) => {
-    setCategories((prev) => {
-      const updated = [...prev];
-      const item = { ...updated[index], rationale: value };
-      if (value !== item.originalRationale) {
-        item.levelChangedWithoutRationale = false;
-      }
-      updated[index] = item;
-      return updated;
-    });
+  const updateRegLevel = (value: string) => {
+    setRegLevel(value as RiskLevel);
+    setRegChangedWithoutRationale(value !== riskParsed.regulatory_impact.level);
+  };
+  const updateRegRationale = (value: string) => {
+    setRegRationale(value);
+    if (value !== riskParsed.regulatory_impact.rationale) {
+      setRegChangedWithoutRationale(false);
+    }
   };
 
-  const updateFilings = (index: number, text: string) => {
-    setCategories((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], filings: textToFilings(text) };
-      return updated;
-    });
+  const updateDiLevel = (value: string) => {
+    setDiLevel(value as RiskLevel);
+    setDiChangedWithoutRationale(value !== riskParsed.data_integrity_risk.level);
+  };
+  const updateDiRationale = (value: string) => {
+    setDiRationale(value);
+    if (value !== riskParsed.data_integrity_risk.rationale) {
+      setDiChangedWithoutRationale(false);
+    }
   };
 
-  //Provenance builder
-  const buildRiskProvenance = (
-    confirmed: boolean,
-  ): RiskCriticalityProvenance => {
-    const byKey = Object.fromEntries(
-      categories.map((c) => [c.key, c]),
-    ) as Record<RiskCategoryKey, CategoryState>;
+  const updateOdLevel = (value: string) => {
+    setOdLevel(value as RiskLevel);
+    setOdChangedWithoutRationale(
+      value !== riskParsed.operational_disruption_risk.level,
+    );
+  };
+  const updateOdRationale = (value: string) => {
+    setOdRationale(value);
+    if (value !== riskParsed.operational_disruption_risk.rationale) {
+      setOdChangedWithoutRationale(false);
+    }
+  };
 
-    const buildRating = (key: RiskCategoryKey) => {
-      const c = byKey[key];
-      const modified =
-        confirmed &&
-        (c.level !== c.originalLevel || c.rationale !== c.originalRationale);
-      return {
-        level: modified
-          ? markModified(aiField(c.originalLevel), c.level)
-          : aiField(c.originalLevel),
-        rationale: modified
-          ? markModified(aiField(c.originalRationale), c.rationale)
-          : aiField(c.originalRationale),
-      };
-    };
+  //Approved risk criticality — already 1:1 with backend's RiskCriticalitySchema
+  //(unlike Stage 1, no flat/nested adapter is needed for this stage).
+  const buildApprovedRiskCriticality = (): RiskCriticalityParsed => ({
+    ...riskParsed,
+    patient_safety_product_quality_impact: {
+      level: psLevel,
+      rationale: psRationale,
+    },
+    regulatory_impact: {
+      level: regLevel,
+      filings_or_submissions_affected: regFilings,
+      rationale: regRationale,
+    },
+    data_integrity_risk: { level: diLevel, rationale: diRationale },
+    operational_disruption_risk: { level: odLevel, rationale: odRationale },
+    risk_ranking_justification: rankingJustification,
+  });
 
-    const reg = byKey.regulatory_impact;
-    const regModified =
-      confirmed &&
-      (reg.level !== reg.originalLevel ||
-        reg.rationale !== reg.originalRationale ||
-        JSON.stringify(reg.filings) !== JSON.stringify(reg.originalFilings));
+  const buildRiskProvenance = (confirmed: boolean): RiskCriticalityProvenance => {
+    const original = riskParsed;
 
-    const rankingModified =
-      confirmed && rankingJustification !== originalRankingJustification;
-
-    return {
-      patient_safety_product_quality_impact: buildRating(
-        "patient_safety_product_quality_impact",
-      ),
-      regulatory_impact: {
-        level: regModified
-          ? markModified(aiField(reg.originalLevel), reg.level)
-          : aiField(reg.originalLevel),
-        filings_or_submissions_affected: regModified
-          ? markModified(
-              aiField(reg.originalFilings ?? []),
-              reg.filings ?? [],
-            )
-          : aiField(reg.originalFilings ?? []),
-        rationale: regModified
-          ? markModified(aiField(reg.originalRationale), reg.rationale)
-          : aiField(reg.originalRationale),
-      },
-      data_integrity_risk: buildRating("data_integrity_risk"),
-      operational_disruption_risk: buildRating("operational_disruption_risk"),
-      risk_ranking_justification: rankingModified
+    const psLevelField =
+      confirmed && psLevel !== original.patient_safety_product_quality_impact.level
         ? markModified(
-            aiField(originalRankingJustification),
+            aiField(original.patient_safety_product_quality_impact.level),
+            psLevel,
+          )
+        : aiField(original.patient_safety_product_quality_impact.level);
+    const psRationaleField =
+      confirmed &&
+      psRationale !== original.patient_safety_product_quality_impact.rationale
+        ? markModified(
+            aiField(original.patient_safety_product_quality_impact.rationale),
+            psRationale,
+          )
+        : aiField(original.patient_safety_product_quality_impact.rationale);
+
+    const regLevelField =
+      confirmed && regLevel !== original.regulatory_impact.level
+        ? markModified(aiField(original.regulatory_impact.level), regLevel)
+        : aiField(original.regulatory_impact.level);
+    const regFilingsField =
+      confirmed &&
+      JSON.stringify(regFilings) !==
+        JSON.stringify(original.regulatory_impact.filings_or_submissions_affected)
+        ? markModified(
+            aiField(original.regulatory_impact.filings_or_submissions_affected),
+            regFilings,
+          )
+        : aiField(original.regulatory_impact.filings_or_submissions_affected);
+    const regRationaleField =
+      confirmed && regRationale !== original.regulatory_impact.rationale
+        ? markModified(
+            aiField(original.regulatory_impact.rationale),
+            regRationale,
+          )
+        : aiField(original.regulatory_impact.rationale);
+
+    const diLevelField =
+      confirmed && diLevel !== original.data_integrity_risk.level
+        ? markModified(aiField(original.data_integrity_risk.level), diLevel)
+        : aiField(original.data_integrity_risk.level);
+    const diRationaleField =
+      confirmed && diRationale !== original.data_integrity_risk.rationale
+        ? markModified(
+            aiField(original.data_integrity_risk.rationale),
+            diRationale,
+          )
+        : aiField(original.data_integrity_risk.rationale);
+
+    const odLevelField =
+      confirmed && odLevel !== original.operational_disruption_risk.level
+        ? markModified(
+            aiField(original.operational_disruption_risk.level),
+            odLevel,
+          )
+        : aiField(original.operational_disruption_risk.level);
+    const odRationaleField =
+      confirmed && odRationale !== original.operational_disruption_risk.rationale
+        ? markModified(
+            aiField(original.operational_disruption_risk.rationale),
+            odRationale,
+          )
+        : aiField(original.operational_disruption_risk.rationale);
+
+    const rankingField =
+      confirmed && rankingJustification !== original.risk_ranking_justification
+        ? markModified(
+            aiField(original.risk_ranking_justification),
             rankingJustification,
           )
-        : aiField(originalRankingJustification),
-      confidence_score: riskParsed.confidence_score,
-    };
-  };
+        : aiField(original.risk_ranking_justification);
 
-  //Approved risk criticality builder — reflects any override edits, in the
-  //shape the backend's RiskCriticalitySchema expects.
-  const buildApprovedRiskCriticality = () => {
-    const byKey = Object.fromEntries(
-      categories.map((c) => [c.key, c]),
-    ) as Record<RiskCategoryKey, CategoryState>;
-    const reg = byKey.regulatory_impact;
     return {
-      ...riskParsed,
       patient_safety_product_quality_impact: {
-        level: byKey.patient_safety_product_quality_impact.level,
-        rationale: byKey.patient_safety_product_quality_impact.rationale,
+        level: psLevelField,
+        rationale: psRationaleField,
       },
       regulatory_impact: {
-        level: reg.level,
-        filings_or_submissions_affected: reg.filings ?? [],
-        rationale: reg.rationale,
+        level: regLevelField,
+        filings_or_submissions_affected: regFilingsField,
+        rationale: regRationaleField,
       },
-      data_integrity_risk: {
-        level: byKey.data_integrity_risk.level,
-        rationale: byKey.data_integrity_risk.rationale,
-      },
+      data_integrity_risk: { level: diLevelField, rationale: diRationaleField },
       operational_disruption_risk: {
-        level: byKey.operational_disruption_risk.level,
-        rationale: byKey.operational_disruption_risk.rationale,
+        level: odLevelField,
+        rationale: odRationaleField,
       },
-      risk_ranking_justification: rankingJustification,
+      risk_ranking_justification: rankingField,
+      confidence_score: original.confidence_score,
     };
   };
 
-  //Navigation helpers
   const navigateToValidationTesting = (
-    validationTestingStage: NonNullable<
-      ValidationTestingApiResponse["stages"]["validationTesting"]
-    >,
+    validationTestingStage: ValidationTestingApiResponse["stages"]["validationTesting"],
     riskProvenance: RiskCriticalityProvenance,
-    approvedRiskCriticality: ReturnType<typeof buildApprovedRiskCriticality>,
+    approvedRiskCriticality: RiskCriticalityParsed,
   ) => {
     mergePipelineResult({
       stages: {
@@ -375,12 +387,14 @@ export function RiskCriticality() {
     navigate("/change-control/validation-testing");
   };
 
-  const runValidationTesting = async (
+  const submitRiskCriticality = async (
     riskProvenance: RiskCriticalityProvenance,
   ) => {
-    setValidationError(null);
-    setIsRunningValidation(true);
+    setSubmitError(null);
+    setIsSubmitting(true);
     const approvedRiskCriticality = buildApprovedRiskCriticality();
+    const flatChangeImpactAssessment =
+      nestedToFlatChangeImpactAssessment(impactParsed);
     try {
       const validationResult: ValidationTestingApiResponse = await apiFetch(
         "/api/change-control/validation-testing",
@@ -389,24 +403,24 @@ export function RiskCriticality() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             query: result!.query,
-            changeImpactAssessment: impactParsed,
+            changeImpactAssessment: flatChangeImpactAssessment,
             riskCriticality: approvedRiskCriticality,
           }),
         },
       );
       navigateToValidationTesting(
-        validationResult.stages.validationTesting!,
+        validationResult.stages.validationTesting,
         riskProvenance,
         approvedRiskCriticality,
       );
     } catch (err) {
-      setValidationError(
+      setSubmitError(
         err instanceof Error
           ? err.message
-          : "Something went wrong running the validation & testing strategy. Please try again.",
+          : "Something went wrong submitting the risk & criticality evaluation. Please try again.",
       );
     } finally {
-      setIsRunningValidation(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -421,18 +435,26 @@ export function RiskCriticality() {
       );
       return;
     }
-    void runValidationTesting(riskProvenance);
+    void submitRiskCriticality(riskProvenance);
   };
 
   const handleOverrideClick = () => setIsOverrideEditing(true);
 
   const handleSaveChanges = () => {
-    const needsRationale = categories
-      .filter((c) => c.levelChangedWithoutRationale)
-      .map((c) => c.category);
+    const needsRationale: string[] = [];
+    if (psChangedWithoutRationale)
+      needsRationale.push(
+        RISK_FIELD_LABELS.patient_safety_product_quality_impact,
+      );
+    if (regChangedWithoutRationale)
+      needsRationale.push(RISK_FIELD_LABELS.regulatory_impact);
+    if (diChangedWithoutRationale)
+      needsRationale.push(RISK_FIELD_LABELS.data_integrity_risk);
+    if (odChangedWithoutRationale)
+      needsRationale.push(RISK_FIELD_LABELS.operational_disruption_risk);
 
     if (needsRationale.length > 0) {
-      setWarningCards(needsRationale);
+      setWarningFields(needsRationale);
       setShowRationaleWarning(true);
       return;
     }
@@ -441,16 +463,20 @@ export function RiskCriticality() {
 
   const handleCancelOverride = () => {
     setIsOverrideEditing(false);
-    setCategories((prev) =>
-      prev.map((c) => ({
-        ...c,
-        level: c.originalLevel,
-        rationale: c.originalRationale,
-        filings: c.originalFilings,
-        levelChangedWithoutRationale: false,
-      })),
-    );
-    setRankingJustification(originalRankingJustification);
+    setPsLevel(riskParsed.patient_safety_product_quality_impact.level);
+    setPsRationale(riskParsed.patient_safety_product_quality_impact.rationale);
+    setRegLevel(riskParsed.regulatory_impact.level);
+    setRegFilings(riskParsed.regulatory_impact.filings_or_submissions_affected);
+    setRegRationale(riskParsed.regulatory_impact.rationale);
+    setDiLevel(riskParsed.data_integrity_risk.level);
+    setDiRationale(riskParsed.data_integrity_risk.rationale);
+    setOdLevel(riskParsed.operational_disruption_risk.level);
+    setOdRationale(riskParsed.operational_disruption_risk.rationale);
+    setRankingJustification(riskParsed.risk_ranking_justification);
+    setPsChangedWithoutRationale(false);
+    setRegChangedWithoutRationale(false);
+    setDiChangedWithoutRationale(false);
+    setOdChangedWithoutRationale(false);
   };
 
   const handleOverrideConfirm = () => {
@@ -464,17 +490,37 @@ export function RiskCriticality() {
   const handleReject = () => {
     if (rejectJustification.trim()) {
       setShowRejectDialog(false);
-      navigate("/change-control/change-impact-assessment");
+      navigate("/deviation");
     }
   };
 
   const confidenceScore = riskParsed.confidence_score;
+
+  const isPsModified =
+    overrideConfirmed &&
+    (psLevel !== riskParsed.patient_safety_product_quality_impact.level ||
+      psRationale !== riskParsed.patient_safety_product_quality_impact.rationale);
+  const isRegModified =
+    overrideConfirmed &&
+    (regLevel !== riskParsed.regulatory_impact.level ||
+      regRationale !== riskParsed.regulatory_impact.rationale ||
+      JSON.stringify(regFilings) !==
+        JSON.stringify(riskParsed.regulatory_impact.filings_or_submissions_affected));
+  const isDiModified =
+    overrideConfirmed &&
+    (diLevel !== riskParsed.data_integrity_risk.level ||
+      diRationale !== riskParsed.data_integrity_risk.rationale);
+  const isOdModified =
+    overrideConfirmed &&
+    (odLevel !== riskParsed.operational_disruption_risk.level ||
+      odRationale !== riskParsed.operational_disruption_risk.rationale);
   const isRankingModified =
-    overrideConfirmed && rankingJustification !== originalRankingJustification;
+    overrideConfirmed &&
+    rankingJustification !== riskParsed.risk_ranking_justification;
 
   //Render
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full w-full bg-gray-50/50 dark:bg-background">
       <div
         className={`min-h-screen p-6 transition-[padding] duration-200 ${chatOpen ? "pr-80" : "pr-6"}`}
       >
@@ -484,16 +530,6 @@ export function RiskCriticality() {
           }
         />
 
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground">
-            Risk &amp; Criticality Evaluation
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Patient safety, regulatory, data integrity, and operational
-            disruption risk for this change.
-          </p>
-        </div>
-
         <OverrideBar
           isOverrideEditing={isOverrideEditing}
           overrideConfirmed={overrideConfirmed}
@@ -501,213 +537,314 @@ export function RiskCriticality() {
           overriddenLabel="Overriden"
         />
 
-        <div className="space-y-6">
-          {/* Confidence */}
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-blue-600" />
+        <div className="space-y-6 mt-6">
+          {/* Top Banner: Confidence Score */}
+          <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-gray-900 dark:text-gray-100">
+                <Sparkles className="h-4 w-4 text-blue-500" />
                 Overall AI Confidence Score
               </CardTitle>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                Based on Change Impact Assessment (risk scoring:{" "}
+                {impactParsed.risk_scoring.level})
+              </p>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">
-                  Based on Change Impact Assessment (risk scoring:{" "}
-                  {impactParsed.risk_scoring})
-                </span>
-                <span className="text-sm font-semibold text-foreground">
+              <div className="flex items-center gap-4 mt-2">
+                <div className="flex-1 h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                  <div
+                    className={`h-full ${
+                      confidenceScore >= 80
+                        ? "bg-green-500"
+                        : confidenceScore >= 60
+                          ? "bg-yellow-400"
+                          : "bg-red-500"
+                    }`}
+                    style={{ width: `${confidenceScore}%` }}
+                  />
+                </div>
+                <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
                   {confidenceScore}%
                 </span>
               </div>
-              <div className="w-full bg-muted rounded-full h-2">
-                <div
-                  className={`h-2 rounded-full ${confidenceScore >= 80 ? "bg-green-500" : confidenceScore >= 60 ? "bg-yellow-500" : "bg-red-500"}`}
-                  style={{ width: `${confidenceScore}%` }}
-                />
-              </div>
             </CardContent>
           </Card>
 
-          {/* 4 Risk category cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {categories.map((cat, index) => {
-              const isLevelModified =
-                overrideConfirmed && cat.level !== cat.originalLevel;
-              const isRationaleModified =
-                overrideConfirmed && cat.rationale !== cat.originalRationale;
-              const isFilingsModified =
-                overrideConfirmed &&
-                JSON.stringify(cat.filings) !==
-                  JSON.stringify(cat.originalFilings);
-              const isAnyModified =
-                isLevelModified || isRationaleModified || isFilingsModified;
+          {/* Grid Container for the 4 risk category fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* 1. Patient Safety / Product Quality Impact */}
+            <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black flex flex-col h-full">
+              <CardContent className="pt-6 flex flex-col flex-1">
+                <div className="flex items-center gap-2 justify-between mb-4">
+                  <h3 className="font-semibold text-[15px] text-gray-900 dark:text-gray-100">
+                    {RISK_FIELD_LABELS.patient_safety_product_quality_impact}
+                  </h3>
+                  {!isOverrideEditing && isPsModified && <ModifiedBadge />}
+                </div>
 
-              return (
-                <Card
-                  key={cat.key}
-                  className={`shadow-sm ${cat.levelChangedWithoutRationale && isOverrideEditing ? "ring-2 ring-orange-400" : ""}`}
-                >
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between text-lg">
-                      {cat.category}
-                      {!isOverrideEditing && isAnyModified && <ModifiedBadge />}
-                    </CardTitle>
-                  </CardHeader>
-
-                  <CardContent className="space-y-4">
-                    {isOverrideEditing ? (
-                      <>
-                        <div>
-                          <label className="text-sm font-medium mb-2 block">
-                            Risk Level
-                          </label>
-                          <Select
-                            value={cat.level}
-                            onValueChange={(value) =>
-                              updateLevel(index, value)
-                            }
-                          >
-                            <SelectTrigger
-                              className={getRiskBadgeClass(cat.level)}
-                            >
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="High">🔴 High</SelectItem>
-                              <SelectItem value="Moderate">
-                                🟡 Moderate
-                              </SelectItem>
-                              <SelectItem value="Low">🟢 Low</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          {cat.levelChangedWithoutRationale && (
-                            <p className="text-xs text-orange-600 mt-1 flex items-center gap-1">
-                              <AlertTriangle className="h-3 w-3" />
-                              Please update the rationale below to explain
-                              this change.
-                            </p>
-                          )}
-                        </div>
-
-                        <div>
-                          <label className="text-sm font-medium mb-2 block">
-                            Rationale
-                            {cat.levelChangedWithoutRationale && (
-                              <span className="text-orange-600 ml-1">*</span>
-                            )}
-                          </label>
-                          <Textarea
-                            rows={4}
-                            value={cat.rationale}
-                            onChange={(e) =>
-                              updateRationale(index, e.target.value)
-                            }
-                            placeholder="Explain the reason for this risk level..."
-                            className={
-                              cat.levelChangedWithoutRationale
-                                ? "border-orange-400 focus:ring-orange-400"
-                                : ""
-                            }
-                          />
-                        </div>
-
-                        {cat.key === "regulatory_impact" && (
-                          <div>
-                            <label className="text-sm font-medium mb-2 block">
-                              Filings / Submissions Affected
-                            </label>
-                            <Textarea
-                              rows={3}
-                              value={filingsToText(cat.filings ?? [])}
-                              onChange={(e) =>
-                                updateFilings(index, e.target.value)
-                              }
-                              placeholder="One filing or submission per line..."
-                            />
-                            <p className="text-xs text-muted-foreground mt-1">
-                              One per line
-                            </p>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <div
-                            className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getRiskBadgeClass(cat.level)}`}
-                          >
-                            {cat.level}
-                          </div>
-                        </div>
-
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {cat.rationale}
-                        </p>
-
-                        {cat.key === "regulatory_impact" && (
-                          <div>
-                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
-                              Filings / Submissions Affected
-                            </p>
-                            {cat.filings && cat.filings.length > 0 ? (
-                              <ul className="space-y-1.5">
-                                {cat.filings.map((f, i) => (
-                                  <li
-                                    key={i}
-                                    className="flex items-start gap-2 text-sm text-muted-foreground"
-                                  >
-                                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
-                                    {f}
-                                  </li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p className="text-sm text-muted-foreground italic">
-                                None identified
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </>
+                {isOverrideEditing ? (
+                  <div className="space-y-3">
+                    <Select value={psLevel} onValueChange={updatePsLevel}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="High">High</SelectItem>
+                        <SelectItem value="Moderate">Moderate</SelectItem>
+                        <SelectItem value="Low">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {psChangedWithoutRationale && (
+                      <p className="text-xs text-orange-600 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" /> Update rationale
+                        below
+                      </p>
                     )}
-                  </CardContent>
-                </Card>
-              );
-            })}
+                    <Textarea
+                      rows={4}
+                      value={psRationale}
+                      onChange={(e) => updatePsRationale(e.target.value)}
+                      placeholder="Explain the reason for this change..."
+                      className={`resize-none text-sm ${psChangedWithoutRationale ? "border-orange-400" : ""}`}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex flex-col flex-1">
+                    <div>
+                      <span
+                        className={`inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium ${getRiskLevelBadgeClass(psLevel)}`}
+                      >
+                        {psLevel}
+                      </span>
+                    </div>
+                    <p className="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed mt-4">
+                      {psRationale || "No rationale provided."}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 2. Regulatory Impact */}
+            <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black flex flex-col h-full">
+              <CardContent className="pt-6 flex flex-col flex-1">
+                <div className="flex items-center gap-2 justify-between mb-4">
+                  <h3 className="font-semibold text-[15px] text-gray-900 dark:text-gray-100">
+                    {RISK_FIELD_LABELS.regulatory_impact}
+                  </h3>
+                  {!isOverrideEditing && isRegModified && <ModifiedBadge />}
+                </div>
+
+                {isOverrideEditing ? (
+                  <div className="space-y-3">
+                    <Select value={regLevel} onValueChange={updateRegLevel}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="High">High</SelectItem>
+                        <SelectItem value="Moderate">Moderate</SelectItem>
+                        <SelectItem value="Low">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Textarea
+                      rows={2}
+                      value={filingsToText(regFilings)}
+                      onChange={(e) => setRegFilings(parseLines(e.target.value))}
+                      placeholder="One filing/submission per line..."
+                      className="resize-none text-sm"
+                    />
+                    {regChangedWithoutRationale && (
+                      <p className="text-xs text-orange-600 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" /> Update rationale
+                        below
+                      </p>
+                    )}
+                    <Textarea
+                      rows={3}
+                      value={regRationale}
+                      onChange={(e) => updateRegRationale(e.target.value)}
+                      placeholder="Explain the reason for this change..."
+                      className={`resize-none text-sm ${regChangedWithoutRationale ? "border-orange-400" : ""}`}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex flex-col flex-1">
+                    <div>
+                      <span
+                        className={`inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium ${getRiskLevelBadgeClass(regLevel)}`}
+                      >
+                        {regLevel} regulatory risk
+                      </span>
+                    </div>
+                    <div className="mt-3">
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
+                        Filings / Submissions Affected
+                      </p>
+                      {regFilings.length > 0 ? (
+                        <div className="flex flex-col gap-1.5">
+                          {regFilings.map((f, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-start gap-2 text-[13px] text-gray-500 dark:text-gray-400"
+                            >
+                              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-gray-400 dark:bg-gray-600 shrink-0" />
+                              <span>{f}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[13px] text-gray-500 dark:text-gray-400 italic">
+                          No specific filings or submissions identified.
+                        </p>
+                      )}
+                    </div>
+                    <p className="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed mt-4">
+                      {regRationale || "No rationale provided."}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 3. Data Integrity Risk */}
+            <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black flex flex-col h-full">
+              <CardContent className="pt-6 flex flex-col flex-1">
+                <div className="flex items-center gap-2 justify-between mb-4">
+                  <h3 className="font-semibold text-[15px] text-gray-900 dark:text-gray-100">
+                    {RISK_FIELD_LABELS.data_integrity_risk}
+                  </h3>
+                  {!isOverrideEditing && isDiModified && <ModifiedBadge />}
+                </div>
+
+                {isOverrideEditing ? (
+                  <div className="space-y-3">
+                    <Select value={diLevel} onValueChange={updateDiLevel}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="High">High</SelectItem>
+                        <SelectItem value="Moderate">Moderate</SelectItem>
+                        <SelectItem value="Low">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {diChangedWithoutRationale && (
+                      <p className="text-xs text-orange-600 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" /> Update rationale
+                        below
+                      </p>
+                    )}
+                    <Textarea
+                      rows={4}
+                      value={diRationale}
+                      onChange={(e) => updateDiRationale(e.target.value)}
+                      placeholder="Explain the reason for this change..."
+                      className={`resize-none text-sm ${diChangedWithoutRationale ? "border-orange-400" : ""}`}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex flex-col flex-1">
+                    <div>
+                      <span
+                        className={`inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium ${getRiskLevelBadgeClass(diLevel)}`}
+                      >
+                        {diLevel}
+                      </span>
+                    </div>
+                    <p className="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed mt-4">
+                      {diRationale || "No rationale provided."}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 4. Operational Disruption Risk */}
+            <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black flex flex-col h-full">
+              <CardContent className="pt-6 flex flex-col flex-1">
+                <div className="flex items-center gap-2 justify-between mb-4">
+                  <h3 className="font-semibold text-[15px] text-gray-900 dark:text-gray-100">
+                    {RISK_FIELD_LABELS.operational_disruption_risk}
+                  </h3>
+                  {!isOverrideEditing && isOdModified && <ModifiedBadge />}
+                </div>
+
+                {isOverrideEditing ? (
+                  <div className="space-y-3">
+                    <Select value={odLevel} onValueChange={updateOdLevel}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="High">High</SelectItem>
+                        <SelectItem value="Moderate">Moderate</SelectItem>
+                        <SelectItem value="Low">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {odChangedWithoutRationale && (
+                      <p className="text-xs text-orange-600 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" /> Update rationale
+                        below
+                      </p>
+                    )}
+                    <Textarea
+                      rows={4}
+                      value={odRationale}
+                      onChange={(e) => updateOdRationale(e.target.value)}
+                      placeholder="Explain the reason for this change..."
+                      className={`resize-none text-sm ${odChangedWithoutRationale ? "border-orange-400" : ""}`}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex flex-col flex-1">
+                    <div>
+                      <span
+                        className={`inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium ${getRiskLevelBadgeClass(odLevel)}`}
+                      >
+                        {odLevel}
+                      </span>
+                    </div>
+                    <p className="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed mt-4">
+                      {odRationale || "No rationale provided."}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 5. Risk Ranking & Justification (spans full width) */}
+            <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black flex flex-col h-full md:col-span-2">
+              <CardContent className="pt-6 flex flex-col flex-1">
+                <div className="flex items-center gap-2 justify-between mb-4">
+                  <h3 className="font-semibold text-[15px] text-gray-900 dark:text-gray-100">
+                    Risk Ranking &amp; Justification
+                  </h3>
+                  {!isOverrideEditing && isRankingModified && <ModifiedBadge />}
+                </div>
+
+                {isOverrideEditing ? (
+                  <Textarea
+                    rows={4}
+                    value={rankingJustification}
+                    onChange={(e) => setRankingJustification(e.target.value)}
+                    placeholder="Explain the overall risk ranking for this change..."
+                    className="resize-none text-sm md:w-2/3"
+                  />
+                ) : (
+                  <p className="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed">
+                    {rankingJustification || "No justification provided."}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Risk ranking + justification */}
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between text-lg">
-                <span className="flex items-center gap-2">
-                  <ShieldAlert className="h-5 w-5 text-blue-600" />
-                  Risk Ranking &amp; Justification
-                </span>
-                {!isOverrideEditing && isRankingModified && <ModifiedBadge />}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isOverrideEditing ? (
-                <Textarea
-                  rows={4}
-                  value={rankingJustification}
-                  onChange={(e) => setRankingJustification(e.target.value)}
-                  placeholder="Explain the overall risk ranking for this change..."
-                />
-              ) : (
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {rankingJustification}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Decision Required */}
+          {/* Bottom Decision Area */}
           <DecisionAction
             acceptLabel="Accept & Continue to Validation & Testing Strategy"
-            acceptLoadingLabel="Generating Validation & Testing Strategy..."
+            acceptLoadingLabel="Submitting Evaluation..."
             onAccept={handleAccept}
             isOverrideEditing={isOverrideEditing}
             overrideLabel="Override Evaluation"
@@ -715,14 +852,14 @@ export function RiskCriticality() {
             onSaveChanges={handleSaveChanges}
             rejectLabel="Reject Evaluation"
             onReject={() => setShowRejectDialog(true)}
-            isLoading={isRunningValidation}
-            error={validationError}
-            errorTitle="Validation & testing strategy generation failed"
-            footerText="Your decision will be logged in the audit trail. Accepting or overriding runs the validation & testing strategy — it only starts now, not before you decide."
+            isLoading={isSubmitting}
+            error={submitError}
+            errorTitle="Evaluation submission failed"
+            footerText="Your decision will be logged in the audit trail. Accepting or overriding submits this evaluation and starts the Validation & Testing strategy — it only starts now, not before you decide."
           />
         </div>
 
-        {/* Rationale required warning dialog */}
+        {/* Warning Dialog */}
         <Dialog
           open={showRationaleWarning}
           onOpenChange={setShowRationaleWarning}
@@ -734,25 +871,25 @@ export function RiskCriticality() {
                 Rationale Update Required
               </DialogTitle>
               <DialogDescription>
-                You changed the risk level for the following{" "}
-                {warningCards.length === 1 ? "category" : "categories"} but
-                have not updated the rationale to explain the change:
+                You changed the value for the following{" "}
+                {warningFields.length === 1 ? "field" : "fields"} but have not
+                updated the rationale to explain the change:
               </DialogDescription>
             </DialogHeader>
             <ul className="mt-2 space-y-1">
-              {warningCards.map((c) => (
+              {warningFields.map((f) => (
                 <li
-                  key={c}
+                  key={f}
                   className="flex items-center gap-2 text-sm font-medium text-foreground"
                 >
                   <span className="h-1.5 w-1.5 rounded-full bg-orange-500 shrink-0" />
-                  {c}
+                  {f}
                 </li>
               ))}
             </ul>
-            <p className="text-sm text-muted-foreground mt-3">
-              Please update the rationale for each changed category with the
-              reason for the new risk level before saving.
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
+              Please update the rationale for each changed field with the reason
+              for the new value before saving.
             </p>
             <DialogFooter>
               <Button
@@ -765,7 +902,7 @@ export function RiskCriticality() {
           </DialogContent>
         </Dialog>
 
-        {/* Override justification dialog */}
+        {/* Override Justification Dialog */}
         <OverrideDialog
           open={showOverrideDialog}
           onOpenChange={setShowOverrideDialog}
@@ -775,10 +912,10 @@ export function RiskCriticality() {
           onChange={setOverrideJustification}
           onCancel={() => setShowOverrideDialog(false)}
           onConfirm={handleOverrideConfirm}
-          isLoading={isRunningValidation}
+          isLoading={isSubmitting}
         />
 
-        {/* Reject dialog */}
+        {/* Reject Dialog */}
         <RejectDialog
           open={showRejectDialog}
           onOpenChange={setShowRejectDialog}

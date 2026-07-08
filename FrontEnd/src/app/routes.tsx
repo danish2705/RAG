@@ -14,7 +14,7 @@ import { Settings } from "./pages/Settings";
 import { ChangeImpactAssessment } from "./pages/changeControl/ChangeImpactAssessment";
 import { RiskCriticality } from "./pages/changeControl/RiskCriticality";
 import { ValidationTesting } from "./pages/changeControl/ValidationTesting";
-import { ImplementationControl } from "./pages/ImplementationControl";
+import { ImplementationControl } from "./pages/changeControl/ImplementationControl";
 import { ChangecontrolSummary } from "./pages/changeControl/ChangecontrolSummary";
 
 export const router = createBrowserRouter([

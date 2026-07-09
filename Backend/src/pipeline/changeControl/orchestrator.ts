@@ -49,7 +49,7 @@ export interface PipelineStages {
   implementationControl?: ImplementationControlStageResult & {
     gate: GateResult;
   };
-  finalSummary?: FinalSummaryStageResult & { gate: GateResult };
+  changeControlSummary?: FinalSummaryStageResult & { gate: GateResult };
 }
 
 export interface PipelineResult {
@@ -218,7 +218,7 @@ export async function runFinalSummaryOnly(
     approvedImplementationControl,
   );
   const gate = evaluateGate("final_summary", result.parsed, result.error);
-  stages.finalSummary = { ...result, gate };
+  stages.changeControlSummary = { ...result, gate };
   audit.record({ ...gate });
 
   if (!gate.passed) {

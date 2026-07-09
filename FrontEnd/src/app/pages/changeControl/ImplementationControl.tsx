@@ -25,12 +25,14 @@ import {
   type ImplementationControlProvenance,
 } from "../../types/dataProvenance";
 import { AIAssistant } from "../../components/chat/ai-assistant";
-import type {
-  ImplementationControlApiResponse,
-  ImplementationControlParsed,
-} from "../../types/pipeline";
+import type { ImplementationControlParsed } from "../../types/pipeline";
 import { useWorkflowStore } from "../../store/workflowStore";
 import { IMPLEMENTATION_CONTROL_FIELD_LABELS } from "../../mocks/mockImplementation";
+import { nestedToFlatChangeImpactAssessment } from "../../../utils/changeImpactAdapter";
+import {
+  flatToNestedImplementationControl,
+  nestedToFlatValidationTesting,
+} from "../../../utils/changeControlAdapters";
 
 //Helpers
 function parseLines(text: string): string[] {
@@ -70,25 +72,39 @@ export function ImplementationControl() {
     setIsGenerating(true);
     setGenerateError(null);
 
-    apiFetch<ImplementationControlApiResponse>(
-      "/api/change-control/implementation-control",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: result.query,
-          changeImpactAssessment: result.stages?.changeImpactAssessment?.parsed ?? null,
-          riskCriticality: result.stages?.riskCriticality?.parsed ?? null,
-          validationTesting: result.stages?.validationTesting?.parsed ?? null,
-        }),
-      },
-    )
+    const changeImpactAssessmentParsed =
+      result.stages?.changeImpactAssessment?.parsed ?? null;
+    const validationTestingParsed =
+      result.stages?.validationTesting?.parsed ?? null;
+
+    apiFetch<any>("/api/change-control/implementation-control", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: result.query,
+        changeImpactAssessment: changeImpactAssessmentParsed
+          ? nestedToFlatChangeImpactAssessment(changeImpactAssessmentParsed)
+          : null,
+        riskCriticality: result.stages?.riskCriticality?.parsed ?? null,
+        validationTesting: validationTestingParsed
+          ? nestedToFlatValidationTesting(validationTestingParsed)
+          : null,
+      }),
+    })
       .then((res) => {
         if (cancelled) return;
+        const rawStage = res?.stages?.implementationControl;
         mergePipelineResult({
           stages: {
             ...result.stages,
-            implementationControl: res.stages.implementationControl,
+            implementationControl: rawStage
+              ? {
+                  ...rawStage,
+                  parsed: rawStage.parsed
+                    ? flatToNestedImplementationControl(rawStage.parsed)
+                    : null,
+                }
+              : undefined,
           },
         });
       })
@@ -274,14 +290,16 @@ export function ImplementationControl() {
             )
           : aiField(implementationParsed.approval_routing),
       implementation_plan:
-        confirmed && implementationPlan !== implementationParsed.implementation_plan
+        confirmed &&
+        implementationPlan !== implementationParsed.implementation_plan
           ? markModified(
               aiField(implementationParsed.implementation_plan),
               implementationPlan,
             )
           : aiField(implementationParsed.implementation_plan),
       rollback_contingency_plan:
-        confirmed && rollbackPlan !== implementationParsed.rollback_contingency_plan
+        confirmed &&
+        rollbackPlan !== implementationParsed.rollback_contingency_plan
           ? markModified(
               aiField(implementationParsed.rollback_contingency_plan),
               rollbackPlan,
@@ -325,7 +343,9 @@ export function ImplementationControl() {
       setRequiredActions(linesToText(savedProvenance!.required_actions.value));
       setSopWiUpdates(linesToText(savedProvenance!.sop_wi_updates.value));
       setApprovalRouting(linesToText(savedProvenance!.approval_routing.value));
-      setImplementationPlan(savedProvenance!.implementation_plan.value as string);
+      setImplementationPlan(
+        savedProvenance!.implementation_plan.value as string,
+      );
       setRollbackPlan(
         savedProvenance!.rollback_contingency_plan.value as string,
       );
@@ -376,7 +396,7 @@ export function ImplementationControl() {
           onCancelOverride={handleCancelOverride}
           cancelDisabled={implementationAccepted}
         />
-        
+
         <div className="space-y-6">
           {/* Confidence */}
           <Card className="shadow-sm">
@@ -427,13 +447,15 @@ export function ImplementationControl() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Label htmlFor="requiredActions">
-                    Config updates, documentation updates, training — one
-                    action per line
+                    Config updates, documentation updates, training — one action
+                    per line
                   </Label>
                   {!isOverrideEditing && (
                     <ModifiedStatus
                       enabled={overrideConfirmed}
-                      original={implementationParsed.required_actions.join("\n")}
+                      original={implementationParsed.required_actions.join(
+                        "\n",
+                      )}
                       current={requiredActions}
                     />
                   )}
@@ -444,7 +466,9 @@ export function ImplementationControl() {
                   value={requiredActions}
                   onChange={(e) => setRequiredActions(e.target.value)}
                   readOnly={!isOverrideEditing}
-                  className={!isOverrideEditing ? "bg-muted cursor-default" : ""}
+                  className={
+                    !isOverrideEditing ? "bg-muted cursor-default" : ""
+                  }
                 />
               </div>
             </CardContent>
@@ -478,7 +502,9 @@ export function ImplementationControl() {
                   value={sopWiUpdates}
                   onChange={(e) => setSopWiUpdates(e.target.value)}
                   readOnly={!isOverrideEditing}
-                  className={!isOverrideEditing ? "bg-muted cursor-default" : ""}
+                  className={
+                    !isOverrideEditing ? "bg-muted cursor-default" : ""
+                  }
                 />
               </div>
             </CardContent>
@@ -501,7 +527,9 @@ export function ImplementationControl() {
                   {!isOverrideEditing && (
                     <ModifiedStatus
                       enabled={overrideConfirmed}
-                      original={implementationParsed.approval_routing.join("\n")}
+                      original={implementationParsed.approval_routing.join(
+                        "\n",
+                      )}
                       current={approvalRouting}
                     />
                   )}
@@ -512,7 +540,9 @@ export function ImplementationControl() {
                   value={approvalRouting}
                   onChange={(e) => setApprovalRouting(e.target.value)}
                   readOnly={!isOverrideEditing}
-                  className={!isOverrideEditing ? "bg-muted cursor-default" : ""}
+                  className={
+                    !isOverrideEditing ? "bg-muted cursor-default" : ""
+                  }
                 />
               </div>
             </CardContent>
@@ -546,7 +576,9 @@ export function ImplementationControl() {
                   value={implementationPlan}
                   onChange={(e) => setImplementationPlan(e.target.value)}
                   readOnly={!isOverrideEditing}
-                  className={!isOverrideEditing ? "bg-muted cursor-default" : ""}
+                  className={
+                    !isOverrideEditing ? "bg-muted cursor-default" : ""
+                  }
                 />
               </div>
             </CardContent>
@@ -580,7 +612,9 @@ export function ImplementationControl() {
                   value={rollbackPlan}
                   onChange={(e) => setRollbackPlan(e.target.value)}
                   readOnly={!isOverrideEditing}
-                  className={!isOverrideEditing ? "bg-muted cursor-default" : ""}
+                  className={
+                    !isOverrideEditing ? "bg-muted cursor-default" : ""
+                  }
                 />
               </div>
             </CardContent>

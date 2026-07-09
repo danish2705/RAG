@@ -41,8 +41,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-import { DeviationCase } from "../types/Records";
-import { PARAMETER_LABELS } from "../mocks/mockImpactAssessment";
+import { AnyCase, DeviationCase, ChangeControlCase } from "../types/Records";
+import {
+  PARAMETER_LABELS,
+  CHANGE_IMPACT_FIELD_LABELS,
+} from "../mocks/mockImpactAssessment";
+import { VALIDATION_TESTING_FIELD_LABELS } from "../mocks/mockValidationTesting";
+import { IMPLEMENTATION_CONTROL_FIELD_LABELS } from "../mocks/mockImplementation";
 
 // Helper
 function getClassificationBadgeClass(type: string): string {
@@ -51,6 +56,78 @@ function getClassificationBadgeClass(type: string): string {
   if (type === "Change Control")
     return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
   return "bg-muted text-muted-foreground border-border";
+}
+
+function getGxpBadgeClass(value: string): string {
+  const v = value.toLowerCase();
+  if (v.includes("indirect"))
+    return "bg-yellow-100 text-yellow-700 border border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800";
+  if (v.includes("direct"))
+    return "bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
+  return "bg-muted text-muted-foreground border border-border";
+}
+
+function getValidationImpactBadgeClass(affected: boolean): string {
+  return affected
+    ? "bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800"
+    : "bg-gray-100 text-gray-700 border border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700";
+}
+
+function getValidationLevelBadgeClass(level: string): string {
+  switch (level.toLowerCase()) {
+    case "full":
+      return "bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
+    case "partial":
+      return "bg-yellow-100 text-yellow-700 border border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800";
+    case "none":
+      return "bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800";
+    default:
+      return "bg-gray-100 text-gray-700 border border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700";
+  }
+}
+
+function getRiskLevelBadgeClass(level: string): string {
+  switch (level.toLowerCase()) {
+    case "high":
+      return "bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
+    case "moderate":
+      return "bg-yellow-100 text-yellow-700 border border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800";
+    case "low":
+      return "bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800";
+    default:
+      return "bg-gray-100 text-gray-700 border border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700";
+  }
+}
+
+const RISK_FIELD_LABELS = {
+  patient_safety_product_quality_impact:
+    "Patient Safety / Product Quality Impact",
+  regulatory_impact: "Regulatory Impact",
+  data_integrity_risk: "Data Integrity Risk",
+  operational_disruption_risk: "Operational Disruption Risk",
+} as const;
+
+function BulletList({ items }: { items: string[] }) {
+  if (!items || items.length === 0) {
+    return (
+      <span className="inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium bg-gray-100 text-gray-700 w-fit">
+        None
+      </span>
+    );
+  }
+  return (
+    <ul className="space-y-1.5">
+      {items.map((point, i) => (
+        <li
+          key={i}
+          className="flex items-start gap-2 text-sm text-muted-foreground"
+        >
+          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
+          {point}
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 function getAlternatingRowClass(index: number): string {
@@ -99,6 +176,19 @@ function ConfidenceBar({ score }: { score: number }) {
 
 // View Modal
 function CaseViewModal({
+  record,
+  onClose,
+}: {
+  record: AnyCase;
+  onClose: () => void;
+}) {
+  if (record.case_type === "Change Control") {
+    return <ChangeControlViewModal record={record} onClose={onClose} />;
+  }
+  return <DeviationViewModal record={record} onClose={onClose} />;
+}
+
+function DeviationViewModal({
   record,
   onClose,
 }: {
@@ -394,13 +484,452 @@ function CaseViewModal({
   );
 }
 
+function ChangeControlViewModal({
+  record,
+  onClose,
+}: {
+  record: ChangeControlCase;
+  onClose: () => void;
+}) {
+  const cls = record.classification;
+  const impact = record.change_impact_assessment;
+  const risk = record.risk_criticality;
+  const validation = record.validation_testing;
+  const implementation = record.implementation_control;
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-lg">
+            <Database className="h-5 w-5 text-blue-600" />
+            Case #{record.id} — Full Summary
+          </DialogTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Saved by{" "}
+            <span className="font-medium text-foreground">
+              {record.saved_by}
+            </span>
+            {" · "}
+            {new Date(record.created_at).toLocaleString()}
+          </p>
+        </DialogHeader>
+
+        <div className="space-y-6 pt-2">
+          {/* Query */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Original Query</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground leading-relaxed bg-muted/50 rounded-md p-3">
+                {record.query}
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Classification */}
+          {cls && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  Classification
+                  <Sparkles className="h-4 w-4 text-blue-600" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Type:
+                  </span>
+                  <Badge
+                    className={getClassificationBadgeClass(cls.classification)}
+                  >
+                    {cls.classification}
+                  </Badge>
+                </div>
+                <ConfidenceBar score={cls.confidence_score} />
+                <div className="border-t border-border pt-3">
+                  <p className="text-sm font-medium text-foreground mb-2">
+                    AI Rationale
+                  </p>
+                  <BulletList items={cls.rationale} />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Change Impact Assessment */}
+          {impact && (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    Change Impact Assessment
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ConfidenceBar score={impact.confidence_score} />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    {CHANGE_IMPACT_FIELD_LABELS.impacted_systems}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <BulletList items={impact.impacted_systems} />
+                </CardContent>
+              </Card>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">
+                      {CHANGE_IMPACT_FIELD_LABELS.gxp_classification}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <span
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getGxpBadgeClass(impact.gxp_classification.value)}`}
+                    >
+                      {impact.gxp_classification.value}
+                    </span>
+                    <p className="text-sm text-muted-foreground">
+                      {impact.gxp_classification.rationale}
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">
+                      {CHANGE_IMPACT_FIELD_LABELS.data_validation_impact}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <span
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getValidationImpactBadgeClass(impact.data_validation_impact.validated_state_affected)}`}
+                    >
+                      {impact.data_validation_impact.validated_state_affected
+                        ? "Validated State Affected"
+                        : "Not Affected"}
+                    </span>
+                    <p className="text-sm text-muted-foreground">
+                      {impact.data_validation_impact.rationale}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    {CHANGE_IMPACT_FIELD_LABELS.downstream_dependencies}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <BulletList items={impact.downstream_dependencies} />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    {CHANGE_IMPACT_FIELD_LABELS.risk_scoring}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <span
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getRiskLevelBadgeClass(impact.risk_scoring.level)}`}
+                  >
+                    {impact.risk_scoring.level} Risk
+                  </span>
+                  <p className="text-sm text-muted-foreground">
+                    {impact.risk_scoring.rationale}
+                  </p>
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {/* Risk & Criticality Evaluation */}
+          {risk && (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    Risk &amp; Criticality Evaluation
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ConfidenceBar score={risk.confidence_score} />
+                </CardContent>
+              </Card>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">
+                      {RISK_FIELD_LABELS.patient_safety_product_quality_impact}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <span
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getRiskLevelBadgeClass(risk.patient_safety_product_quality_impact.level)}`}
+                    >
+                      {risk.patient_safety_product_quality_impact.level}
+                    </span>
+                    <p className="text-sm text-muted-foreground">
+                      {risk.patient_safety_product_quality_impact.rationale}
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">
+                      {RISK_FIELD_LABELS.regulatory_impact}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <span
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getRiskLevelBadgeClass(risk.regulatory_impact.level)}`}
+                    >
+                      {risk.regulatory_impact.level}
+                    </span>
+                    <BulletList
+                      items={
+                        risk.regulatory_impact.filings_or_submissions_affected
+                      }
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      {risk.regulatory_impact.rationale}
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">
+                      {RISK_FIELD_LABELS.data_integrity_risk}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <span
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getRiskLevelBadgeClass(risk.data_integrity_risk.level)}`}
+                    >
+                      {risk.data_integrity_risk.level}
+                    </span>
+                    <p className="text-sm text-muted-foreground">
+                      {risk.data_integrity_risk.rationale}
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">
+                      {RISK_FIELD_LABELS.operational_disruption_risk}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <span
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getRiskLevelBadgeClass(risk.operational_disruption_risk.level)}`}
+                    >
+                      {risk.operational_disruption_risk.level}
+                    </span>
+                    <p className="text-sm text-muted-foreground">
+                      {risk.operational_disruption_risk.rationale}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    Risk Ranking Justification
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground leading-relaxed bg-muted/50 rounded-md p-3">
+                    {risk.risk_ranking_justification}
+                  </p>
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {/* Validation & Testing Strategy */}
+          {validation && (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    Validation &amp; Testing Strategy
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ConfidenceBar score={validation.confidence_score} />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    {VALIDATION_TESTING_FIELD_LABELS.required_validation_level}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <span
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getValidationLevelBadgeClass(validation.required_validation_level.level)}`}
+                  >
+                    {validation.required_validation_level.level}
+                  </span>
+                  <p className="text-sm text-muted-foreground">
+                    {validation.required_validation_level.rationale}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    {VALIDATION_TESTING_FIELD_LABELS.scenario_based_testing}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <BulletList items={validation.scenario_based_testing} />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    {VALIDATION_TESTING_FIELD_LABELS.regression_scope}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <BulletList items={validation.regression_scope} />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    {VALIDATION_TESTING_FIELD_LABELS.uat_requirements}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <BulletList items={validation.uat_requirements} />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    {VALIDATION_TESTING_FIELD_LABELS.traceability}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <BulletList items={validation.traceability} />
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {/* Implementation & Control Actions */}
+          {implementation && (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    Implementation &amp; Control Actions
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ConfidenceBar score={implementation.confidence_score} />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    {IMPLEMENTATION_CONTROL_FIELD_LABELS.required_actions}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <BulletList items={implementation.required_actions} />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    {IMPLEMENTATION_CONTROL_FIELD_LABELS.sop_wi_updates}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <BulletList items={implementation.sop_wi_updates} />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    {IMPLEMENTATION_CONTROL_FIELD_LABELS.approval_routing}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <BulletList items={implementation.approval_routing} />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    {IMPLEMENTATION_CONTROL_FIELD_LABELS.implementation_plan}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground leading-relaxed bg-muted/50 rounded-md p-3">
+                    {implementation.implementation_plan}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    {
+                      IMPLEMENTATION_CONTROL_FIELD_LABELS.rollback_contingency_plan
+                    }
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground leading-relaxed bg-muted/50 rounded-md p-3">
+                    {implementation.rollback_contingency_plan}
+                  </p>
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // Main Page
 export function Records() {
   const navigate = useNavigate();
-  const [cases, setCases] = useState<DeviationCase[]>([]);
+  const [cases, setCases] = useState<AnyCase[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCase, setSelectedCase] = useState<DeviationCase | null>(null);
+  const [selectedCase, setSelectedCase] = useState<AnyCase | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
 
   const [sortField, setSortField] = useState<
@@ -415,8 +944,28 @@ export function Records() {
   useEffect(() => {
     (async () => {
       try {
-        const data = await apiFetch("/api/cases");
-        setCases(data);
+        const [deviationCases, changeControlCases] = await Promise.all([
+          apiFetch<DeviationCase[]>("/api/cases"),
+          apiFetch<ChangeControlCase[]>("/api/change-control/cases"),
+        ]);
+
+        const merged: AnyCase[] = [
+          ...deviationCases.map((c) => ({
+            ...c,
+            case_type: "Deviation" as const,
+          })),
+          ...changeControlCases.map((c) => ({
+            ...c,
+            case_type: "Change Control" as const,
+          })),
+        ];
+
+        merged.sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        );
+
+        setCases(merged);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load cases.");
       } finally {
@@ -621,7 +1170,7 @@ export function Records() {
                 <TableBody>
                   {filteredCases.map((c, index) => (
                     <TableRow
-                      key={c.id}
+                      key={`${c.case_type}-${c.id}`}
                       className={`transition-colors ${getAlternatingRowClass(index)}`}
                     >
                       <TableCell

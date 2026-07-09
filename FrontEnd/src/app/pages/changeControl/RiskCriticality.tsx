@@ -9,7 +9,12 @@ import {
   RejectDialog,
   StepProgressBar,
 } from "../../components/eventIntake";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Textarea } from "../../components/ui/textarea";
 import {
@@ -41,6 +46,7 @@ import type {
 } from "../../types/pipeline";
 import { useWorkflowStore } from "../../store/workflowStore";
 import { nestedToFlatChangeImpactAssessment } from "../../../utils/changeImpactAdapter";
+import { flatToNestedValidationTesting } from "../../../utils/changeControlAdapters";
 
 //Field labels — mirrors CHANGE_IMPACT_FIELD_LABELS convention in mockImpactAssessment.ts
 const RISK_FIELD_LABELS = {
@@ -230,7 +236,9 @@ export function RiskCriticality() {
 
   const updateDiLevel = (value: string) => {
     setDiLevel(value as RiskLevel);
-    setDiChangedWithoutRationale(value !== riskParsed.data_integrity_risk.level);
+    setDiChangedWithoutRationale(
+      value !== riskParsed.data_integrity_risk.level,
+    );
   };
   const updateDiRationale = (value: string) => {
     setDiRationale(value);
@@ -270,11 +278,14 @@ export function RiskCriticality() {
     risk_ranking_justification: rankingJustification,
   });
 
-  const buildRiskProvenance = (confirmed: boolean): RiskCriticalityProvenance => {
+  const buildRiskProvenance = (
+    confirmed: boolean,
+  ): RiskCriticalityProvenance => {
     const original = riskParsed;
 
     const psLevelField =
-      confirmed && psLevel !== original.patient_safety_product_quality_impact.level
+      confirmed &&
+      psLevel !== original.patient_safety_product_quality_impact.level
         ? markModified(
             aiField(original.patient_safety_product_quality_impact.level),
             psLevel,
@@ -296,7 +307,9 @@ export function RiskCriticality() {
     const regFilingsField =
       confirmed &&
       JSON.stringify(regFilings) !==
-        JSON.stringify(original.regulatory_impact.filings_or_submissions_affected)
+        JSON.stringify(
+          original.regulatory_impact.filings_or_submissions_affected,
+        )
         ? markModified(
             aiField(original.regulatory_impact.filings_or_submissions_affected),
             regFilings,
@@ -330,7 +343,8 @@ export function RiskCriticality() {
           )
         : aiField(original.operational_disruption_risk.level);
     const odRationaleField =
-      confirmed && odRationale !== original.operational_disruption_risk.rationale
+      confirmed &&
+      odRationale !== original.operational_disruption_risk.rationale
         ? markModified(
             aiField(original.operational_disruption_risk.rationale),
             odRationale,
@@ -396,7 +410,10 @@ export function RiskCriticality() {
     const flatChangeImpactAssessment =
       nestedToFlatChangeImpactAssessment(impactParsed);
     try {
-      const validationResult: ValidationTestingApiResponse = await apiFetch(
+      // The backend returns validationTesting.parsed in its flat LLM-schema
+      // shape — convert to the nested shape the UI expects before it ever
+      // touches the store/page.
+      const rawValidationResult: any = await apiFetch(
         "/api/change-control/validation-testing",
         {
           method: "POST",
@@ -408,8 +425,18 @@ export function RiskCriticality() {
           }),
         },
       );
+      const rawStage = rawValidationResult?.stages?.validationTesting;
+      const validationTestingStage: ValidationTestingApiResponse["stages"]["validationTesting"] =
+        rawStage
+          ? {
+              ...rawStage,
+              parsed: rawStage.parsed
+                ? flatToNestedValidationTesting(rawStage.parsed)
+                : null,
+            }
+          : undefined;
       navigateToValidationTesting(
-        validationResult.stages.validationTesting,
+        validationTestingStage,
         riskProvenance,
         approvedRiskCriticality,
       );
@@ -499,13 +526,16 @@ export function RiskCriticality() {
   const isPsModified =
     overrideConfirmed &&
     (psLevel !== riskParsed.patient_safety_product_quality_impact.level ||
-      psRationale !== riskParsed.patient_safety_product_quality_impact.rationale);
+      psRationale !==
+        riskParsed.patient_safety_product_quality_impact.rationale);
   const isRegModified =
     overrideConfirmed &&
     (regLevel !== riskParsed.regulatory_impact.level ||
       regRationale !== riskParsed.regulatory_impact.rationale ||
       JSON.stringify(regFilings) !==
-        JSON.stringify(riskParsed.regulatory_impact.filings_or_submissions_affected));
+        JSON.stringify(
+          riskParsed.regulatory_impact.filings_or_submissions_affected,
+        ));
   const isDiModified =
     overrideConfirmed &&
     (diLevel !== riskParsed.data_integrity_risk.level ||
@@ -651,7 +681,9 @@ export function RiskCriticality() {
                     <Textarea
                       rows={2}
                       value={filingsToText(regFilings)}
-                      onChange={(e) => setRegFilings(parseLines(e.target.value))}
+                      onChange={(e) =>
+                        setRegFilings(parseLines(e.target.value))
+                      }
                       placeholder="One filing/submission per line..."
                       className="resize-none text-sm"
                     />

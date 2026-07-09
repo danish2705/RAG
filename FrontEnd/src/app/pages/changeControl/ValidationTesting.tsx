@@ -56,6 +56,11 @@ import type {
 } from "../../types/pipeline";
 import { useWorkflowStore } from "../../store/workflowStore";
 import { VALIDATION_TESTING_FIELD_LABELS } from "../../mocks/mockValidationTesting";
+import { nestedToFlatChangeImpactAssessment } from "../../../utils/changeImpactAdapter";
+import {
+  flatToNestedImplementationControl,
+  nestedToFlatValidationTesting,
+} from "../../../utils/changeControlAdapters";
 
 // Helpers — mirrors the list <-> textarea convention used on
 // RiskCriticality.tsx / ImplementationControl.tsx
@@ -153,7 +158,12 @@ export function ValidationTesting() {
   }, [validationParsed]);
 
   // Guard
-  if (!validationParsed || !riskParsed || !impactParsed || !classificationParsed) {
+  if (
+    !validationParsed ||
+    !riskParsed ||
+    !impactParsed ||
+    !classificationParsed
+  ) {
     return (
       <div className="p-6 w-full">
         <Card>
@@ -296,19 +306,37 @@ export function ValidationTesting() {
     setIsSubmitting(true);
     const approvedValidationTesting = buildApprovedValidationTesting();
     try {
-      const implementationResult: ImplementationControlApiResponse =
-        await apiFetch("/api/change-control/implementation-control", {
+      // Backend expects the flat LLM-schema shape for the upstream approved
+      // stages, and returns implementationControl.parsed in that same flat
+      // shape — flatten going out, nest coming back in.
+      const rawImplementationResult: any = await apiFetch(
+        "/api/change-control/implementation-control",
+        {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             query: result!.query,
-            changeImpactAssessment: impactParsed,
+            changeImpactAssessment:
+              nestedToFlatChangeImpactAssessment(impactParsed),
             riskCriticality: riskParsed,
-            validationTesting: approvedValidationTesting,
+            validationTesting: nestedToFlatValidationTesting(
+              approvedValidationTesting,
+            ),
           }),
-        });
+        },
+      );
+      const rawStage = rawImplementationResult?.stages?.implementationControl;
+      const implementationControlStage: ImplementationControlApiResponse["stages"]["implementationControl"] =
+        rawStage
+          ? {
+              ...rawStage,
+              parsed: rawStage.parsed
+                ? flatToNestedImplementationControl(rawStage.parsed)
+                : null,
+            }
+          : undefined;
       navigateToImplementation(
-        implementationResult.stages.implementationControl,
+        implementationControlStage,
         validationProvenance,
         approvedValidationTesting,
       );
@@ -515,7 +543,9 @@ export function ValidationTesting() {
                   value={scenarioTesting}
                   onChange={(e) => setScenarioTesting(e.target.value)}
                   readOnly={!isOverrideEditing}
-                  className={!isOverrideEditing ? "bg-muted cursor-default" : ""}
+                  className={
+                    !isOverrideEditing ? "bg-muted cursor-default" : ""
+                  }
                   placeholder="Describe recommended test scenarios..."
                 />
               </div>
@@ -550,7 +580,9 @@ export function ValidationTesting() {
                   value={regressionScope}
                   onChange={(e) => setRegressionScope(e.target.value)}
                   readOnly={!isOverrideEditing}
-                  className={!isOverrideEditing ? "bg-muted cursor-default" : ""}
+                  className={
+                    !isOverrideEditing ? "bg-muted cursor-default" : ""
+                  }
                   placeholder="Describe the regression testing scope..."
                 />
               </div>
@@ -585,7 +617,9 @@ export function ValidationTesting() {
                   value={uatRequirements}
                   onChange={(e) => setUatRequirements(e.target.value)}
                   readOnly={!isOverrideEditing}
-                  className={!isOverrideEditing ? "bg-muted cursor-default" : ""}
+                  className={
+                    !isOverrideEditing ? "bg-muted cursor-default" : ""
+                  }
                   placeholder="Describe UAT requirements..."
                 />
               </div>
@@ -620,7 +654,9 @@ export function ValidationTesting() {
                   value={traceability}
                   onChange={(e) => setTraceability(e.target.value)}
                   readOnly={!isOverrideEditing}
-                  className={!isOverrideEditing ? "bg-muted cursor-default" : ""}
+                  className={
+                    !isOverrideEditing ? "bg-muted cursor-default" : ""
+                  }
                   placeholder="Link to relevant requirements or procedures..."
                 />
               </div>
@@ -703,7 +739,10 @@ export function ValidationTesting() {
         />
 
         <div className="fixed top-16 right-0 bottom-0 z-40">
-          <AIAssistant isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
+          <AIAssistant
+            isOpen={chatOpen}
+            onToggle={() => setChatOpen(!chatOpen)}
+          />
         </div>
       </div>
     </div>

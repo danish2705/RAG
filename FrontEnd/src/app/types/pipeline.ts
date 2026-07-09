@@ -5,6 +5,9 @@ import type {
   RCAProvenance,
   CAPAProvenance,
   RiskCriticalityProvenance,
+  ValidationTestingProvenance,
+  ImplementationControlProvenance,
+  ChangeControlSummaryProvenance,
 } from "./dataProvenance";
 
 // Primitives
@@ -104,6 +107,65 @@ export interface RiskCriticalityParsed {
   confidence_score: number;
 }
 
+// Change Control — stage 3: Validation & Testing Strategy
+export type ValidationLevel = "None" | "Partial" | "Full";
+
+export interface ValidationTestingParsed {
+  /** Required validation level: none / partial / full. */
+  required_validation_level: {
+    level: ValidationLevel;
+    rationale: string;
+  };
+  /** Scenario-based testing recommendations. */
+  scenario_based_testing: string[];
+  /** Regression scope — what existing functionality needs to be retested. */
+  regression_scope: string[];
+  /** UAT requirements. */
+  uat_requirements: string[];
+  /** Traceability to requirements / procedures. */
+  traceability: string[];
+  confidence_score: number;
+}
+
+// Change Control — stage 4: Implementation & Control Actions
+export interface ImplementationControlParsed {
+  /** Config updates, documentation updates, training, etc. */
+  required_actions: string[];
+  /** SOP / Work Instruction updates required as a result of this change. */
+  sop_wi_updates: string[];
+  /** Roles/functions who must sign off before implementation. */
+  approval_routing: string[];
+  /** Implementation plan + timeline, free text. */
+  implementation_plan: string;
+  /** Rollback / contingency plan, free text. */
+  rollback_contingency_plan: string;
+  confidence_score: number;
+}
+
+// Change Control — stage 5: Final Change Control Summary
+export type FinalRecommendation = "Approve" | "Reject" | "Conditional";
+
+export interface ControlChecklistItem {
+  /** e.g. "Explainability", "Data Integrity" */
+  label: string;
+  satisfied: boolean;
+  notes: string;
+}
+
+export interface ChangeControlSummaryParsed {
+  impact_assessment_summary: string;
+  risk_classification: {
+    level: RiskLevel;
+    justification: string;
+  };
+  validation_strategy_summary: string;
+  /** Required controls checklist — Explainability + Data Integrity, at minimum. */
+  required_controls_checklist: ControlChecklistItem[];
+  final_recommendation: FinalRecommendation;
+  residual_risk_statement: string;
+  confidence_score: number;
+}
+
 // Stage results
 export type ClassificationType = "Deviation" | "Change Control";
 
@@ -155,8 +217,16 @@ export type ChangeImpactAssessmentStage =
   StageWrapper<ChangeImpactAssessmentParsed>;
 // NEW: Added StageWrapper for RiskCriticality
 export type RiskCriticalityStage = StageWrapper<RiskCriticalityParsed>;
+/** Change Control — stage 3: Validation & Testing Strategy */
+export type ValidationTestingStage = StageWrapper<ValidationTestingParsed>;
 export type RCAStage = StageWrapper<RCAResult>;
 export type CAPAStage = StageWrapper<CAPAResult>;
+/** Change Control — stage 4: Implementation & Control Actions */
+export type ImplementationControlStage =
+  StageWrapper<ImplementationControlParsed>;
+/** Change Control — stage 5: Final Change Control Summary */
+export type ChangeControlSummaryStage =
+  StageWrapper<ChangeControlSummaryParsed>;
 
 // Full pipeline result
 export interface PipelineResult {
@@ -174,10 +244,12 @@ export interface PipelineResult {
 
     rca?: RCAStage;
     capa?: CAPAStage;
-    // Stage 3 isn't fully modeled on the frontend yet — kept loose so the
-    // Risk & Criticality page can hand its raw payload off without needing
-    // to know the shape ValidationTesting.tsx will eventually expect.
-    validationTesting?: StageWrapper<Record<string, unknown>>;
+    /** Change Control only — stage 3: Validation & Testing Strategy */
+    validationTesting?: ValidationTestingStage;
+    /** Change Control only — stage 4: Implementation & Control Actions */
+    implementationControl?: ImplementationControlStage;
+    /** Change Control only — stage 5: Final Change Control Summary */
+    changeControlSummary?: ChangeControlSummaryStage;
   };
   auditTrail: GateResult[];
   query: string;
@@ -190,6 +262,9 @@ export interface PipelineResult {
     rca?: RCAProvenance;
     capa?: CAPAProvenance;
     riskCriticality?: RiskCriticalityProvenance;
+    validationTesting?: ValidationTestingProvenance;
+    implementationControl?: ImplementationControlProvenance;
+    changeControlSummary?: ChangeControlSummaryProvenance;
   };
 }
 
@@ -241,5 +316,21 @@ export interface ValidationTestingApiResponse extends Pick<
   PipelineResult,
   "status" | "haltedAt" | "auditTrail" | "query"
 > {
-  stages: { validationTesting?: StageWrapper<Record<string, unknown>> };
+  stages: { validationTesting?: ValidationTestingStage };
+}
+
+/** Change Control — stage 4: Implementation & Control Actions */
+export interface ImplementationControlApiResponse extends Pick<
+  PipelineResult,
+  "status" | "haltedAt" | "auditTrail" | "query"
+> {
+  stages: { implementationControl?: ImplementationControlStage };
+}
+
+/** Change Control — stage 5: Final Change Control Summary */
+export interface ChangeControlSummaryApiResponse extends Pick<
+  PipelineResult,
+  "status" | "haltedAt" | "auditTrail" | "query"
+> {
+  stages: { changeControlSummary?: ChangeControlSummaryStage };
 }

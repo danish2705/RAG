@@ -90,6 +90,49 @@ export interface RiskCriticalityProvenance {
   confidence_score: number;
 }
 
+// Change Control — Stage 3: Validation & Testing Strategy
+export interface ValidationTestingProvenance {
+  required_validation_level: {
+    level: DataField<"None" | "Partial" | "Full">;
+    rationale: DataField<string>;
+  };
+  scenario_based_testing: DataField<string[]>;
+  regression_scope: DataField<string[]>;
+  uat_requirements: DataField<string[]>;
+  traceability: DataField<string[]>;
+  confidence_score: number;
+}
+
+// Change Control — Stage 4: Implementation & Control Actions
+export interface ImplementationControlProvenance {
+  required_actions: DataField<string[]>;
+  sop_wi_updates: DataField<string[]>;
+  approval_routing: DataField<string[]>;
+  implementation_plan: DataField<string>;
+  rollback_contingency_plan: DataField<string>;
+  confidence_score: number;
+}
+
+// Change Control — Stage 5: Final Change Control Summary
+export interface ControlChecklistItemValue {
+  label: string;
+  satisfied: boolean;
+  notes: string;
+}
+
+export interface ChangeControlSummaryProvenance {
+  impact_assessment_summary: DataField<string>;
+  risk_classification: {
+    level: DataField<"Low" | "Moderate" | "High">;
+    justification: DataField<string>;
+  };
+  validation_strategy_summary: DataField<string>;
+  required_controls_checklist: DataField<ControlChecklistItemValue[]>;
+  final_recommendation: DataField<"Approve" | "Reject" | "Conditional">;
+  residual_risk_statement: DataField<string>;
+  confidence_score: number;
+}
+
 // Helpers
 /** Wrap a value as AI-generated */
 export function aiField<T>(value: T): DataField<T> {

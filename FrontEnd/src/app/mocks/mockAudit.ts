@@ -1,3 +1,6 @@
+import type { AuditEntry } from "../types/audit";
+
+
 export const auditTrailData = [
   {
     timestamp: '2024-04-06 14:32:15',

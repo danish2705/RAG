@@ -28,11 +28,11 @@ import { AIAssistant } from "../../components/chat/ai-assistant";
 import type { ImplementationControlParsed } from "../../types/pipeline";
 import { useWorkflowStore } from "../../store/workflowStore";
 import { IMPLEMENTATION_CONTROL_FIELD_LABELS } from "../../mocks/mockImplementation";
-import { nestedToFlatChangeImpactAssessment } from "../../../utils/changeImpactAdapter";
+import { nestedToFlatChangeImpactAssessment } from "../../utils/changeImpactAdapter";
 import {
   flatToNestedImplementationControl,
   nestedToFlatValidationTesting,
-} from "../../../utils/changeControlAdapters";
+} from "../../utils/changeControlAdapters";
 
 //Helpers
 function parseLines(text: string): string[] {

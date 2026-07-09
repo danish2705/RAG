@@ -2,7 +2,7 @@ import { createBrowserRouter } from "react-router";
 import { Layout } from "./components/layout/Layout";
 import { Dashboard } from "./pages/Dashboard";
 import { NewDeviation } from "./pages/InputQuery";
-import { AIRecommendation } from "./pages/deviation/AIRecommendation";
+import { AIRecommendation } from "./pages/AIRecommendation";
 import { ImpactAssessment } from "./pages/deviation/ImpactAssessment";
 import { RootCause } from "./pages/deviation/RootCause";
 import { Capa } from "./pages/deviation/Capa";
@@ -11,11 +11,11 @@ import { Records } from "./pages/Records";
 import { AuditTrail } from "./pages/AuditTrail";
 import { Reports } from "./pages/Reports";
 import { Settings } from "./pages/Settings";
-import { ChangeImpactAssessment } from "./pages/ChangeControl/ChangeImpactAssessment";
-import { RiskCriticality } from "./pages/ChangeControl/RiskCriticality";
-import { ValidationTesting } from "./pages/ChangeControl/ValidationTesting";
-import { ImplementationControl } from "./pages/ChangeControl/ImplementationControl";
-import { ChangecontrolSummary } from "./pages/ChangeControl/Summary";
+import { ChangeImpactAssessment } from "./pages/changeControl/ChangeImpactAssessment";
+import { RiskCriticality } from "./pages/changeControl/RiskCriticality";
+import { ValidationTesting } from "./pages/changeControl/ValidationTesting";
+import { ImplementationControl } from "./pages/changeControl/ImplementationControl";
+import { ChangecontrolSummary } from "./pages/changeControl/Summary";
 
 export const router = createBrowserRouter([
   {

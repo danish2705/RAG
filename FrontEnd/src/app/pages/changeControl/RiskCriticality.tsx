@@ -45,8 +45,8 @@ import type {
   ValidationTestingApiResponse,
 } from "../../types/pipeline";
 import { useWorkflowStore } from "../../store/workflowStore";
-import { nestedToFlatChangeImpactAssessment } from "../../../utils/changeImpactAdapter";
-import { flatToNestedValidationTesting } from "../../../utils/changeControlAdapters";
+import { nestedToFlatChangeImpactAssessment } from "../../utils/changeImpactAdapter";
+import { flatToNestedValidationTesting } from "../../utils/changeControlAdapters";
 
 //Field labels — mirrors CHANGE_IMPACT_FIELD_LABELS convention in mockImpactAssessment.ts
 const RISK_FIELD_LABELS = {

@@ -491,7 +491,7 @@ export function ChangeImpactAssessment() {
 
         <div className="space-y-6 mt-6">
           {/* Top Banner: Confidence Score */}
-          <Card className="shadow-sm border-gray-200">
+          <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-gray-900 dark:text-gray-100">
                 <Sparkles className="h-4 w-4 text-blue-500" />
@@ -503,7 +503,7 @@ export function ChangeImpactAssessment() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-4 mt-2">
-                <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
+                <div className="flex-1 h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
                   <div
                     className={`h-full ${
                       confidenceScore >= 80
@@ -525,7 +525,7 @@ export function ChangeImpactAssessment() {
           {/* Grid Container for Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* 1. GxP Classification */}
-            <Card className="shadow-sm border-gray-200 flex flex-col h-full">
+            <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black flex flex-col h-full">
               <CardContent className="pt-6 flex flex-col flex-1">
                 <div className="flex items-center gap-2 justify-between mb-4">
                   <h3 className="font-semibold text-[15px] text-gray-900 dark:text-gray-100">
@@ -581,7 +581,7 @@ export function ChangeImpactAssessment() {
             </Card>
 
             {/* 2. Data & Validation Impact */}
-            <Card className="shadow-sm border-gray-200 flex flex-col h-full">
+            <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black flex flex-col h-full">
               <CardContent className="pt-6 flex flex-col flex-1">
                 <div className="flex items-center gap-2 justify-between mb-4">
                   <h3 className="font-semibold text-[15px] text-gray-900 dark:text-gray-100">
@@ -644,7 +644,7 @@ export function ChangeImpactAssessment() {
             </Card>
 
             {/* 3. Impacted Systems */}
-            <Card className="shadow-sm border-gray-200 flex flex-col h-full">
+            <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black flex flex-col h-full">
               <CardContent className="pt-6 flex flex-col flex-1">
                 <div className="flex items-center gap-2 justify-between mb-4">
                   <h3 className="font-semibold text-[15px] text-gray-900 dark:text-gray-100">
@@ -676,7 +676,7 @@ export function ChangeImpactAssessment() {
                         </div>
                       ))
                     ) : (
-                      <span className="inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium bg-gray-100 text-gray-700 w-fit">
+                      <span className="inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 w-fit">
                         None
                       </span>
                     )}
@@ -686,7 +686,7 @@ export function ChangeImpactAssessment() {
             </Card>
 
             {/* 4. Downstream Dependencies */}
-            <Card className="shadow-sm border-gray-200 flex flex-col h-full">
+            <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black flex flex-col h-full">
               <CardContent className="pt-6 flex flex-col flex-1">
                 <div className="flex items-center gap-2 justify-between mb-4">
                   <h3 className="font-semibold text-[15px] text-gray-900 dark:text-gray-100">
@@ -720,7 +720,7 @@ export function ChangeImpactAssessment() {
                         </div>
                       ))
                     ) : (
-                      <span className="inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium bg-gray-100 text-gray-700 w-fit">
+                      <span className="inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 w-fit">
                         None
                       </span>
                     )}
@@ -730,7 +730,7 @@ export function ChangeImpactAssessment() {
             </Card>
 
             {/* 5. Risk Scoring (Spans full width for emphasis) */}
-            <Card className="shadow-sm border-gray-200 flex flex-col h-full md:col-span-2">
+            <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black flex flex-col h-full md:col-span-2">
               <CardContent className="pt-6 flex flex-col flex-1">
                 <div className="flex items-center gap-2 justify-between mb-4">
                   <h3 className="font-semibold text-[15px] text-gray-900 dark:text-gray-100">

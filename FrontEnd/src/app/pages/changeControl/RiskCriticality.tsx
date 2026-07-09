@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { apiFetch } from "../../../utils/api";
+import { apiFetch } from "../../utils/api";
 import {
   DecisionAction,
   ModifiedBadge,

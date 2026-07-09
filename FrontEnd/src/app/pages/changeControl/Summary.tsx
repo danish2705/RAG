@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { apiFetch } from "../../../utils/api";
+import { apiFetch } from "../../utils/api";
 import { ModifiedBadge } from "../../components/eventIntake";
 import {
   Card,

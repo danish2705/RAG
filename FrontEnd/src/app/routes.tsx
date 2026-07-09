@@ -11,11 +11,11 @@ import { Records } from "./pages/Records";
 import { AuditTrail } from "./pages/AuditTrail";
 import { Reports } from "./pages/Reports";
 import { Settings } from "./pages/Settings";
-import { ChangeImpactAssessment } from "./pages/changeControl/ChangeImpactAssessment";
-import { RiskCriticality } from "./pages/changeControl/RiskCriticality";
-import { ValidationTesting } from "./pages/changeControl/ValidationTesting";
-import { ImplementationControl } from "./pages/changeControl/ImplementationControl";
-import { ChangecontrolSummary } from "./pages/changeControl/Summary";
+import { ChangeImpactAssessment } from "./pages/ChangeControl/ChangeImpactAssessment";
+import { RiskCriticality } from "./pages/ChangeControl/RiskCriticality";
+import { ValidationTesting } from "./pages/ChangeControl/ValidationTesting";
+import { ImplementationControl } from "./pages/ChangeControl/ImplementationControl";
+import { ChangecontrolSummary } from "./pages/ChangeControl/Summary";
 
 export const router = createBrowserRouter([
   {

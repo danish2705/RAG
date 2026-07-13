@@ -13,5 +13,6 @@ export type { OverrideBarProps } from "./OverrideBar";
 
 export { RejectDialog } from "./RejectDialog";
 export type { RejectDialogProps } from "./RejectDialog";
+export type { Classification } from "./StepProgressBar";
 
 export { StepProgressBar } from "./StepProgressBar";

@@ -11,7 +11,7 @@ import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 
-export interface RejectJustificationDialogProps {
+export interface RejectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** e.g. "Reject AI Classification" */
@@ -40,7 +40,7 @@ export function RejectDialog({
   onChange,
   onCancel,
   onConfirm,
-}: RejectJustificationDialogProps) {
+}: RejectDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>

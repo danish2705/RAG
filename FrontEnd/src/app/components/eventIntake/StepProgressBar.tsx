@@ -1,7 +1,7 @@
 import { Check } from "lucide-react";
 import { useLocation } from "react-router";
 
-type Classification = "Deviation" | "Change Control" | "Hybrid";
+export type Classification = "Deviation" | "Change Control" | "Hybrid";
 
 interface StepProgressBarProps {
   classification?: Classification;

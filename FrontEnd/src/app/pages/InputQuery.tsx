@@ -1,6 +1,6 @@
 import { Button } from "../components/ui/button";
 import { Sparkles, Loader2 } from "lucide-react";
-import { AIAssistant } from "../components/chat/ai-assistant";
+import { AIAssistant } from "../components/chat/AiAssistant";
 import { useInputQueryForm } from "../hooks/inputQuery/useInputQueryForm";
 import {
   SubmitErrorBanner,
@@ -8,7 +8,7 @@ import {
   DescriptionCard,
   ImmediateActionsCard,
   AttachmentsCard,
-} from "../components/inputQuery/inputQueryCards";
+} from "../components/inputQuery/InputQueryCards";
 
 export function NewDeviation() {
   const {
@@ -101,7 +101,10 @@ export function NewDeviation() {
       </div>
 
       <div className="fixed top-16 right-0 bottom-0 z-40">
-        <AIAssistant isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
+        <AIAssistant
+          isOpen={chatOpen}
+          onToggle={() => setChatOpen(!chatOpen)}
+        />
       </div>
     </div>
   );

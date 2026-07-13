@@ -7,7 +7,7 @@ import {
   StepProgressBar,
 } from "../../components/eventIntake";
 import { Button } from "../../components/ui/button";
-import { AIAssistant } from "../../components/chat/ai-assistant";
+import { AIAssistant } from "../../components/chat/AiAssistant";
 import { useCapaReview } from "../../hooks/deviation/useCapaReview";
 import {
   NoCapaDataGuard,
@@ -20,14 +20,39 @@ import {
 export function Capa() {
   const navigate = useNavigate();
   const {
-    result, capaParsed, chatOpen, setChatOpen,
-    isOverrideEditing, setIsOverrideEditing, overrideConfirmed, capaAccepted, setCapaAccepted,
-    correction, setCorrection, correctiveAction, handleCorrectiveActionChange,
-    preventiveAction, setPreventiveAction, effectivenessCheck, setEffectivenessCheck,
-    dueDate, setDueDate, showWeakCapaWarning, decisionMade,
-    showOverrideDialog, setShowOverrideDialog, overrideJustification, setOverrideJustification,
-    showRejectDialog, setShowRejectDialog, rejectJustification, setRejectJustification,
-    proceed, handleCancelOverride, handleOverrideConfirm, handleReject
+    result,
+    capaParsed,
+    chatOpen,
+    setChatOpen,
+    isOverrideEditing,
+    setIsOverrideEditing,
+    overrideConfirmed,
+    capaAccepted,
+    setCapaAccepted,
+    correction,
+    setCorrection,
+    correctiveAction,
+    handleCorrectiveActionChange,
+    preventiveAction,
+    setPreventiveAction,
+    effectivenessCheck,
+    setEffectivenessCheck,
+    dueDate,
+    setDueDate,
+    showWeakCapaWarning,
+    decisionMade,
+    showOverrideDialog,
+    setShowOverrideDialog,
+    overrideJustification,
+    setOverrideJustification,
+    showRejectDialog,
+    setShowRejectDialog,
+    rejectJustification,
+    setRejectJustification,
+    proceed,
+    handleCancelOverride,
+    handleOverrideConfirm,
+    handleReject,
   } = useCapaReview();
 
   if (!capaParsed || !result) {
@@ -36,9 +61,13 @@ export function Capa() {
 
   return (
     <div className="relative h-full w-full">
-      <div className={`min-h-screen p-6 transition-[padding] duration-200 ${chatOpen ? "pr-80" : "pr-6"}`}>
+      <div
+        className={`min-h-screen p-6 transition-[padding] duration-200 ${chatOpen ? "pr-80" : "pr-6"}`}
+      >
         <StepProgressBar
-          classification={result?.stages?.classification?.parsed?.classification}
+          classification={
+            result?.stages?.classification?.parsed?.classification
+          }
           capaAccepted={capaAccepted}
         />
 
@@ -51,7 +80,7 @@ export function Capa() {
 
         <div className="space-y-6">
           <CapaConfidenceCard score={capaParsed.confidence_score} />
-          
+
           <CapaCorrectionCard value={correction} onChange={setCorrection} />
 
           <CapaActionCard
@@ -142,7 +171,10 @@ export function Capa() {
       </div>
 
       <div className="fixed top-16 right-0 bottom-0 z-40">
-        <AIAssistant isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
+        <AIAssistant
+          isOpen={chatOpen}
+          onToggle={() => setChatOpen(!chatOpen)}
+        />
       </div>
     </div>
   );

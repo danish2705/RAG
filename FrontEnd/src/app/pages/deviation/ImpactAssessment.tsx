@@ -6,7 +6,7 @@ import {
   RejectDialog,
   StepProgressBar,
 } from "../../components/eventIntake";
-import { AIAssistant } from "../../components/chat/ai-assistant";
+import { AIAssistant } from "../../components/chat/AiAssistant";
 import { useImpactAssessmentReview } from "../../hooks/deviation/useImpactAssessmentReview";
 import {
   NoImpactDataGuard,
@@ -18,14 +18,35 @@ import {
 export function ImpactAssessment() {
   const navigate = useNavigate();
   const {
-    result, classificationParsed, impactParsed, chatOpen, setChatOpen,
-    assessments, isOverrideEditing, overrideConfirmed,
-    showOverrideDialog, setShowOverrideDialog, overrideJustification, setOverrideJustification,
-    showRejectDialog, setShowRejectDialog, rejectJustification, setRejectJustification,
-    showDescriptionWarning, setShowDescriptionWarning, warningCards,
-    isGeneratingRCA, rcaError,
-    updateSeverity, updateDescription, handleAccept, handleOverrideClick, handleSaveChanges,
-    handleCancelOverride, handleOverrideConfirm, handleReject
+    result,
+    classificationParsed,
+    impactParsed,
+    chatOpen,
+    setChatOpen,
+    assessments,
+    isOverrideEditing,
+    overrideConfirmed,
+    showOverrideDialog,
+    setShowOverrideDialog,
+    overrideJustification,
+    setOverrideJustification,
+    showRejectDialog,
+    setShowRejectDialog,
+    rejectJustification,
+    setRejectJustification,
+    showDescriptionWarning,
+    setShowDescriptionWarning,
+    warningCards,
+    isGeneratingRCA,
+    rcaError,
+    updateSeverity,
+    updateDescription,
+    handleAccept,
+    handleOverrideClick,
+    handleSaveChanges,
+    handleCancelOverride,
+    handleOverrideConfirm,
+    handleReject,
   } = useImpactAssessmentReview();
 
   if (!impactParsed || !classificationParsed) {
@@ -34,7 +55,9 @@ export function ImpactAssessment() {
 
   return (
     <div className="relative h-full w-full">
-      <div className={`min-h-screen p-6 transition-[padding] duration-200 ${chatOpen ? "pr-80" : "pr-6"}`}>
+      <div
+        className={`min-h-screen p-6 transition-[padding] duration-200 ${chatOpen ? "pr-80" : "pr-6"}`}
+      >
         <StepProgressBar classification={classificationParsed.classification} />
 
         <OverrideBar
@@ -45,7 +68,10 @@ export function ImpactAssessment() {
         />
 
         <div className="space-y-6">
-          <ImpactConfidenceCard score={impactParsed.confidence_score} classificationName={classificationParsed.classification} />
+          <ImpactConfidenceCard
+            score={impactParsed.confidence_score}
+            classificationName={classificationParsed.classification}
+          />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {assessments.map((assessment, index) => (
@@ -109,7 +135,10 @@ export function ImpactAssessment() {
         />
 
         <div className="fixed top-16 right-0 bottom-0 z-40">
-          <AIAssistant isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
+          <AIAssistant
+            isOpen={chatOpen}
+            onToggle={() => setChatOpen(!chatOpen)}
+          />
         </div>
       </div>
     </div>

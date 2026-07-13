@@ -1,16 +1,14 @@
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Sparkles, Database } from "lucide-react";
 import type { DeviationCase } from "../../types/Records";
 import { PARAMETER_LABELS } from "../../mocks/mockImpactAssessment";
-import { getClassificationBadgeClass, getSeverityBadgeClass } from "../../utils/records/badges";
-import { BulletList, ConfidenceBar } from "./recordsShared";
+import {
+  getClassificationBadgeClass,
+  getSeverityBadgeClass,
+} from "../../utils/records/badges";
+import { BulletList, ConfidenceBar } from "./RecordsShared";
 
 export function DeviationViewModal({
   record,
@@ -76,7 +74,9 @@ export function DeviationViewModal({
                   <span className="text-sm font-medium text-muted-foreground">
                     Type:
                   </span>
-                  <Badge className={getClassificationBadgeClass(cls.classification)}>
+                  <Badge
+                    className={getClassificationBadgeClass(cls.classification)}
+                  >
                     {cls.classification}
                   </Badge>
                 </div>
@@ -108,7 +108,9 @@ export function DeviationViewModal({
                 {impactEntries.map((entry) => (
                   <Card key={entry.key}>
                     <CardHeader>
-                      <CardTitle className="text-sm">{entry.category}</CardTitle>
+                      <CardTitle className="text-sm">
+                        {entry.category}
+                      </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
                       <div

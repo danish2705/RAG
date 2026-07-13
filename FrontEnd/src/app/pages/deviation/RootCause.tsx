@@ -6,7 +6,7 @@ import {
   RejectDialog,
   StepProgressBar,
 } from "../../components/eventIntake";
-import { AIAssistant } from "../../components/chat/ai-assistant";
+import { AIAssistant } from "../../components/chat/AiAssistant";
 import { useRootCauseReview } from "../../hooks/deviation/useRootCauseReview";
 import {
   NoRcaDataGuard,
@@ -18,16 +18,36 @@ import {
 export function RootCause() {
   const navigate = useNavigate();
   const {
-    result, rcaParsed, chatOpen, setChatOpen,
-    isOverrideEditing, overrideConfirmed,
-    primaryRootCause, setPrimaryRootCause,
-    immediateCause, setImmediateCause,
-    contributingFactors, setContributingFactors,
-    evidence, setEvidence,
-    showOverrideDialog, setShowOverrideDialog, overrideJustification, setOverrideJustification,
-    showRejectDialog, setShowRejectDialog, rejectJustification, setRejectJustification,
-    isGeneratingCAPA, capaError,
-    handleAccept, handleOverrideClick, handleSaveChanges, handleCancelOverride, handleOverrideConfirm, handleReject
+    result,
+    rcaParsed,
+    chatOpen,
+    setChatOpen,
+    isOverrideEditing,
+    overrideConfirmed,
+    primaryRootCause,
+    setPrimaryRootCause,
+    immediateCause,
+    setImmediateCause,
+    contributingFactors,
+    setContributingFactors,
+    evidence,
+    setEvidence,
+    showOverrideDialog,
+    setShowOverrideDialog,
+    overrideJustification,
+    setOverrideJustification,
+    showRejectDialog,
+    setShowRejectDialog,
+    rejectJustification,
+    setRejectJustification,
+    isGeneratingCAPA,
+    capaError,
+    handleAccept,
+    handleOverrideClick,
+    handleSaveChanges,
+    handleCancelOverride,
+    handleOverrideConfirm,
+    handleReject,
   } = useRootCauseReview();
 
   if (!rcaParsed || !result) {
@@ -36,8 +56,12 @@ export function RootCause() {
 
   return (
     <div className="relative h-full w-full">
-      <div className={`min-h-screen p-6 transition-[padding] duration-200 ${chatOpen ? "pr-80" : "pr-6"}`}>
-        <StepProgressBar classification={result.stages?.classification?.parsed?.classification} />
+      <div
+        className={`min-h-screen p-6 transition-[padding] duration-200 ${chatOpen ? "pr-80" : "pr-6"}`}
+      >
+        <StepProgressBar
+          classification={result.stages?.classification?.parsed?.classification}
+        />
 
         <OverrideBar
           isOverrideEditing={isOverrideEditing}
@@ -122,7 +146,10 @@ export function RootCause() {
         />
 
         <div className="fixed top-16 right-0 bottom-0 z-40">
-          <AIAssistant isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
+          <AIAssistant
+            isOpen={chatOpen}
+            onToggle={() => setChatOpen(!chatOpen)}
+          />
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AIAssistant } from "../components/chat/ai-assistant";
+import { AIAssistant } from "../components/chat/AiAssistant";
 import { AuditFilters } from "../components/auditTrail/AuditFilters";
 import { ActivityLogTable } from "../components/auditTrail/ActivityLogTable";
 import { auditTrailData } from "../mocks/mockAudit";
@@ -23,7 +23,10 @@ export function AuditTrail() {
         </div>
       </div>
       <div className="fixed top-16 right-0 bottom-0 z-40">
-        <AIAssistant isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
+        <AIAssistant
+          isOpen={chatOpen}
+          onToggle={() => setChatOpen(!chatOpen)}
+        />
       </div>
     </div>
   );

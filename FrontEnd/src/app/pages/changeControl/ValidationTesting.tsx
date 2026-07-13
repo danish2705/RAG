@@ -23,7 +23,7 @@ import {
   RefreshCcw,
   Users,
 } from "lucide-react";
-import { AIAssistant } from "../../components/chat/ai-assistant";
+import { AIAssistant } from "../../components/chat/AiAssistant";
 import { useValidationTestingReview } from "../../hooks/changeControl/useValidationTestingReview";
 import {
   NoValidationDataGuard,

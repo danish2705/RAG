@@ -15,6 +15,7 @@ import {
   ImplementationTextareaCard,
 } from "../../components/changeControl/ImplementationControlCards";
 import { IMPLEMENTATION_CONTROL_FIELD_LABELS } from "../../mocks/mockImplementation";
+import { ClipboardList, FileText, Route, ListChecks, RotateCcw } from "lucide-react";
 
 export function ImplementationControl() {
   const {
@@ -100,6 +101,7 @@ export function ImplementationControl() {
           />
 
           <ImplementationTextareaCard
+            icon={<ClipboardList className="h-5 w-5 text-blue-600" />}
             title="Required Actions"
             fieldId="requiredActions"
             label="Config updates, documentation updates, training — one action per line"
@@ -112,6 +114,7 @@ export function ImplementationControl() {
           />
 
           <ImplementationTextareaCard
+            icon={<FileText className="h-5 w-5 text-blue-600" />}
             title="SOP / WI Updates Required"
             fieldId="sopWiUpdates"
             label="One SOP / Work Instruction per line"
@@ -124,6 +127,7 @@ export function ImplementationControl() {
           />
 
           <ImplementationTextareaCard
+            icon={<Route className="h-5 w-5 text-blue-600" />}
             title="Approval Routing"
             fieldId="approvalRouting"
             label="Who must sign off — one role per line"
@@ -136,6 +140,7 @@ export function ImplementationControl() {
           />
 
           <ImplementationTextareaCard
+            icon={<ListChecks className="h-5 w-5 text-blue-600" />}
             title={IMPLEMENTATION_CONTROL_FIELD_LABELS.implementation_plan}
             fieldId="implementationPlan"
             label="Plan and timeline for rolling out this change"
@@ -148,9 +153,8 @@ export function ImplementationControl() {
           />
 
           <ImplementationTextareaCard
-            title={
-              IMPLEMENTATION_CONTROL_FIELD_LABELS.rollback_contingency_plan
-            }
+            icon={<RotateCcw className="h-5 w-5 text-blue-600" />}
+            title={IMPLEMENTATION_CONTROL_FIELD_LABELS.rollback_contingency_plan}
             fieldId="rollbackPlan"
             label="What happens if the change needs to be reversed"
             rows={4}

@@ -81,45 +81,41 @@ export const GeneratingImplementationGuard: React.FC<{
 export const ImplementationConfidenceCard: React.FC<{
   score: number;
   riskLevel: string | null;
-}> = ({ score, riskLevel }) => (
-  <Card className="shadow-sm">
+}> = ({ score}) => (
+  <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black">
     <CardHeader>
-      <CardTitle className="flex items-center gap-2">
-        <Sparkles className="h-5 w-5 text-blue-600" />
+      <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-gray-900 dark:text-gray-100">
+        <Sparkles className="h-4 w-4 text-blue-500" />
         Overall AI Confidence Score
       </CardTitle>
-      {riskLevel && (
-        <p className="text-xs text-muted-foreground mt-0.5">
-          ({riskLevel} System Rationale)
-        </p>
-      )}
+      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+        Based on Validation &amp; Testing Strategy
+      </p>
     </CardHeader>
     <CardContent>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm text-muted-foreground">
-          Based on Implementation &amp; Control Actions
-        </span>
-        <span className="text-sm font-semibold text-foreground">
+      <div className="flex items-center gap-4">
+        <div className="flex-1 h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+          <div
+            className={`h-full ${
+              score >= 80
+                ? "bg-green-500"
+                : score >= 60
+                  ? "bg-yellow-400"
+                  : "bg-red-500"
+            }`}
+            style={{ width: `${score}%` }}
+          />
+        </div>
+        <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
           {score}%
         </span>
-      </div>
-      <div className="w-full bg-muted rounded-full h-2">
-        <div
-          className={`h-2 rounded-full ${
-            score >= 80
-              ? "bg-green-500"
-              : score >= 60
-                ? "bg-yellow-500"
-                : "bg-red-500"
-          }`}
-          style={{ width: `${score}%` }}
-        />
       </div>
     </CardContent>
   </Card>
 );
 
 export const ImplementationTextareaCard: React.FC<{
+  icon: React.ReactNode;
   title: string;
   fieldId: string;
   label: string;
@@ -130,6 +126,7 @@ export const ImplementationTextareaCard: React.FC<{
   overrideConfirmed: boolean;
   onChange: (value: string) => void;
 }> = ({
+  icon,
   title,
   fieldId,
   label,
@@ -140,11 +137,11 @@ export const ImplementationTextareaCard: React.FC<{
   overrideConfirmed,
   onChange,
 }) => (
-  <Card>
+  <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black">
     <CardHeader>
-      <CardTitle className="flex items-center gap-2">
+      <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-gray-900 dark:text-gray-100">
+        {icon}
         {title}
-        <Sparkles className="h-5 w-5 text-blue-600" />
       </CardTitle>
     </CardHeader>
     <CardContent>

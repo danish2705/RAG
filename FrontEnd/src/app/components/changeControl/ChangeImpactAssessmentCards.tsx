@@ -80,7 +80,7 @@ export const ImpactConfidenceCard: React.FC<{ score: number }> = ({
   score,
 }) => (
   <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black">
-    <CardHeader className="pb-2">
+    <CardHeader>
       <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-gray-900 dark:text-gray-100">
         <Sparkles className="h-4 w-4 text-blue-500" />
         Overall AI Confidence Score
@@ -90,7 +90,7 @@ export const ImpactConfidenceCard: React.FC<{ score: number }> = ({
       </p>
     </CardHeader>
     <CardContent>
-      <div className="flex items-center gap-4 mt-2">
+      <div className="flex items-center gap-4">
         <div className="flex-1 h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
           <div
             className={`h-full ${

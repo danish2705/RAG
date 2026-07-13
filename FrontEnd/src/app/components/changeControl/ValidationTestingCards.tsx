@@ -61,18 +61,17 @@ export const ValidationConfidenceCard: React.FC<{ score: number }> = ({
   score,
 }) => (
   <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black">
-    <CardHeader className="pb-2">
+    <CardHeader>
       <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-gray-900 dark:text-gray-100">
         <Sparkles className="h-4 w-4 text-blue-500" />
         Overall AI Confidence Score
       </CardTitle>
       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-        Based on Risk &amp; Criticality Evaluation (risk ranking
-        justification reviewed)
+        Based on Risk &amp; Criticality Evaluation
       </p>
     </CardHeader>
     <CardContent>
-      <div className="flex items-center gap-4 mt-2">
+      <div className="flex items-center gap-4">
         <div className="flex-1 h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
           <div
             className={`h-full ${
@@ -152,15 +151,19 @@ export const ValidationLevelCard: React.FC<ValidationLevelCardProps> = ({
           />
         </div>
       ) : (
-        <div>
+        <div className="space-y-2">
           <span
             className={`inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium ${getValidationLevelBadgeClass(level)}`}
           >
             {level}
           </span>
-          <p className="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed mt-4">
-            {levelRationale || "No rationale provided."}
-          </p>
+          <Textarea
+            rows={3}
+            value={levelRationale}
+            readOnly
+            placeholder="No rationale provided."
+            className="resize-none text-sm bg-muted cursor-default mt-4"
+          />
         </div>
       )}
     </CardContent>

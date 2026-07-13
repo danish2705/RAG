@@ -1,6 +1,6 @@
 import { apiFetch } from "../../utils/api";
 import type { ClassificationParsed, ImpactAssessmentApiResponse } from "../../types/pipeline";
-import type { FlatChangeImpactAssessment } from "../../../utils/changeImpactAdapter";
+import type { FlatChangeImpactAssessment } from "../../utils/changeImpactAdapter";
 
 export interface RawChangeImpactAssessmentApiResponse {
   status: "halted_for_human_review" | "completed_pending_human_review";

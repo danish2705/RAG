@@ -16,7 +16,7 @@ import {
 } from "../../components/ui/dialog";
 import { Button } from "../../components/ui/button";
 import { AlertTriangle } from "lucide-react";
-import { AIAssistant } from "../../components/chat/ai-assistant";
+import { AIAssistant } from "../../components/chat/AiAssistant";
 import { useChangeImpactAssessmentReview } from "../../hooks/changeControl/useChangeImpactAssessmentReview";
 import {
   NoImpactAssessmentDataGuard,
@@ -183,7 +183,10 @@ export function ChangeImpactAssessment() {
         </div>
 
         {/* Warning Dialog */}
-        <Dialog open={showRationaleWarning} onOpenChange={setShowRationaleWarning}>
+        <Dialog
+          open={showRationaleWarning}
+          onOpenChange={setShowRationaleWarning}
+        >
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-orange-600">
@@ -208,8 +211,8 @@ export function ChangeImpactAssessment() {
               ))}
             </ul>
             <p className="text-sm text-muted-foreground mt-3">
-              Please update the rationale for each changed field with the
-              reason for the new value before saving.
+              Please update the rationale for each changed field with the reason
+              for the new value before saving.
             </p>
             <DialogFooter>
               <Button
@@ -249,7 +252,10 @@ export function ChangeImpactAssessment() {
         />
 
         <div className="fixed top-16 right-0 bottom-0 z-40">
-          <AIAssistant isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
+          <AIAssistant
+            isOpen={chatOpen}
+            onToggle={() => setChatOpen(!chatOpen)}
+          />
         </div>
       </div>
     </div>

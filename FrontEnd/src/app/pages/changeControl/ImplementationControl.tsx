@@ -6,7 +6,7 @@ import {
   StepProgressBar,
 } from "../../components/eventIntake";
 import { Button } from "../../components/ui/button";
-import { AIAssistant } from "../../components/chat/ai-assistant";
+import { AIAssistant } from "../../components/chat/AiAssistant";
 import { useImplementationControl } from "../../hooks/changeControl/useImplementationControl";
 import {
   NoChangeControlDataGuard,

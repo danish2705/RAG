@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from "../../components/ui/dialog";
 import { AlertTriangle, Loader2, Sparkles, User } from "lucide-react";
-import { AIAssistant } from "../../components/chat/ai-assistant";
+import { AIAssistant } from "../../components/chat/AiAssistant";
 import { useWorkflowStore } from "../../store/workflowStore";
 import { CHANGE_IMPACT_FIELD_LABELS } from "../../mocks/mockImpactAssessment";
 import { VALIDATION_TESTING_FIELD_LABELS } from "../../mocks/mockValidationTesting";

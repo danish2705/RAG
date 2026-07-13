@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
-import { AIAssistant } from "../components/chat/ai-assistant";
+import { AIAssistant } from "../components/chat/AiAssistant";
 import { useRecords } from "../hooks/records/useRecords";
 import { CaseViewModal } from "../components/records/CaseViewModal";
 import { RecordsFilterBar } from "../components/records/RecordsFilterBar";
@@ -30,7 +30,10 @@ export function Records() {
         className={`h-full p-6 overflow-y-auto transition-[margin] duration-200 ${chatOpen ? "mr-80" : ""}`}
       >
         {selectedCase && (
-          <CaseViewModal record={selectedCase} onClose={() => setSelectedCase(null)} />
+          <CaseViewModal
+            record={selectedCase}
+            onClose={() => setSelectedCase(null)}
+          />
         )}
 
         <div className="mb-6 flex items-center gap-3">
@@ -67,7 +70,10 @@ export function Records() {
         />
       </div>
       <div className="fixed top-16 right-0 bottom-0 z-40">
-        <AIAssistant isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
+        <AIAssistant
+          isOpen={chatOpen}
+          onToggle={() => setChatOpen(!chatOpen)}
+        />
       </div>
     </div>
   );

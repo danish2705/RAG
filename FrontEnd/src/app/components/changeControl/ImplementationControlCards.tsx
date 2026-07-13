@@ -139,7 +139,7 @@ export const ImplementationTextareaCard: React.FC<{
 }) => (
   <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black">
     <CardHeader>
-      <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-gray-900 dark:text-gray-100">
+      <CardTitle className="flex items-center gap-2">
         {icon}
         {title}
       </CardTitle>

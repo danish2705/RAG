@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { AIAssistantPanel } from "../components/chat/ai-assistant";
+import { AIAssistantPanel } from "../components/chat/AiAssistant";
 import { KpiCardGrid } from "../components/dashboard/KpiCard";
 import { RecentRecordsList } from "../components/dashboard/RecentRecordsList";
 import {

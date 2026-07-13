@@ -6,7 +6,7 @@ import {
   RejectDialog,
   StepProgressBar,
 } from "../components/eventIntake";
-import { AIAssistant } from "../components/chat/ai-assistant";
+import { AIAssistant } from "../components/chat/AiAssistant";
 import { useClassificationReview } from "../hooks/deviation/useClassificationReview";
 import { ClassificationCard } from "../components/deviation/ClassificationCard";
 import {
@@ -64,7 +64,9 @@ export function AIRecommendation() {
   }
 
   if (!parsed) {
-    return <ClassificationFailedGuard onGoBack={() => navigate("/deviation")} />;
+    return (
+      <ClassificationFailedGuard onGoBack={() => navigate("/deviation")} />
+    );
   }
 
   return (

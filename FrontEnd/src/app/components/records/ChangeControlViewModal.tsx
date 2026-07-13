@@ -1,9 +1,4 @@
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Database } from "lucide-react";
@@ -19,7 +14,7 @@ import {
   getValidationLevelBadgeClass,
   getRiskLevelBadgeClass,
 } from "../../utils/records/badges";
-import { BulletList, ConfidenceBar } from "./recordsShared";
+import { BulletList, ConfidenceBar } from "./RecordsShared";
 
 export function ChangeControlViewModal({
   record,
@@ -76,7 +71,9 @@ export function ChangeControlViewModal({
                   <span className="text-sm font-medium text-muted-foreground">
                     Type:
                   </span>
-                  <Badge className={getClassificationBadgeClass(cls.classification)}>
+                  <Badge
+                    className={getClassificationBadgeClass(cls.classification)}
+                  >
                     {cls.classification}
                   </Badge>
                 </div>
@@ -231,7 +228,9 @@ export function ChangeControlViewModal({
                       {risk.regulatory_impact.level}
                     </span>
                     <BulletList
-                      items={risk.regulatory_impact.filings_or_submissions_affected}
+                      items={
+                        risk.regulatory_impact.filings_or_submissions_affected
+                      }
                     />
                     <p className="text-sm text-muted-foreground">
                       {risk.regulatory_impact.rationale}
@@ -430,7 +429,9 @@ export function ChangeControlViewModal({
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">
-                    {IMPLEMENTATION_CONTROL_FIELD_LABELS.rollback_contingency_plan}
+                    {
+                      IMPLEMENTATION_CONTROL_FIELD_LABELS.rollback_contingency_plan
+                    }
                   </CardTitle>
                 </CardHeader>
                 <CardContent>

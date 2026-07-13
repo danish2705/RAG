@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from "../../components/ui/dialog";
 import { AlertTriangle } from "lucide-react";
-import { AIAssistant } from "../../components/chat/ai-assistant";
+import { AIAssistant } from "../../components/chat/AiAssistant";
 import {
   useRiskCriticality,
   RISK_FIELD_LABELS,

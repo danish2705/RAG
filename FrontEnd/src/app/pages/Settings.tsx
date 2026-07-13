@@ -1,9 +1,20 @@
-import { Card, CardContent, CardHeader, CardTitle, } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Label } from "../components/ui/label";
 import { Switch } from "../components/ui/switch";
 import { Button } from "../components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, } from "../components/ui/select";
-import { AIAssistant } from "../components/chat/ai-assistant";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import { AIAssistant } from "../components/chat/AiAssistant";
 import { useState } from "react";
 import { CheckCircle, X } from "lucide-react";
 import { DEFAULTS, LABELS, OPTION_LABELS } from "../mocks/Settings";
@@ -24,7 +35,6 @@ export function Settings() {
     setSettings((s) => ({ ...s, [key]: val }));
 
   const handleSave = () => {
-
     const changes: string[] = [];
     (Object.keys(settings) as (keyof typeof DEFAULTS)[]).forEach((key) => {
       if (settings[key] !== lastSaved[key]) {
@@ -67,7 +77,9 @@ export function Settings() {
 
             {savedChanges.length > 0 ? (
               <>
-                <p className="text-sm text-muted-foreground">The following settings were updated:</p>
+                <p className="text-sm text-muted-foreground">
+                  The following settings were updated:
+                </p>
                 <ul className="space-y-2">
                   {savedChanges.map((change, i) => (
                     <li
@@ -81,7 +93,9 @@ export function Settings() {
                 </ul>
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">No changes were made.</p>
+              <p className="text-sm text-muted-foreground">
+                No changes were made.
+              </p>
             )}
 
             <div className="flex justify-end pt-2">
@@ -130,7 +144,8 @@ export function Settings() {
                     Auto-Accept High Confidence AI Decisions
                   </Label>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Automatically accept AI suggestions above confidence threshold
+                    Automatically accept AI suggestions above confidence
+                    threshold
                   </p>
                 </div>
                 <Switch
@@ -236,8 +251,12 @@ export function Settings() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="plant-a">Manufacturing Plant A</SelectItem>
-                    <SelectItem value="plant-b">Manufacturing Plant B</SelectItem>
+                    <SelectItem value="plant-a">
+                      Manufacturing Plant A
+                    </SelectItem>
+                    <SelectItem value="plant-b">
+                      Manufacturing Plant B
+                    </SelectItem>
                     <SelectItem value="lab">Quality Lab</SelectItem>
                     <SelectItem value="dist">Distribution Center</SelectItem>
                   </SelectContent>
@@ -320,7 +339,10 @@ export function Settings() {
       </div>
 
       <div className="fixed top-16 right-0 bottom-0 z-40">
-        <AIAssistant isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
+        <AIAssistant
+          isOpen={chatOpen}
+          onToggle={() => setChatOpen(!chatOpen)}
+        />
       </div>
     </div>
   );

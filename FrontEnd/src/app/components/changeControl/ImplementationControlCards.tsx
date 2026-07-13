@@ -120,6 +120,7 @@ export const ImplementationConfidenceCard: React.FC<{
 );
 
 export const ImplementationTextareaCard: React.FC<{
+  icon: React.ReactNode;
   title: string;
   fieldId: string;
   label: string;
@@ -130,6 +131,7 @@ export const ImplementationTextareaCard: React.FC<{
   overrideConfirmed: boolean;
   onChange: (value: string) => void;
 }> = ({
+  icon,
   title,
   fieldId,
   label,
@@ -143,8 +145,8 @@ export const ImplementationTextareaCard: React.FC<{
   <Card>
     <CardHeader>
       <CardTitle className="flex items-center gap-2">
+        {icon}
         {title}
-        <Sparkles className="h-5 w-5 text-blue-600" />
       </CardTitle>
     </CardHeader>
     <CardContent>

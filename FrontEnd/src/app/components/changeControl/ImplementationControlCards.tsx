@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
@@ -78,44 +73,47 @@ export const GeneratingImplementationGuard: React.FC<{
   </div>
 );
 
-export const ImplementationConfidenceCard: React.FC<{
+export const ImplementationConfidenceCard = React.memo<{
   score: number;
   riskLevel: string | null;
-}> = ({ score}) => (
-  <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black">
+}>(({ score, riskLevel }) => (
+  <Card className="shadow-sm">
     <CardHeader>
-      <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-gray-900 dark:text-gray-100">
-        <Sparkles className="h-4 w-4 text-blue-500" />
+      <CardTitle className="flex items-center gap-2">
+        <Sparkles className="h-5 w-5 text-blue-600" />
         Overall AI Confidence Score
       </CardTitle>
-      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-        Based on Validation &amp; Testing Strategy
-      </p>
+      {riskLevel && (
+        <p className="text-xs text-muted-foreground mt-0.5">
+          ({riskLevel} System Rationale)
+        </p>
+      )}
     </CardHeader>
     <CardContent>
-      <div className="flex items-center gap-4">
-        <div className="flex-1 h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
-          <div
-            className={`h-full ${
-              score >= 80
-                ? "bg-green-500"
-                : score >= 60
-                  ? "bg-yellow-400"
-                  : "bg-red-500"
-            }`}
-            style={{ width: `${score}%` }}
-          />
-        </div>
-        <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
-          {score}%
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm text-muted-foreground">
+          Based on Implementation &amp; Control Actions
         </span>
+        <span className="text-sm font-semibold text-foreground">{score}%</span>
+      </div>
+      <div className="w-full bg-muted rounded-full h-2">
+        <div
+          className={`h-2 rounded-full ${
+            score >= 80
+              ? "bg-green-500"
+              : score >= 60
+                ? "bg-yellow-500"
+                : "bg-red-500"
+          }`}
+          style={{ width: `${score}%` }}
+        />
       </div>
     </CardContent>
   </Card>
-);
+));
+ImplementationConfidenceCard.displayName = "ImplementationConfidenceCard";
 
-export const ImplementationTextareaCard: React.FC<{
-  icon: React.ReactNode;
+export const ImplementationTextareaCard = React.memo<{
   title: string;
   fieldId: string;
   label: string;
@@ -125,46 +123,48 @@ export const ImplementationTextareaCard: React.FC<{
   isOverrideEditing: boolean;
   overrideConfirmed: boolean;
   onChange: (value: string) => void;
-}> = ({
-  icon,
-  title,
-  fieldId,
-  label,
-  rows,
-  value,
-  original,
-  isOverrideEditing,
-  overrideConfirmed,
-  onChange,
-}) => (
-  <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black">
-    <CardHeader>
-      <CardTitle className="flex items-center gap-2">
-        {icon}
-        {title}
-      </CardTitle>
-    </CardHeader>
-    <CardContent>
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 flex-wrap">
-          <Label htmlFor={fieldId}>{label}</Label>
-          {!isOverrideEditing && (
-            <ModifiedStatus
-              enabled={overrideConfirmed}
-              original={original}
-              current={value}
-            />
-          )}
+}>(
+  ({
+    title,
+    fieldId,
+    label,
+    rows,
+    value,
+    original,
+    isOverrideEditing,
+    overrideConfirmed,
+    onChange,
+  }) => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          {title}
+          <Sparkles className="h-5 w-5 text-blue-600" />
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Label htmlFor={fieldId}>{label}</Label>
+            {!isOverrideEditing && (
+              <ModifiedStatus
+                enabled={overrideConfirmed}
+                original={original}
+                current={value}
+              />
+            )}
+          </div>
+          <Textarea
+            id={fieldId}
+            rows={rows}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            readOnly={!isOverrideEditing}
+            className={!isOverrideEditing ? "bg-muted cursor-default" : ""}
+          />
         </div>
-        <Textarea
-          id={fieldId}
-          rows={rows}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          readOnly={!isOverrideEditing}
-          className={!isOverrideEditing ? "bg-muted cursor-default" : ""}
-        />
-      </div>
-    </CardContent>
-  </Card>
+      </CardContent>
+    </Card>
+  ),
 );
+ImplementationTextareaCard.displayName = "ImplementationTextareaCard";

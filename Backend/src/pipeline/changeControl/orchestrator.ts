@@ -59,10 +59,8 @@ export interface PipelineResult {
   auditTrail: AuditEntry[];
 }
 
-/**
- * Stage 1 ONLY: Change Impact Assessment. Call only after a human has
- * accepted/overridden the upstream (shared) "Change Control" classification.
- */
+
+// Stage 1 ONLY: Change Impact Assessment.
 export async function runChangeImpactAssessmentOnly(
   query: string,
   contextText: string,
@@ -96,10 +94,8 @@ export async function runChangeImpactAssessmentOnly(
   return finalize("completed_pending_human_review", null, stages, audit.all());
 }
 
-/**
- * Stage 2 ONLY: Risk & Criticality Evaluation. Call only after a human has
- * accepted/overridden Stage 1.
- */
+
+// Stage 2 ONLY: Risk & Criticality Evaluation.
 export async function runRiskCriticalityOnly(
   query: string,
   approvedImpactAssessment: ChangeImpactAssessmentResult,
@@ -124,10 +120,8 @@ export async function runRiskCriticalityOnly(
   return finalize("completed_pending_human_review", null, stages, audit.all());
 }
 
-/**
- * Stage 3 ONLY: Validation & Testing Strategy. Call only after a human has
- * accepted/overridden Stage 2.
- */
+
+// Stage 3 ONLY: Validation & Testing Strategy.
 export async function runValidationTestingOnly(
   query: string,
   approvedImpactAssessment: ChangeImpactAssessmentResult,
@@ -157,10 +151,7 @@ export async function runValidationTestingOnly(
   return finalize("completed_pending_human_review", null, stages, audit.all());
 }
 
-/**
- * Stage 4 ONLY: Implementation & Control Actions. Call only after a human
- * has accepted/overridden Stage 3.
- */
+// Stage 4 ONLY: Implementation & Control Actions.
 export async function runImplementationControlOnly(
   query: string,
   approvedImpactAssessment: ChangeImpactAssessmentResult,
@@ -196,10 +187,8 @@ export async function runImplementationControlOnly(
   return finalize("completed_pending_human_review", null, stages, audit.all());
 }
 
-/**
- * Stage 5 ONLY: Final Change Control Summary. Call only after a human has
- * accepted/overridden Stage 4. Advisory only — never auto-approves.
- */
+
+// Stage 5 ONLY: Final Change Control Summary.
 export async function runFinalSummaryOnly(
   query: string,
   approvedImpactAssessment: ChangeImpactAssessmentResult,

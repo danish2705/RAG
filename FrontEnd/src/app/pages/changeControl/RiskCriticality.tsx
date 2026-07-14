@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   DecisionAction,
   OverrideDialog,
@@ -91,6 +92,20 @@ export function RiskCriticality() {
     handleReject,
   } = useRiskCriticality();
 
+  // Stabilized so RiskLevelCard (React.memo) doesn't see a "new" prop and
+  // re-render on every keystroke elsewhere on the page — only when
+  // regFilings/setRegFilings actually change does this recompute.
+  const regulatoryFilingsEditorEl = useMemo(
+    () => (
+      <RegulatoryFilingsEditor filings={regFilings} onChange={setRegFilings} />
+    ),
+    [regFilings, setRegFilings],
+  );
+  const regulatoryFilingsListEl = useMemo(
+    () => <RegulatoryFilingsList filings={regFilings} />,
+    [regFilings],
+  );
+
   // Guard
   if (!riskParsed || !impactParsed || !classificationParsed) {
     return (
@@ -150,13 +165,8 @@ export function RiskCriticality() {
               onLevelChange={updateRegLevel}
               onRationaleChange={updateRegRationale}
               badgeSuffix="regulatory risk"
-              extraEditor={
-                <RegulatoryFilingsEditor
-                  filings={regFilings}
-                  onChange={setRegFilings}
-                />
-              }
-              extraReadOnly={<RegulatoryFilingsList filings={regFilings} />}
+              extraEditor={regulatoryFilingsEditorEl}
+              extraReadOnly={regulatoryFilingsListEl}
             />
 
             {/* 3. Data Integrity Risk */}

@@ -3,11 +3,7 @@ import { z } from "zod";
 const RiskLevel = z.enum(["Low", "Moderate", "High"]);
 export type RiskLevel = z.infer<typeof RiskLevel>;
 
-// ─────────────────────────────────────────────────────────────────────────
 // Stage 1: Change Impact Assessment
-// (Impacted systems/processes/studies, GxP classification, data/validation
-// impact, downstream dependencies, risk scoring)
-// ─────────────────────────────────────────────────────────────────────────
 export const ChangeImpactAssessmentSchema = z.object({
   impacted_systems_processes_studies: z.array(z.string().min(1)).min(1),
   gxp_classification: z.enum(["Direct", "Indirect"]),
@@ -22,11 +18,7 @@ export type ChangeImpactAssessmentResult = z.infer<
   typeof ChangeImpactAssessmentSchema
 >;
 
-// ─────────────────────────────────────────────────────────────────────────
 // Stage 2: Risk & Criticality Evaluation
-// (Patient safety/product quality, regulatory impact, data integrity risk,
-// operational disruption risk, risk ranking + justification)
-// ─────────────────────────────────────────────────────────────────────────
 export const RiskCriticalitySchema = z.object({
   patient_safety_product_quality_impact: z.object({
     level: RiskLevel,
@@ -50,11 +42,7 @@ export const RiskCriticalitySchema = z.object({
 });
 export type RiskCriticalityResult = z.infer<typeof RiskCriticalitySchema>;
 
-// ─────────────────────────────────────────────────────────────────────────
 // Stage 3: Validation & Testing Strategy
-// (Required validation level, scenario-based testing, regression scope,
-// UAT requirements, traceability)
-// ─────────────────────────────────────────────────────────────────────────
 export const ValidationTestingSchema = z.object({
   required_validation_level: z.enum(["None", "Partial", "Full"]),
   validation_level_rationale: z.string().min(1),
@@ -66,11 +54,7 @@ export const ValidationTestingSchema = z.object({
 });
 export type ValidationTestingResult = z.infer<typeof ValidationTestingSchema>;
 
-// ─────────────────────────────────────────────────────────────────────────
 // Stage 4: Implementation & Control Actions
-// (Required actions, SOP/WI updates, approval routing, implementation
-// plan/timeline, rollback/contingency plan)
-// ─────────────────────────────────────────────────────────────────────────
 export const ImplementationControlSchema = z.object({
   required_actions: z.array(z.string().min(1)).min(1),
   sop_wi_updates: z.array(z.string()),
@@ -83,12 +67,7 @@ export type ImplementationControlResult = z.infer<
   typeof ImplementationControlSchema
 >;
 
-// ─────────────────────────────────────────────────────────────────────────
 // Stage 5: Final Change Control Summary
-// (Impact summary, risk classification + justification, validation
-// strategy summary, required controls checklist, final recommendation,
-// residual risk)
-// ─────────────────────────────────────────────────────────────────────────
 export const FinalChangeControlSummarySchema = z.object({
   impact_assessment_summary: z.string().min(1),
   risk_classification_justification: z.string().min(1),

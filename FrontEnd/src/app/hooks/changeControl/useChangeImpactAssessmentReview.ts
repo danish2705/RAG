@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useReducer, useState } from "react";
 import { useNavigate } from "react-router";
 import { apiFetch } from "../../utils/api";
 import {
@@ -15,14 +15,134 @@ import type {
 import { useWorkflowStore } from "../../store/workflowStore";
 import { CHANGE_IMPACT_FIELD_LABELS } from "../../mocks/mockImpactAssessment";
 import { nestedToFlatChangeImpactAssessment } from "../../utils/changeImpactAdapter";
+import { useOverrideDialogState } from "../shared/useOverRideDialogState";
 
-// Helpers — mirrors the list <-> textarea convention used on
-// RiskCriticality.tsx / ValidationTesting.tsx
-function parseLines(text: string): string[] {
-  return text
-    .split("\n")
-    .map((s) => s.trim())
-    .filter(Boolean);
+// ---------------------------------------------------------------------------
+// Form reducer: the editable change-impact fields, previously 13 separate
+// useState calls. See useRiskCriticality.ts for the same pattern applied
+// to its sibling page.
+// ---------------------------------------------------------------------------
+interface ImpactFormState {
+  impactedSystems: string[];
+  downstreamDependencies: string[];
+  gxpValue: GxpClassification;
+  gxpRationale: string;
+  validatedStateAffected: boolean;
+  dataValidationRationale: string;
+  riskLevel: RiskLevel;
+  riskRationale: string;
+  gxpChangedWithoutRationale: boolean;
+  validationChangedWithoutRationale: boolean;
+  riskChangedWithoutRationale: boolean;
+}
+
+type ImpactFormAction =
+  | { type: "HYDRATE"; parsed: ChangeImpactAssessmentParsed }
+  | { type: "SET_IMPACTED_SYSTEMS"; value: string[] }
+  | { type: "SET_DOWNSTREAM_DEPENDENCIES"; value: string[] }
+  | {
+      type: "SET_GXP_VALUE";
+      value: GxpClassification;
+      original: GxpClassification;
+    }
+  | { type: "SET_GXP_RATIONALE"; value: string; original: string }
+  | { type: "SET_VALIDATED_STATE_AFFECTED"; value: boolean; original: boolean }
+  | { type: "SET_DATA_VALIDATION_RATIONALE"; value: string; original: string }
+  | { type: "SET_RISK_LEVEL"; value: RiskLevel; original: RiskLevel }
+  | { type: "SET_RISK_RATIONALE"; value: string; original: string };
+
+const initialImpactFormState: ImpactFormState = {
+  impactedSystems: [],
+  downstreamDependencies: [],
+  gxpValue: "Indirect Impact",
+  gxpRationale: "",
+  validatedStateAffected: false,
+  dataValidationRationale: "",
+  riskLevel: "Low",
+  riskRationale: "",
+  gxpChangedWithoutRationale: false,
+  validationChangedWithoutRationale: false,
+  riskChangedWithoutRationale: false,
+};
+
+function hydrateImpactForm(
+  parsed: ChangeImpactAssessmentParsed,
+): ImpactFormState {
+  return {
+    impactedSystems: parsed.impacted_systems,
+    downstreamDependencies: parsed.downstream_dependencies,
+    gxpValue: parsed.gxp_classification.value,
+    gxpRationale: parsed.gxp_classification.rationale,
+    validatedStateAffected:
+      parsed.data_validation_impact.validated_state_affected,
+    dataValidationRationale: parsed.data_validation_impact.rationale,
+    riskLevel: parsed.risk_scoring.level,
+    riskRationale: parsed.risk_scoring.rationale,
+    gxpChangedWithoutRationale: false,
+    validationChangedWithoutRationale: false,
+    riskChangedWithoutRationale: false,
+  };
+}
+
+function impactFormReducer(
+  state: ImpactFormState,
+  action: ImpactFormAction,
+): ImpactFormState {
+  switch (action.type) {
+    case "HYDRATE":
+      return hydrateImpactForm(action.parsed);
+    case "SET_IMPACTED_SYSTEMS":
+      return { ...state, impactedSystems: action.value };
+    case "SET_DOWNSTREAM_DEPENDENCIES":
+      return { ...state, downstreamDependencies: action.value };
+    case "SET_GXP_VALUE":
+      return {
+        ...state,
+        gxpValue: action.value,
+        gxpChangedWithoutRationale: action.value !== action.original,
+      };
+    case "SET_GXP_RATIONALE":
+      return {
+        ...state,
+        gxpRationale: action.value,
+        gxpChangedWithoutRationale:
+          action.value !== action.original
+            ? false
+            : state.gxpChangedWithoutRationale,
+      };
+    case "SET_VALIDATED_STATE_AFFECTED":
+      return {
+        ...state,
+        validatedStateAffected: action.value,
+        validationChangedWithoutRationale: action.value !== action.original,
+      };
+    case "SET_DATA_VALIDATION_RATIONALE":
+      return {
+        ...state,
+        dataValidationRationale: action.value,
+        validationChangedWithoutRationale:
+          action.value !== action.original
+            ? false
+            : state.validationChangedWithoutRationale,
+      };
+    case "SET_RISK_LEVEL":
+      return {
+        ...state,
+        riskLevel: action.value,
+        riskChangedWithoutRationale: action.value !== action.original,
+      };
+    case "SET_RISK_RATIONALE":
+      return {
+        ...state,
+        riskRationale: action.value,
+        riskChangedWithoutRationale:
+          action.value !== action.original
+            ? false
+            : state.riskChangedWithoutRationale,
+      };
+    default:
+      return state;
+  }
 }
 
 export function useChangeImpactAssessmentReview() {
@@ -37,125 +157,111 @@ export function useChangeImpactAssessmentReview() {
   const changeImpactParsed =
     result?.stages?.changeImpactAssessment?.parsed ?? null;
 
-  // Editable form state, seeded from the AI-generated values
-  const [impactedSystems, setImpactedSystems] = useState<string[]>(
-    changeImpactParsed?.impacted_systems ?? [],
+  const [form, dispatchForm] = useReducer(
+    impactFormReducer,
+    changeImpactParsed
+      ? hydrateImpactForm(changeImpactParsed)
+      : initialImpactFormState,
   );
-  const [downstreamDependencies, setDownstreamDependencies] = useState<
-    string[]
-  >(changeImpactParsed?.downstream_dependencies ?? []);
-  const [gxpValue, setGxpValue] = useState<GxpClassification>(
-    changeImpactParsed?.gxp_classification.value ?? "Indirect Impact",
+  const override = useOverrideDialogState();
+
+  const setImpactedSystems = useCallback(
+    (value: string[]) => dispatchForm({ type: "SET_IMPACTED_SYSTEMS", value }),
+    [],
   );
-  const [gxpRationale, setGxpRationale] = useState(
-    changeImpactParsed?.gxp_classification.rationale ?? "",
-  );
-  const [validatedStateAffected, setValidatedStateAffected] = useState(
-    changeImpactParsed?.data_validation_impact.validated_state_affected ??
-      false,
-  );
-  const [dataValidationRationale, setDataValidationRationale] = useState(
-    changeImpactParsed?.data_validation_impact.rationale ?? "",
-  );
-  const [riskLevel, setRiskLevel] = useState<RiskLevel>(
-    changeImpactParsed?.risk_scoring.level ?? "Low",
-  );
-  const [riskRationale, setRiskRationale] = useState(
-    changeImpactParsed?.risk_scoring.rationale ?? "",
+  const setDownstreamDependencies = useCallback(
+    (value: string[]) =>
+      dispatchForm({ type: "SET_DOWNSTREAM_DEPENDENCIES", value }),
+    [],
   );
 
-  // "Changed the value but not the rationale" tracking
-  const [gxpChangedWithoutRationale, setGxpChangedWithoutRationale] =
-    useState(false);
-  const [
-    validationChangedWithoutRationale,
-    setValidationChangedWithoutRationale,
-  ] = useState(false);
-  const [riskChangedWithoutRationale, setRiskChangedWithoutRationale] =
-    useState(false);
+  const updateGxpValue = useCallback(
+    (value: string) => {
+      if (!changeImpactParsed) return;
+      dispatchForm({
+        type: "SET_GXP_VALUE",
+        value: value as GxpClassification,
+        original: changeImpactParsed.gxp_classification.value,
+      });
+    },
+    [changeImpactParsed],
+  );
 
-  const [isOverrideEditing, setIsOverrideEditing] = useState(false);
-  const [overrideConfirmed, setOverrideConfirmed] = useState(false);
+  const updateGxpRationale = useCallback(
+    (value: string) => {
+      if (!changeImpactParsed) return;
+      dispatchForm({
+        type: "SET_GXP_RATIONALE",
+        value,
+        original: changeImpactParsed.gxp_classification.rationale,
+      });
+    },
+    [changeImpactParsed],
+  );
 
-  const [showOverrideDialog, setShowOverrideDialog] = useState(false);
-  const [overrideJustification, setOverrideJustification] = useState("");
-  const [showRejectDialog, setShowRejectDialog] = useState(false);
-  const [rejectJustification, setRejectJustification] = useState("");
+  const updateValidatedStateAffected = useCallback(
+    (value: string) => {
+      if (!changeImpactParsed) return;
+      dispatchForm({
+        type: "SET_VALIDATED_STATE_AFFECTED",
+        value: value === "true",
+        original:
+          changeImpactParsed.data_validation_impact.validated_state_affected,
+      });
+    },
+    [changeImpactParsed],
+  );
 
-  const [showRationaleWarning, setShowRationaleWarning] = useState(false);
-  const [warningFields, setWarningFields] = useState<string[]>([]);
+  const updateDataValidationRationale = useCallback(
+    (value: string) => {
+      if (!changeImpactParsed) return;
+      dispatchForm({
+        type: "SET_DATA_VALIDATION_RATIONALE",
+        value,
+        original: changeImpactParsed.data_validation_impact.rationale,
+      });
+    },
+    [changeImpactParsed],
+  );
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const updateRiskLevel = useCallback(
+    (value: string) => {
+      if (!changeImpactParsed) return;
+      dispatchForm({
+        type: "SET_RISK_LEVEL",
+        value: value as RiskLevel,
+        original: changeImpactParsed.risk_scoring.level,
+      });
+    },
+    [changeImpactParsed],
+  );
 
-  // Field update helpers
-  const updateGxpValue = (value: string) => {
-    if (!changeImpactParsed) return;
-    setGxpValue(value as GxpClassification);
-    setGxpChangedWithoutRationale(
-      value !== changeImpactParsed.gxp_classification.value,
-    );
-  };
-
-  const updateGxpRationale = (value: string) => {
-    setGxpRationale(value);
-    if (
-      changeImpactParsed &&
-      value !== changeImpactParsed.gxp_classification.rationale
-    ) {
-      setGxpChangedWithoutRationale(false);
-    }
-  };
-
-  const updateValidatedStateAffected = (value: string) => {
-    if (!changeImpactParsed) return;
-    const next = value === "true";
-    setValidatedStateAffected(next);
-    setValidationChangedWithoutRationale(
-      next !==
-        changeImpactParsed.data_validation_impact.validated_state_affected,
-    );
-  };
-
-  const updateDataValidationRationale = (value: string) => {
-    setDataValidationRationale(value);
-    if (
-      changeImpactParsed &&
-      value !== changeImpactParsed.data_validation_impact.rationale
-    ) {
-      setValidationChangedWithoutRationale(false);
-    }
-  };
-
-  const updateRiskLevel = (value: string) => {
-    if (!changeImpactParsed) return;
-    setRiskLevel(value as RiskLevel);
-    setRiskChangedWithoutRationale(
-      value !== changeImpactParsed.risk_scoring.level,
-    );
-  };
-
-  const updateRiskRationale = (value: string) => {
-    setRiskRationale(value);
-    if (
-      changeImpactParsed &&
-      value !== changeImpactParsed.risk_scoring.rationale
-    ) {
-      setRiskChangedWithoutRationale(false);
-    }
-  };
+  const updateRiskRationale = useCallback(
+    (value: string) => {
+      if (!changeImpactParsed) return;
+      dispatchForm({
+        type: "SET_RISK_RATIONALE",
+        value,
+        original: changeImpactParsed.risk_scoring.rationale,
+      });
+    },
+    [changeImpactParsed],
+  );
 
   const buildApprovedChangeImpactAssessment =
     (): ChangeImpactAssessmentParsed => ({
       ...changeImpactParsed!,
-      impacted_systems: impactedSystems,
-      gxp_classification: { value: gxpValue, rationale: gxpRationale },
-      data_validation_impact: {
-        validated_state_affected: validatedStateAffected,
-        rationale: dataValidationRationale,
+      impacted_systems: form.impactedSystems,
+      gxp_classification: {
+        value: form.gxpValue,
+        rationale: form.gxpRationale,
       },
-      downstream_dependencies: downstreamDependencies,
-      risk_scoring: { level: riskLevel, rationale: riskRationale },
+      data_validation_impact: {
+        validated_state_affected: form.validatedStateAffected,
+        rationale: form.dataValidationRationale,
+      },
+      downstream_dependencies: form.downstreamDependencies,
+      risk_scoring: { level: form.riskLevel, rationale: form.riskRationale },
     });
 
   const buildChangeImpactProvenance = (
@@ -165,61 +271,67 @@ export function useChangeImpactAssessmentReview() {
 
     const impactedSystemsField =
       confirmed &&
-      JSON.stringify(impactedSystems) !==
+      JSON.stringify(form.impactedSystems) !==
         JSON.stringify(original.impacted_systems)
-        ? markModified(aiField(original.impacted_systems), impactedSystems)
+        ? markModified(aiField(original.impacted_systems), form.impactedSystems)
         : aiField(original.impacted_systems);
 
     const downstreamDependenciesField =
       confirmed &&
-      JSON.stringify(downstreamDependencies) !==
+      JSON.stringify(form.downstreamDependencies) !==
         JSON.stringify(original.downstream_dependencies)
         ? markModified(
             aiField(original.downstream_dependencies),
-            downstreamDependencies,
+            form.downstreamDependencies,
           )
         : aiField(original.downstream_dependencies);
 
     const gxpValueField =
-      confirmed && gxpValue !== original.gxp_classification.value
-        ? markModified(aiField(original.gxp_classification.value), gxpValue)
+      confirmed && form.gxpValue !== original.gxp_classification.value
+        ? markModified(
+            aiField(original.gxp_classification.value),
+            form.gxpValue,
+          )
         : aiField(original.gxp_classification.value);
 
     const gxpRationaleField =
-      confirmed && gxpRationale !== original.gxp_classification.rationale
+      confirmed && form.gxpRationale !== original.gxp_classification.rationale
         ? markModified(
             aiField(original.gxp_classification.rationale),
-            gxpRationale,
+            form.gxpRationale,
           )
         : aiField(original.gxp_classification.rationale);
 
     const validatedStateField =
       confirmed &&
-      validatedStateAffected !==
+      form.validatedStateAffected !==
         original.data_validation_impact.validated_state_affected
         ? markModified(
             aiField(original.data_validation_impact.validated_state_affected),
-            validatedStateAffected,
+            form.validatedStateAffected,
           )
         : aiField(original.data_validation_impact.validated_state_affected);
 
     const dataValidationRationaleField =
       confirmed &&
-      dataValidationRationale !== original.data_validation_impact.rationale
+      form.dataValidationRationale !== original.data_validation_impact.rationale
         ? markModified(
             aiField(original.data_validation_impact.rationale),
-            dataValidationRationale,
+            form.dataValidationRationale,
           )
         : aiField(original.data_validation_impact.rationale);
 
     const riskLevelField =
-      confirmed && riskLevel !== original.risk_scoring.level
-        ? markModified(aiField(original.risk_scoring.level), riskLevel)
+      confirmed && form.riskLevel !== original.risk_scoring.level
+        ? markModified(aiField(original.risk_scoring.level), form.riskLevel)
         : aiField(original.risk_scoring.level);
 
     const riskRationaleField =
-      confirmed && riskRationale !== original.risk_scoring.rationale
-        ? markModified(aiField(original.risk_scoring.rationale), riskRationale)
+      confirmed && form.riskRationale !== original.risk_scoring.rationale
+        ? markModified(
+            aiField(original.risk_scoring.rationale),
+            form.riskRationale,
+          )
         : aiField(original.risk_scoring.rationale);
 
     return {
@@ -266,8 +378,7 @@ export function useChangeImpactAssessmentReview() {
   const submitChangeImpactAssessment = async (
     changeImpactProvenance: ChangeImpactAssessmentProvenance,
   ) => {
-    setSubmitError(null);
-    setIsSubmitting(true);
+    override.submitStart();
     const approvedChangeImpactAssessment =
       buildApprovedChangeImpactAssessment();
     const flatChangeImpactAssessment = nestedToFlatChangeImpactAssessment(
@@ -286,27 +397,27 @@ export function useChangeImpactAssessmentReview() {
           }),
         },
       );
+      override.submitSuccess();
       navigateToRiskCriticality(
         riskResult.stages.riskCriticality,
         changeImpactProvenance,
         approvedChangeImpactAssessment,
       );
     } catch (err) {
-      setSubmitError(
+      override.submitFailure(
         err instanceof Error
           ? err.message
           : "Something went wrong submitting the change impact assessment. Please try again.",
       );
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   const handleAccept = () => {
-    const changeImpactProvenance =
-      buildChangeImpactProvenance(overrideConfirmed);
+    const changeImpactProvenance = buildChangeImpactProvenance(
+      override.overrideConfirmed,
+    );
     const existingRiskCriticality = result!.stages?.riskCriticality;
-    if (!overrideConfirmed && existingRiskCriticality?.parsed) {
+    if (!override.overrideConfirmed && existingRiskCriticality?.parsed) {
       navigateToRiskCriticality(
         existingRiskCriticality,
         changeImpactProvenance,
@@ -317,86 +428,69 @@ export function useChangeImpactAssessmentReview() {
     void submitChangeImpactAssessment(changeImpactProvenance);
   };
 
-  const handleOverrideClick = () => setIsOverrideEditing(true);
+  const handleOverrideClick = () => override.setIsOverrideEditing(true);
 
   const handleSaveChanges = () => {
     const needsRationale: string[] = [];
-    if (gxpChangedWithoutRationale)
+    if (form.gxpChangedWithoutRationale)
       needsRationale.push(CHANGE_IMPACT_FIELD_LABELS.gxp_classification);
-    if (validationChangedWithoutRationale)
+    if (form.validationChangedWithoutRationale)
       needsRationale.push(CHANGE_IMPACT_FIELD_LABELS.data_validation_impact);
-    if (riskChangedWithoutRationale)
+    if (form.riskChangedWithoutRationale)
       needsRationale.push(CHANGE_IMPACT_FIELD_LABELS.risk_scoring);
 
     if (needsRationale.length > 0) {
-      setWarningFields(needsRationale);
-      setShowRationaleWarning(true);
+      override.setWarningFields(needsRationale);
+      override.setShowRationaleWarning(true);
       return;
     }
-    setShowOverrideDialog(true);
+    override.setShowOverrideDialog(true);
   };
 
   const handleCancelOverride = () => {
     if (!changeImpactParsed) return;
-    setIsOverrideEditing(false);
-    setImpactedSystems(changeImpactParsed.impacted_systems);
-    setDownstreamDependencies(changeImpactParsed.downstream_dependencies);
-    setGxpValue(changeImpactParsed.gxp_classification.value);
-    setGxpRationale(changeImpactParsed.gxp_classification.rationale);
-    setValidatedStateAffected(
-      changeImpactParsed.data_validation_impact.validated_state_affected,
-    );
-    setDataValidationRationale(
-      changeImpactParsed.data_validation_impact.rationale,
-    );
-    setRiskLevel(changeImpactParsed.risk_scoring.level);
-    setRiskRationale(changeImpactParsed.risk_scoring.rationale);
-    setGxpChangedWithoutRationale(false);
-    setValidationChangedWithoutRationale(false);
-    setRiskChangedWithoutRationale(false);
+    override.setIsOverrideEditing(false);
+    dispatchForm({ type: "HYDRATE", parsed: changeImpactParsed });
   };
 
   const handleOverrideConfirm = () => {
-    if (!overrideJustification.trim()) return;
-    setShowOverrideDialog(false);
-    setIsOverrideEditing(false);
-    setOverrideConfirmed(true);
-    setOverrideJustification("");
+    if (!override.overrideJustification.trim()) return;
+    override.confirmOverride();
   };
 
   const handleReject = () => {
-    if (rejectJustification.trim()) {
-      setShowRejectDialog(false);
+    if (override.rejectJustification.trim()) {
+      override.setShowRejectDialog(false);
       navigate("/deviation");
     }
   };
 
   const isGxpModified =
     !!changeImpactParsed &&
-    overrideConfirmed &&
-    (gxpValue !== changeImpactParsed.gxp_classification.value ||
-      gxpRationale !== changeImpactParsed.gxp_classification.rationale);
+    override.overrideConfirmed &&
+    (form.gxpValue !== changeImpactParsed.gxp_classification.value ||
+      form.gxpRationale !== changeImpactParsed.gxp_classification.rationale);
   const isValidationModified =
     !!changeImpactParsed &&
-    overrideConfirmed &&
-    (validatedStateAffected !==
+    override.overrideConfirmed &&
+    (form.validatedStateAffected !==
       changeImpactParsed.data_validation_impact.validated_state_affected ||
-      dataValidationRationale !==
+      form.dataValidationRationale !==
         changeImpactParsed.data_validation_impact.rationale);
   const isRiskModified =
     !!changeImpactParsed &&
-    overrideConfirmed &&
-    (riskLevel !== changeImpactParsed.risk_scoring.level ||
-      riskRationale !== changeImpactParsed.risk_scoring.rationale);
+    override.overrideConfirmed &&
+    (form.riskLevel !== changeImpactParsed.risk_scoring.level ||
+      form.riskRationale !== changeImpactParsed.risk_scoring.rationale);
   const isSystemsModified =
     !!changeImpactParsed &&
-    overrideConfirmed &&
-    JSON.stringify(impactedSystems) !==
+    override.overrideConfirmed &&
+    JSON.stringify(form.impactedSystems) !==
       JSON.stringify(changeImpactParsed.impacted_systems);
   const isDependenciesModified =
     !!changeImpactParsed &&
-    overrideConfirmed &&
-    JSON.stringify(downstreamDependencies) !==
+    override.overrideConfirmed &&
+    JSON.stringify(form.downstreamDependencies) !==
       JSON.stringify(changeImpactParsed.downstream_dependencies);
 
   return {
@@ -408,16 +502,16 @@ export function useChangeImpactAssessmentReview() {
     chatOpen,
     setChatOpen,
 
-    impactedSystems,
+    impactedSystems: form.impactedSystems,
     setImpactedSystems,
-    downstreamDependencies,
+    downstreamDependencies: form.downstreamDependencies,
     setDownstreamDependencies,
-    gxpValue,
-    gxpRationale,
-    validatedStateAffected,
-    dataValidationRationale,
-    riskLevel,
-    riskRationale,
+    gxpValue: form.gxpValue,
+    gxpRationale: form.gxpRationale,
+    validatedStateAffected: form.validatedStateAffected,
+    dataValidationRationale: form.dataValidationRationale,
+    riskLevel: form.riskLevel,
+    riskRationale: form.riskRationale,
     updateGxpValue,
     updateGxpRationale,
     updateValidatedStateAffected,
@@ -425,9 +519,9 @@ export function useChangeImpactAssessmentReview() {
     updateRiskLevel,
     updateRiskRationale,
 
-    gxpChangedWithoutRationale,
-    validationChangedWithoutRationale,
-    riskChangedWithoutRationale,
+    gxpChangedWithoutRationale: form.gxpChangedWithoutRationale,
+    validationChangedWithoutRationale: form.validationChangedWithoutRationale,
+    riskChangedWithoutRationale: form.riskChangedWithoutRationale,
 
     isGxpModified,
     isValidationModified,
@@ -435,23 +529,23 @@ export function useChangeImpactAssessmentReview() {
     isSystemsModified,
     isDependenciesModified,
 
-    isOverrideEditing,
-    overrideConfirmed,
+    isOverrideEditing: override.isOverrideEditing,
+    overrideConfirmed: override.overrideConfirmed,
 
-    showOverrideDialog,
-    setShowOverrideDialog,
-    overrideJustification,
-    setOverrideJustification,
-    showRejectDialog,
-    setShowRejectDialog,
-    rejectJustification,
-    setRejectJustification,
-    showRationaleWarning,
-    setShowRationaleWarning,
-    warningFields,
+    showOverrideDialog: override.showOverrideDialog,
+    setShowOverrideDialog: override.setShowOverrideDialog,
+    overrideJustification: override.overrideJustification,
+    setOverrideJustification: override.setOverrideJustification,
+    showRejectDialog: override.showRejectDialog,
+    setShowRejectDialog: override.setShowRejectDialog,
+    rejectJustification: override.rejectJustification,
+    setRejectJustification: override.setRejectJustification,
+    showRationaleWarning: override.showRationaleWarning,
+    setShowRationaleWarning: override.setShowRationaleWarning,
+    warningFields: override.warningFields,
 
-    isSubmitting,
-    submitError,
+    isSubmitting: override.isSubmitting,
+    submitError: override.submitError,
 
     handleAccept,
     handleOverrideClick,

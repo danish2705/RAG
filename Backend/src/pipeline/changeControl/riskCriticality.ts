@@ -13,10 +13,7 @@ export interface RiskCriticalityStageResult {
   error: Error | null;
 }
 
-/**
- * Stage 2 of 5: risk & criticality evaluation. Runs only after a human has
- * accepted/overridden the Stage 1 Change Impact Assessment.
- */
+// Stage 2 : risk & criticality evaluation.
 export async function runRiskCriticalityStage(
   query: string,
   approvedImpactAssessment: ChangeImpactAssessmentResult,

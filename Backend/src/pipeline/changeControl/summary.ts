@@ -16,11 +16,7 @@ export interface FinalSummaryStageResult {
   error: Error | null;
 }
 
-/**
- * Stage 5 of 5: final change control summary. Runs only after a human has
- * accepted/overridden Stage 4 (Implementation & Control Actions). Advisory
- * only — never auto-approves/rejects the change.
- */
+// Stage 5: final change control summary.
 export async function runFinalSummaryStage(
   query: string,
   approvedImpactAssessment: ChangeImpactAssessmentResult,

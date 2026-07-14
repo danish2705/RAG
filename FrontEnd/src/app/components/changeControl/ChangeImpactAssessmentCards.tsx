@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import {
@@ -55,9 +50,9 @@ function parseLines(text: string): string[] {
     .filter(Boolean);
 }
 
-export const NoImpactAssessmentDataGuard: React.FC<{ onGoBack: () => void }> = ({
-  onGoBack,
-}) => (
+export const NoImpactAssessmentDataGuard: React.FC<{
+  onGoBack: () => void;
+}> = ({ onGoBack }) => (
   <div className="p-6 w-full">
     <Card>
       <CardContent className="py-12 text-center">
@@ -76,42 +71,43 @@ export const NoImpactAssessmentDataGuard: React.FC<{ onGoBack: () => void }> = (
   </div>
 );
 
-export const ImpactConfidenceCard: React.FC<{ score: number }> = ({
-  score,
-}) => (
-  <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black">
-    <CardHeader>
-      <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-gray-900 dark:text-gray-100">
-        <Sparkles className="h-4 w-4 text-blue-500" />
-        Overall AI Confidence Score
-      </CardTitle>
-      <p className="text-xs text-muted-foreground mt-0.5">
-        Based on Change Control classification
-      </p>
-    </CardHeader>
-    <CardContent>
-      <div className="flex items-center gap-4">
-        <div className="flex-1 h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
-          <div
-            className={`h-full ${
-              score >= 80
-                ? "bg-green-500"
-                : score >= 60
-                  ? "bg-yellow-400"
-                  : "bg-red-500"
-            }`}
-            style={{ width: `${score}%` }}
-          />
+export const ImpactConfidenceCard = React.memo<{ score: number }>(
+  ({ score }) => (
+    <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-gray-900 dark:text-gray-100">
+          <Sparkles className="h-4 w-4 text-blue-500" />
+          Overall AI Confidence Score
+        </CardTitle>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Based on Change Control classification
+        </p>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center gap-4 mt-2">
+          <div className="flex-1 h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+            <div
+              className={`h-full ${
+                score >= 80
+                  ? "bg-green-500"
+                  : score >= 60
+                    ? "bg-yellow-400"
+                    : "bg-red-500"
+              }`}
+              style={{ width: `${score}%` }}
+            />
+          </div>
+          <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
+            {score}%
+          </span>
         </div>
-        <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
-          {score}%
-        </span>
-      </div>
-    </CardContent>
-  </Card>
+      </CardContent>
+    </Card>
+  ),
 );
+ImpactConfidenceCard.displayName = "ImpactConfidenceCard";
 
-export const GxpClassificationCard: React.FC<{
+export const GxpClassificationCard = React.memo<{
   title: string;
   value: string;
   rationale: string;
@@ -120,68 +116,71 @@ export const GxpClassificationCard: React.FC<{
   changedWithoutRationale: boolean;
   onValueChange: (value: string) => void;
   onRationaleChange: (value: string) => void;
-}> = ({
-  title,
-  value,
-  rationale,
-  isOverrideEditing,
-  isModified,
-  changedWithoutRationale,
-  onValueChange,
-  onRationaleChange,
-}) => (
-  <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black flex flex-col h-full">
-    <CardContent className="pt-6 flex flex-col flex-1">
-      <div className="flex items-center gap-2 justify-between mb-4">
-        <h3 className="font-semibold text-[15px] text-gray-900 dark:text-gray-100">
-          {title}
-        </h3>
-        {!isOverrideEditing && isModified && <ModifiedBadge />}
-      </div>
-
-      {isOverrideEditing ? (
-        <div className="space-y-3">
-          <Select value={value} onValueChange={onValueChange}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Direct Impact">Direct Impact</SelectItem>
-              <SelectItem value="Indirect Impact">Indirect Impact</SelectItem>
-            </SelectContent>
-          </Select>
-          {changedWithoutRationale && (
-            <p className="text-xs text-orange-600 flex items-center gap-1">
-              <AlertTriangle className="h-3 w-3" /> Update rationale below
-            </p>
-          )}
-          <Textarea
-            rows={4}
-            value={rationale}
-            onChange={(e) => onRationaleChange(e.target.value)}
-            placeholder="Explain the reason for this change..."
-            className={`resize-none text-sm ${changedWithoutRationale ? "border-orange-400" : ""}`}
-          />
+}>(
+  ({
+    title,
+    value,
+    rationale,
+    isOverrideEditing,
+    isModified,
+    changedWithoutRationale,
+    onValueChange,
+    onRationaleChange,
+  }) => (
+    <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black flex flex-col h-full">
+      <CardContent className="pt-6 flex flex-col flex-1">
+        <div className="flex items-center gap-2 justify-between mb-4">
+          <h3 className="font-semibold text-[15px] text-gray-900 dark:text-gray-100">
+            {title}
+          </h3>
+          {!isOverrideEditing && isModified && <ModifiedBadge />}
         </div>
-      ) : (
-        <div className="flex flex-col flex-1">
-          <div>
-            <span
-              className={`inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium ${getGxpBadgeClass(value)}`}
-            >
-              {value}
-            </span>
+
+        {isOverrideEditing ? (
+          <div className="space-y-3">
+            <Select value={value} onValueChange={onValueChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Direct Impact">Direct Impact</SelectItem>
+                <SelectItem value="Indirect Impact">Indirect Impact</SelectItem>
+              </SelectContent>
+            </Select>
+            {changedWithoutRationale && (
+              <p className="text-xs text-orange-600 flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" /> Update rationale below
+              </p>
+            )}
+            <Textarea
+              rows={4}
+              value={rationale}
+              onChange={(e) => onRationaleChange(e.target.value)}
+              placeholder="Explain the reason for this change..."
+              className={`resize-none text-sm ${changedWithoutRationale ? "border-orange-400" : ""}`}
+            />
           </div>
-          <p className="text-[13px] text-muted-foreground leading-relaxed mt-4">
-            {rationale || "No rationale provided."}
-          </p>
-        </div>
-      )}
-    </CardContent>
-  </Card>
+        ) : (
+          <div className="flex flex-col flex-1">
+            <div>
+              <span
+                className={`inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium ${getGxpBadgeClass(value)}`}
+              >
+                {value}
+              </span>
+            </div>
+            <p className="text-[13px] text-muted-foreground leading-relaxed mt-4">
+              {rationale || "No rationale provided."}
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  ),
 );
+GxpClassificationCard.displayName = "GxpClassificationCard";
 
-export const DataValidationImpactCard: React.FC<{
+export const DataValidationImpactCard = React.memo<{
   title: string;
   validatedStateAffected: boolean;
   rationale: string;
@@ -190,80 +189,83 @@ export const DataValidationImpactCard: React.FC<{
   changedWithoutRationale: boolean;
   onValueChange: (value: string) => void;
   onRationaleChange: (value: string) => void;
-}> = ({
-  title,
-  validatedStateAffected,
-  rationale,
-  isOverrideEditing,
-  isModified,
-  changedWithoutRationale,
-  onValueChange,
-  onRationaleChange,
-}) => (
-  <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black flex flex-col h-full">
-    <CardContent className="pt-6 flex flex-col flex-1">
-      <div className="flex items-center gap-2 justify-between mb-4">
-        <h3 className="font-semibold text-[15px] text-gray-900 dark:text-gray-100">
-          {title}
-        </h3>
-        {!isOverrideEditing && isModified && <ModifiedBadge />}
-      </div>
-
-      {isOverrideEditing ? (
-        <div className="space-y-3">
-          <Select
-            value={String(validatedStateAffected)}
-            onValueChange={onValueChange}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="true">Validated State Affected</SelectItem>
-              <SelectItem value="false">
-                Validated State Not Affected
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          {changedWithoutRationale && (
-            <p className="text-xs text-orange-600 flex items-center gap-1">
-              <AlertTriangle className="h-3 w-3" /> Update rationale below
-            </p>
-          )}
-          <Textarea
-            rows={4}
-            value={rationale}
-            onChange={(e) => onRationaleChange(e.target.value)}
-            placeholder="Explain the reason for this change..."
-            className={`resize-none text-sm ${changedWithoutRationale ? "border-orange-400" : ""}`}
-          />
+}>(
+  ({
+    title,
+    validatedStateAffected,
+    rationale,
+    isOverrideEditing,
+    isModified,
+    changedWithoutRationale,
+    onValueChange,
+    onRationaleChange,
+  }) => (
+    <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black flex flex-col h-full">
+      <CardContent className="pt-6 flex flex-col flex-1">
+        <div className="flex items-center gap-2 justify-between mb-4">
+          <h3 className="font-semibold text-[15px] text-gray-900 dark:text-gray-100">
+            {title}
+          </h3>
+          {!isOverrideEditing && isModified && <ModifiedBadge />}
         </div>
-      ) : (
-        <div className="flex flex-col flex-1">
-          <div>
-            <span
-              className={`inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium ${getValidationImpactBadgeClass(validatedStateAffected)}`}
+
+        {isOverrideEditing ? (
+          <div className="space-y-3">
+            <Select
+              value={String(validatedStateAffected)}
+              onValueChange={onValueChange}
             >
-              {validatedStateAffected ? "Affected" : "None"}
-            </span>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="true">Validated State Affected</SelectItem>
+                <SelectItem value="false">
+                  Validated State Not Affected
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            {changedWithoutRationale && (
+              <p className="text-xs text-orange-600 flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" /> Update rationale below
+              </p>
+            )}
+            <Textarea
+              rows={4}
+              value={rationale}
+              onChange={(e) => onRationaleChange(e.target.value)}
+              placeholder="Explain the reason for this change..."
+              className={`resize-none text-sm ${changedWithoutRationale ? "border-orange-400" : ""}`}
+            />
           </div>
-          <p className="text-[13px] text-muted-foreground leading-relaxed mt-4">
-            {rationale || "No rationale provided."}
-          </p>
-        </div>
-      )}
-    </CardContent>
-  </Card>
+        ) : (
+          <div className="flex flex-col flex-1">
+            <div>
+              <span
+                className={`inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium ${getValidationImpactBadgeClass(validatedStateAffected)}`}
+              >
+                {validatedStateAffected ? "Affected" : "None"}
+              </span>
+            </div>
+            <p className="text-[13px] text-muted-foreground leading-relaxed mt-4">
+              {rationale || "No rationale provided."}
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  ),
 );
+DataValidationImpactCard.displayName = "DataValidationImpactCard";
 
-export const ImpactListCard: React.FC<{
+export const ImpactListCard = React.memo<{
   title: string;
   items: string[];
   isOverrideEditing: boolean;
   isModified: boolean;
   onChange: (items: string[]) => void;
   placeholder: string;
-}> = ({ title, items, isOverrideEditing, isModified, onChange, placeholder }) => (
+}>(({ title, items, isOverrideEditing, isModified, onChange, placeholder }) => (
   <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black flex flex-col h-full">
     <CardContent className="pt-6 flex flex-col flex-1">
       <div className="flex items-center gap-2 justify-between mb-4">
@@ -302,9 +304,10 @@ export const ImpactListCard: React.FC<{
       )}
     </CardContent>
   </Card>
-);
+));
+ImpactListCard.displayName = "ImpactListCard";
 
-export const RiskScoringCard: React.FC<{
+export const RiskScoringCard = React.memo<{
   title: string;
   level: string;
   rationale: string;
@@ -313,64 +316,67 @@ export const RiskScoringCard: React.FC<{
   changedWithoutRationale: boolean;
   onLevelChange: (value: string) => void;
   onRationaleChange: (value: string) => void;
-}> = ({
-  title,
-  level,
-  rationale,
-  isOverrideEditing,
-  isModified,
-  changedWithoutRationale,
-  onLevelChange,
-  onRationaleChange,
-}) => (
-  <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black flex flex-col h-full md:col-span-2">
-    <CardContent className="pt-6 flex flex-col flex-1">
-      <div className="flex items-center gap-2 justify-between mb-4">
-        <h3 className="font-semibold text-[15px] text-gray-900 dark:text-gray-100">
-          {title}
-        </h3>
-        {!isOverrideEditing && isModified && <ModifiedBadge />}
-      </div>
+}>(
+  ({
+    title,
+    level,
+    rationale,
+    isOverrideEditing,
+    isModified,
+    changedWithoutRationale,
+    onLevelChange,
+    onRationaleChange,
+  }) => (
+    <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black flex flex-col h-full md:col-span-2">
+      <CardContent className="pt-6 flex flex-col flex-1">
+        <div className="flex items-center gap-2 justify-between mb-4">
+          <h3 className="font-semibold text-[15px] text-gray-900 dark:text-gray-100">
+            {title}
+          </h3>
+          {!isOverrideEditing && isModified && <ModifiedBadge />}
+        </div>
 
-      {isOverrideEditing ? (
-        <div className="space-y-3 md:w-1/2">
-          <Select value={level} onValueChange={onLevelChange}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="High">High</SelectItem>
-              <SelectItem value="Moderate">Moderate</SelectItem>
-              <SelectItem value="Low">Low</SelectItem>
-            </SelectContent>
-          </Select>
-          {changedWithoutRationale && (
-            <p className="text-xs text-orange-600 flex items-center gap-1">
-              <AlertTriangle className="h-3 w-3" /> Update rationale below
-            </p>
-          )}
-          <Textarea
-            rows={3}
-            value={rationale}
-            onChange={(e) => onRationaleChange(e.target.value)}
-            placeholder="Explain the reason for this change..."
-            className={`resize-none text-sm ${changedWithoutRationale ? "border-orange-400" : ""}`}
-          />
-        </div>
-      ) : (
-        <div className="flex flex-col flex-1">
-          <div>
-            <span
-              className={`inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium ${getRiskLevelBadgeClass(level)}`}
-            >
-              {level}
-            </span>
+        {isOverrideEditing ? (
+          <div className="space-y-3 md:w-1/2">
+            <Select value={level} onValueChange={onLevelChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="High">High</SelectItem>
+                <SelectItem value="Moderate">Moderate</SelectItem>
+                <SelectItem value="Low">Low</SelectItem>
+              </SelectContent>
+            </Select>
+            {changedWithoutRationale && (
+              <p className="text-xs text-orange-600 flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" /> Update rationale below
+              </p>
+            )}
+            <Textarea
+              rows={3}
+              value={rationale}
+              onChange={(e) => onRationaleChange(e.target.value)}
+              placeholder="Explain the reason for this change..."
+              className={`resize-none text-sm ${changedWithoutRationale ? "border-orange-400" : ""}`}
+            />
           </div>
-          <p className="text-[13px] text-muted-foreground leading-relaxed mt-4">
-            {rationale || "No rationale provided."}
-          </p>
-        </div>
-      )}
-    </CardContent>
-  </Card>
+        ) : (
+          <div className="flex flex-col flex-1">
+            <div>
+              <span
+                className={`inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium ${getRiskLevelBadgeClass(level)}`}
+              >
+                {level}
+              </span>
+            </div>
+            <p className="text-[13px] text-muted-foreground leading-relaxed mt-4">
+              {rationale || "No rationale provided."}
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  ),
 );
+RiskScoringCard.displayName = "RiskScoringCard";

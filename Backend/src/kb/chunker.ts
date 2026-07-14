@@ -1,3 +1,5 @@
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+
 export interface SourceDoc {
   content: string;
   source: string;
@@ -10,24 +12,27 @@ export interface DocChunk {
   type: string;
 }
 
-/** Equivalent to chunk_text(text, size, overlap) in the notebook. */
-export function chunkText(text: string, size = 500, overlap = 50): string[] {
-  const chunks: string[] = [];
-  const step = size - overlap;
+// chunking
+export async function chunkText(
+  text: string,
+  size = 500,
+  overlap = 50,
+): Promise<string[]> {
+  const splitter = new RecursiveCharacterTextSplitter({
+    chunkSize: size,
+    chunkOverlap: overlap,
+  });
 
-  for (let i = 0; i < text.length; i += step) {
-    chunks.push(text.slice(i, i + size));
-  }
-
-  return chunks;
+  return splitter.splitText(text);
 }
 
 /** Equivalent to prepare_chunks(docs) in the notebook. */
-export function prepareChunks(docs: SourceDoc[]): DocChunk[] {
+export async function prepareChunks(docs: SourceDoc[]): Promise<DocChunk[]> {
   const allChunks: DocChunk[] = [];
 
   for (const doc of docs) {
-    for (const text of chunkText(doc.content)) {
+    const textChunks = await chunkText(doc.content);
+    for (const text of textChunks) {
       allChunks.push({ text, source: doc.source, type: doc.type });
     }
   }

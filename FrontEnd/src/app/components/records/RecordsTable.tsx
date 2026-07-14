@@ -1,7 +1,4 @@
-import {
-  Card,
-  CardContent,
-} from "../ui/card";
+import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import {
@@ -12,10 +9,33 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import { AlertTriangle, ArrowUpDown, Database, Eye, Loader2 } from "lucide-react";
-import type { AnyCase } from "../../types/Records";
+import {
+  AlertTriangle,
+  ArrowUpDown,
+  Database,
+  Eye,
+  Loader2,
+} from "lucide-react";
+import type { ClassificationParsed } from "../../types/Records";
 import type { RecordsSortField } from "../../hooks/records/useRecords";
-import { getAlternatingRowClass, getRowBorderClass, getClassificationBadgeClass } from "../../utils/records/badges";
+import {
+  getAlternatingRowClass,
+  getRowBorderClass,
+  getClassificationBadgeClass,
+} from "../../utils/records/badges";
+
+// Summary row shape returned by GET /api/records (the combined UNION ALL
+// list). Only what's shown in this table — full case detail (rca/capa,
+// risk_criticality/etc) is fetched separately on "View" click.
+export interface RecordsSummaryRow {
+  id: number | string;
+  query: string;
+  saved_by: string;
+  classification: ClassificationParsed | null;
+  status: string;
+  created_at: string;
+  case_type: "Deviation" | "Change Control";
+}
 
 export function RecordsTable({
   loading,
@@ -27,10 +47,10 @@ export function RecordsTable({
 }: {
   loading: boolean;
   error: string | null;
-  cases: AnyCase[];
-  filteredCases: AnyCase[];
+  cases: RecordsSummaryRow[];
+  filteredCases: RecordsSummaryRow[];
   onSort: (field: RecordsSortField) => void;
-  onSelectCase: (record: AnyCase) => void;
+  onSelectCase: (record: RecordsSummaryRow) => void;
 }) {
   return (
     <Card>
@@ -38,7 +58,9 @@ export function RecordsTable({
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-6 w-6 animate-spin text-blue-500 mr-2" />
-            <span className="text-muted-foreground text-sm">Loading records…</span>
+            <span className="text-muted-foreground text-sm">
+              Loading records…
+            </span>
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -70,7 +92,9 @@ export function RecordsTable({
                     <ArrowUpDown className="h-4 w-4" />
                   </button>
                 </TableHead>
-                <TableHead className="font-semibold text-foreground">Query</TableHead>
+                <TableHead className="font-semibold text-foreground">
+                  Query
+                </TableHead>
                 <TableHead className="font-semibold text-foreground">
                   <button
                     onClick={() => onSort("classification")}

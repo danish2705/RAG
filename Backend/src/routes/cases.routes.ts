@@ -18,4 +18,12 @@ router.get(
   asyncHandler(casesController.listChangeControlCases),
 );
 
+// Combined Records page: single UNION ALL query across both case types,
+// so pagination/sorting is accurate across the merged view.
+router.get("/records", asyncHandler(casesController.listCombinedRecords));
+
+// Single case detail (by id + ?case_type=Deviation|Change Control) — used
+// by the View modal, since /records only returns summary columns.
+router.get("/records/:id", asyncHandler(casesController.getCaseDetail));
+
 export default router;

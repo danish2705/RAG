@@ -14,7 +14,9 @@ async function start(): Promise<void> {
     console.log(`GxP AI orchestrator listening on port ${config.port}`);
   });
 
-  console.log("Loading knowledge base from S3 and building vector indexes...");
+  console.log(
+    "Loading knowledge base from Azure Blob Storage and building vector indexes...",
+  );
   await initKnowledgeBase();
   setReady(true);
   console.log("Knowledge base ready.");

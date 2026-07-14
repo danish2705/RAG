@@ -30,9 +30,13 @@ export interface DatabaseConfig {
 }
 
 export interface KbConfig {
-  localPath: string;
   deviationFolder: string;
   changeControlFolder: string;
+}
+
+export interface AzureConfig {
+  connectionString: string | undefined;
+  container: string;
 }
 
 export interface GateConfig {
@@ -43,6 +47,7 @@ export interface Config {
   llm: LlmConfig;
   embeddings: EmbeddingsConfig;
   kb: KbConfig;
+  azure: AzureConfig;
   gate: GateConfig;
   port: number;
   databaseUrl: DatabaseConfig;
@@ -69,12 +74,15 @@ export const config: Config = {
     apiKey: process.env.API_KEY,
   },
   kb: {
-    // Reads PDFs from disk. Folder layout: <localPath>/deviation/*.pdf
-    // and <localPath>/changecontrol/*.pdf
-    localPath:
-      process.env.KB_LOCAL_PATH || path.resolve(__dirname, "../kb-data"),
+    // These are now blob-name prefixes ("folders") inside the Azure
+    // container, e.g. "deviation/*.pdf" and "change-control/*.pdf" -
+    // not paths on local disk.
     deviationFolder: process.env.DEVIATION_FOLDER || "deviation",
     changeControlFolder: process.env.CHANGE_CONTROL_FOLDER || "changecontrol",
+  },
+  azure: {
+    connectionString: process.env.AZURE_STORAGE_CONNECTION_STRING,
+    container: process.env.AZURE_KB_CONTAINER || "lifescience-kb",
   },
   gate: {
     // Feature 2: confidence threshold used by the gate between pipeline stages.

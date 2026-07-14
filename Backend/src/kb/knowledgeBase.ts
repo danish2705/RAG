@@ -1,4 +1,4 @@
-import { loadKnowledgeBase } from "./localLoader.js";
+import { loadKnowledgeBaseFromAzure } from "./azureLoader.js";
 import { prepareChunks } from "./chunker.js";
 import {
   buildIndex,
@@ -24,15 +24,18 @@ export interface RetrieveContextResult {
 }
 
 /**
- * Loads both knowledge bases from local disk (kb-data/deviation and
- * kb-data/changecontrol) and builds their vector indexes.
-  */
+ * Loads both knowledge bases from Azure Blob Storage (the "deviation" and
+ * "change-control" folders in the KB container) and builds their vector indexes.
+ */
 export function initKnowledgeBase(): Promise<void> {
   if (!initPromise) {
     initPromise = (async () => {
       const [deviationDocs, ccDocs] = await Promise.all([
-        loadKnowledgeBase(config.kb.deviationFolder, "deviation"),
-        loadKnowledgeBase(config.kb.changeControlFolder, "change_control"),
+        loadKnowledgeBaseFromAzure(config.kb.deviationFolder, "deviation"),
+        loadKnowledgeBaseFromAzure(
+          config.kb.changeControlFolder,
+          "change_control",
+        ),
       ]);
 
       devIndex = await buildIndex(prepareChunks(deviationDocs));

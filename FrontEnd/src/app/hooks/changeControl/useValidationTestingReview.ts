@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useReducer, useState } from "react";
 import { useNavigate } from "react-router";
 import { apiFetch } from "../../utils/api";
 import {
@@ -12,15 +12,12 @@ import type {
   ValidationTestingParsed,
 } from "../../types/pipeline";
 import { useWorkflowStore } from "../../store/workflowStore";
-// NOTE: these live at src/app/utils/, i.e. two levels up from
-// src/app/hooks/changeControl/ — not three. The page this hook was
-// extracted from had `../../../utils/...` (three levels), which resolves
-// to a nonexistent `src/utils/` and fails to build. Fixed here.
 import { nestedToFlatChangeImpactAssessment } from "../../utils/changeImpactAdapter";
 import {
   flatToNestedImplementationControl,
   nestedToFlatValidationTesting,
 } from "../../utils/changeControlAdapters";
+import { useOverrideDialogState } from "../shared/useOverRideDialogState";
 
 // Helpers — mirrors the list <-> textarea convention used on
 // RiskCriticality.tsx / ImplementationControl.tsx
@@ -33,6 +30,88 @@ function parseLines(text: string): string[] {
 
 function linesToText(lines: string[]): string {
   return lines.join("\n");
+}
+
+// ---------------------------------------------------------------------------
+// Form reducer: the 7 editable fields, previously 7 separate useState calls.
+// Same pattern as useRiskCriticality.ts / useChangeImpactAssessmentReview.ts.
+// ---------------------------------------------------------------------------
+interface ValidationFormState {
+  level: ValidationLevel;
+  levelRationale: string;
+  scenarioTesting: string;
+  regressionScope: string;
+  uatRequirements: string;
+  traceability: string;
+  levelChangedWithoutRationale: boolean;
+}
+
+type ValidationFormAction =
+  | { type: "HYDRATE"; parsed: ValidationTestingParsed }
+  | { type: "SET_LEVEL"; value: ValidationLevel; original: ValidationLevel }
+  | { type: "SET_LEVEL_RATIONALE"; value: string; original: string }
+  | { type: "SET_SCENARIO_TESTING"; value: string }
+  | { type: "SET_REGRESSION_SCOPE"; value: string }
+  | { type: "SET_UAT_REQUIREMENTS"; value: string }
+  | { type: "SET_TRACEABILITY"; value: string };
+
+const initialValidationFormState: ValidationFormState = {
+  level: "None",
+  levelRationale: "",
+  scenarioTesting: "",
+  regressionScope: "",
+  uatRequirements: "",
+  traceability: "",
+  levelChangedWithoutRationale: false,
+};
+
+function hydrateValidationForm(
+  parsed: ValidationTestingParsed,
+): ValidationFormState {
+  return {
+    level: parsed.required_validation_level.level,
+    levelRationale: parsed.required_validation_level.rationale,
+    scenarioTesting: linesToText(parsed.scenario_based_testing),
+    regressionScope: linesToText(parsed.regression_scope),
+    uatRequirements: linesToText(parsed.uat_requirements),
+    traceability: linesToText(parsed.traceability),
+    levelChangedWithoutRationale: false,
+  };
+}
+
+function validationFormReducer(
+  state: ValidationFormState,
+  action: ValidationFormAction,
+): ValidationFormState {
+  switch (action.type) {
+    case "HYDRATE":
+      return hydrateValidationForm(action.parsed);
+    case "SET_LEVEL":
+      return {
+        ...state,
+        level: action.value,
+        levelChangedWithoutRationale: action.value !== action.original,
+      };
+    case "SET_LEVEL_RATIONALE":
+      return {
+        ...state,
+        levelRationale: action.value,
+        levelChangedWithoutRationale:
+          action.value !== action.original
+            ? false
+            : state.levelChangedWithoutRationale,
+      };
+    case "SET_SCENARIO_TESTING":
+      return { ...state, scenarioTesting: action.value };
+    case "SET_REGRESSION_SCOPE":
+      return { ...state, regressionScope: action.value };
+    case "SET_UAT_REQUIREMENTS":
+      return { ...state, uatRequirements: action.value };
+    case "SET_TRACEABILITY":
+      return { ...state, traceability: action.value };
+    default:
+      return state;
+  }
 }
 
 export function useValidationTestingReview() {
@@ -48,86 +127,72 @@ export function useValidationTestingReview() {
   const riskParsed = result?.stages?.riskCriticality?.parsed ?? null;
   const validationParsed = result?.stages?.validationTesting?.parsed ?? null;
 
-  // Editable form state, seeded from the AI-generated values
-  const [level, setLevel] = useState<ValidationLevel>(
-    validationParsed?.required_validation_level.level ?? "None",
+  const [form, dispatchForm] = useReducer(
+    validationFormReducer,
+    initialValidationFormState,
   );
-  const [levelRationale, setLevelRationale] = useState(
-    validationParsed?.required_validation_level.rationale ?? "",
-  );
-  const [scenarioTesting, setScenarioTesting] = useState(
-    linesToText(validationParsed?.scenario_based_testing ?? []),
-  );
-  const [regressionScope, setRegressionScope] = useState(
-    linesToText(validationParsed?.regression_scope ?? []),
-  );
-  const [uatRequirements, setUatRequirements] = useState(
-    linesToText(validationParsed?.uat_requirements ?? []),
-  );
-  const [traceability, setTraceability] = useState(
-    linesToText(validationParsed?.traceability ?? []),
-  );
-
-  // "Changed the value but not the rationale" tracking (level field only —
-  // the list fields below don't carry a separate rationale sub-field).
-  const [levelChangedWithoutRationale, setLevelChangedWithoutRationale] =
-    useState(false);
-
-  const [isOverrideEditing, setIsOverrideEditing] = useState(false);
-  const [overrideConfirmed, setOverrideConfirmed] = useState(false);
-
-  const [showOverrideDialog, setShowOverrideDialog] = useState(false);
-  const [overrideJustification, setOverrideJustification] = useState("");
-  const [showRejectDialog, setShowRejectDialog] = useState(false);
-  const [rejectJustification, setRejectJustification] = useState("");
-
-  const [showRationaleWarning, setShowRationaleWarning] = useState(false);
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const override = useOverrideDialogState();
 
   // Re-hydrate local editable state whenever a *new* validation strategy
   // lands in the store (mirrors RiskCriticality.tsx / ImplementationControl.tsx).
   useEffect(() => {
     if (!validationParsed) return;
-    setLevel(validationParsed.required_validation_level.level);
-    setLevelRationale(validationParsed.required_validation_level.rationale);
-    setScenarioTesting(linesToText(validationParsed.scenario_based_testing));
-    setRegressionScope(linesToText(validationParsed.regression_scope));
-    setUatRequirements(linesToText(validationParsed.uat_requirements));
-    setTraceability(linesToText(validationParsed.traceability));
-    setLevelChangedWithoutRationale(false);
-    setOverrideConfirmed(false);
-    setIsOverrideEditing(false);
+    dispatchForm({ type: "HYDRATE", parsed: validationParsed });
+    override.resetOnHydrate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [validationParsed]);
 
   // Field update helpers
-  const updateLevel = (value: string) => {
-    if (!validationParsed) return;
-    setLevel(value as ValidationLevel);
-    setLevelChangedWithoutRationale(
-      value !== validationParsed.required_validation_level.level,
-    );
-  };
-  const updateLevelRationale = (value: string) => {
-    setLevelRationale(value);
-    if (
-      validationParsed &&
-      value !== validationParsed.required_validation_level.rationale
-    ) {
-      setLevelChangedWithoutRationale(false);
-    }
-  };
+  const updateLevel = useCallback(
+    (value: string) => {
+      if (!validationParsed) return;
+      dispatchForm({
+        type: "SET_LEVEL",
+        value: value as ValidationLevel,
+        original: validationParsed.required_validation_level.level,
+      });
+    },
+    [validationParsed],
+  );
+  const updateLevelRationale = useCallback(
+    (value: string) => {
+      if (!validationParsed) return;
+      dispatchForm({
+        type: "SET_LEVEL_RATIONALE",
+        value,
+        original: validationParsed.required_validation_level.rationale,
+      });
+    },
+    [validationParsed],
+  );
+  const setScenarioTesting = useCallback(
+    (value: string) => dispatchForm({ type: "SET_SCENARIO_TESTING", value }),
+    [],
+  );
+  const setRegressionScope = useCallback(
+    (value: string) => dispatchForm({ type: "SET_REGRESSION_SCOPE", value }),
+    [],
+  );
+  const setUatRequirements = useCallback(
+    (value: string) => dispatchForm({ type: "SET_UAT_REQUIREMENTS", value }),
+    [],
+  );
+  const setTraceability = useCallback(
+    (value: string) => dispatchForm({ type: "SET_TRACEABILITY", value }),
+    [],
+  );
 
   // Approved validation testing — 1:1 with ValidationTestingParsed
   const buildApprovedValidationTesting = (): ValidationTestingParsed => ({
     ...validationParsed!,
-    required_validation_level: { level, rationale: levelRationale },
-    scenario_based_testing: parseLines(scenarioTesting),
-    regression_scope: parseLines(regressionScope),
-    uat_requirements: parseLines(uatRequirements),
-    traceability: parseLines(traceability),
+    required_validation_level: {
+      level: form.level,
+      rationale: form.levelRationale,
+    },
+    scenario_based_testing: parseLines(form.scenarioTesting),
+    regression_scope: parseLines(form.regressionScope),
+    uat_requirements: parseLines(form.uatRequirements),
+    traceability: parseLines(form.traceability),
   });
 
   const buildValidationProvenance = (
@@ -136,19 +201,22 @@ export function useValidationTestingReview() {
     const original = validationParsed!;
 
     const levelField =
-      confirmed && level !== original.required_validation_level.level
-        ? markModified(aiField(original.required_validation_level.level), level)
+      confirmed && form.level !== original.required_validation_level.level
+        ? markModified(
+            aiField(original.required_validation_level.level),
+            form.level,
+          )
         : aiField(original.required_validation_level.level);
     const levelRationaleField =
       confirmed &&
-      levelRationale !== original.required_validation_level.rationale
+      form.levelRationale !== original.required_validation_level.rationale
         ? markModified(
             aiField(original.required_validation_level.rationale),
-            levelRationale,
+            form.levelRationale,
           )
         : aiField(original.required_validation_level.rationale);
 
-    const currentScenarios = parseLines(scenarioTesting);
+    const currentScenarios = parseLines(form.scenarioTesting);
     const scenarioField =
       confirmed &&
       JSON.stringify(currentScenarios) !==
@@ -159,7 +227,7 @@ export function useValidationTestingReview() {
           )
         : aiField(original.scenario_based_testing);
 
-    const currentRegression = parseLines(regressionScope);
+    const currentRegression = parseLines(form.regressionScope);
     const regressionField =
       confirmed &&
       JSON.stringify(currentRegression) !==
@@ -167,14 +235,14 @@ export function useValidationTestingReview() {
         ? markModified(aiField(original.regression_scope), currentRegression)
         : aiField(original.regression_scope);
 
-    const currentUat = parseLines(uatRequirements);
+    const currentUat = parseLines(form.uatRequirements);
     const uatField =
       confirmed &&
       JSON.stringify(currentUat) !== JSON.stringify(original.uat_requirements)
         ? markModified(aiField(original.uat_requirements), currentUat)
         : aiField(original.uat_requirements);
 
-    const currentTraceability = parseLines(traceability);
+    const currentTraceability = parseLines(form.traceability);
     const traceabilityField =
       confirmed &&
       JSON.stringify(currentTraceability) !==
@@ -220,8 +288,7 @@ export function useValidationTestingReview() {
   const submitValidationTesting = async (
     validationProvenance: ValidationTestingProvenance,
   ) => {
-    setSubmitError(null);
-    setIsSubmitting(true);
+    override.submitStart();
     const approvedValidationTesting = buildApprovedValidationTesting();
     try {
       // Backend expects the flat LLM-schema shape for the upstream approved
@@ -234,8 +301,9 @@ export function useValidationTestingReview() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             query: result!.query,
-            changeImpactAssessment:
-              nestedToFlatChangeImpactAssessment(impactParsed!),
+            changeImpactAssessment: nestedToFlatChangeImpactAssessment(
+              impactParsed!,
+            ),
             riskCriticality: riskParsed,
             validationTesting: nestedToFlatValidationTesting(
               approvedValidationTesting,
@@ -253,26 +321,27 @@ export function useValidationTestingReview() {
                 : null,
             }
           : undefined;
+      override.submitSuccess();
       navigateToImplementation(
         implementationControlStage,
         validationProvenance,
         approvedValidationTesting,
       );
     } catch (err) {
-      setSubmitError(
+      override.submitFailure(
         err instanceof Error
           ? err.message
           : "Something went wrong submitting the validation & testing strategy. Please try again.",
       );
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   const handleAccept = () => {
-    const validationProvenance = buildValidationProvenance(overrideConfirmed);
+    const validationProvenance = buildValidationProvenance(
+      override.overrideConfirmed,
+    );
     const existingImplementation = result!.stages?.implementationControl;
-    if (!overrideConfirmed && existingImplementation?.parsed) {
+    if (!override.overrideConfirmed && existingImplementation?.parsed) {
       navigateToImplementation(
         existingImplementation,
         validationProvenance,
@@ -283,48 +352,40 @@ export function useValidationTestingReview() {
     void submitValidationTesting(validationProvenance);
   };
 
-  const handleOverrideClick = () => setIsOverrideEditing(true);
+  const handleOverrideClick = () => override.setIsOverrideEditing(true);
 
   const handleSaveChanges = () => {
-    if (levelChangedWithoutRationale) {
-      setShowRationaleWarning(true);
+    if (form.levelChangedWithoutRationale) {
+      override.setShowRationaleWarning(true);
       return;
     }
-    setShowOverrideDialog(true);
+    override.setShowOverrideDialog(true);
   };
 
   const handleCancelOverride = () => {
     if (!validationParsed) return;
-    setIsOverrideEditing(false);
-    setLevel(validationParsed.required_validation_level.level);
-    setLevelRationale(validationParsed.required_validation_level.rationale);
-    setScenarioTesting(linesToText(validationParsed.scenario_based_testing));
-    setRegressionScope(linesToText(validationParsed.regression_scope));
-    setUatRequirements(linesToText(validationParsed.uat_requirements));
-    setTraceability(linesToText(validationParsed.traceability));
-    setLevelChangedWithoutRationale(false);
+    override.setIsOverrideEditing(false);
+    dispatchForm({ type: "HYDRATE", parsed: validationParsed });
   };
 
   const handleOverrideConfirm = () => {
-    if (!overrideJustification.trim()) return;
-    setShowOverrideDialog(false);
-    setIsOverrideEditing(false);
-    setOverrideConfirmed(true);
-    setOverrideJustification("");
+    if (!override.overrideJustification.trim()) return;
+    override.confirmOverride();
   };
 
   const handleReject = () => {
-    if (rejectJustification.trim()) {
-      setShowRejectDialog(false);
+    if (override.rejectJustification.trim()) {
+      override.setShowRejectDialog(false);
       navigate("/deviation");
     }
   };
 
   const isLevelModified =
     !!validationParsed &&
-    overrideConfirmed &&
-    (level !== validationParsed.required_validation_level.level ||
-      levelRationale !== validationParsed.required_validation_level.rationale);
+    override.overrideConfirmed &&
+    (form.level !== validationParsed.required_validation_level.level ||
+      form.levelRationale !==
+        validationParsed.required_validation_level.rationale);
 
   return {
     // guard inputs
@@ -337,38 +398,38 @@ export function useValidationTestingReview() {
     chatOpen,
     setChatOpen,
 
-    level,
-    levelRationale,
-    scenarioTesting,
+    level: form.level,
+    levelRationale: form.levelRationale,
+    scenarioTesting: form.scenarioTesting,
     setScenarioTesting,
-    regressionScope,
+    regressionScope: form.regressionScope,
     setRegressionScope,
-    uatRequirements,
+    uatRequirements: form.uatRequirements,
     setUatRequirements,
-    traceability,
+    traceability: form.traceability,
     setTraceability,
     updateLevel,
     updateLevelRationale,
 
-    levelChangedWithoutRationale,
+    levelChangedWithoutRationale: form.levelChangedWithoutRationale,
     isLevelModified,
 
-    isOverrideEditing,
-    overrideConfirmed,
+    isOverrideEditing: override.isOverrideEditing,
+    overrideConfirmed: override.overrideConfirmed,
 
-    showOverrideDialog,
-    setShowOverrideDialog,
-    overrideJustification,
-    setOverrideJustification,
-    showRejectDialog,
-    setShowRejectDialog,
-    rejectJustification,
-    setRejectJustification,
-    showRationaleWarning,
-    setShowRationaleWarning,
+    showOverrideDialog: override.showOverrideDialog,
+    setShowOverrideDialog: override.setShowOverrideDialog,
+    overrideJustification: override.overrideJustification,
+    setOverrideJustification: override.setOverrideJustification,
+    showRejectDialog: override.showRejectDialog,
+    setShowRejectDialog: override.setShowRejectDialog,
+    rejectJustification: override.rejectJustification,
+    setRejectJustification: override.setRejectJustification,
+    showRationaleWarning: override.showRationaleWarning,
+    setShowRationaleWarning: override.setShowRationaleWarning,
 
-    isSubmitting,
-    submitError,
+    isSubmitting: override.isSubmitting,
+    submitError: override.submitError,
 
     handleAccept,
     handleOverrideClick,

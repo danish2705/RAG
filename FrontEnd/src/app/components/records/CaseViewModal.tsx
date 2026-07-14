@@ -1,6 +1,6 @@
 import type { AnyCase } from "../../types/Records";
 import { DeviationViewModal } from "./DeviationViewModal";
-import { ChangeControlViewModal } from "./changeControlViewModal";
+import { ChangeControlViewModal } from "./ChangeControlViewModal";
 
 export function CaseViewModal({
   record,

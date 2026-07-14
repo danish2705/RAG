@@ -2,7 +2,7 @@ import type {
   ChangeImpactAssessmentParsed,
   GxpClassification,
   RiskLevel,
-} from "../app/types/pipeline";
+} from "../types/pipeline";
 
 /**
  * Mirrors backend's ChangeImpactAssessmentSchema

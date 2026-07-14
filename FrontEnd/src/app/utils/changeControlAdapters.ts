@@ -7,7 +7,7 @@ import type {
   FinalRecommendation,
   RiskCriticalityParsed,
   RiskLevel,
-} from "../app/types/pipeline";
+} from "../types/pipeline";
 
 /**
  * Adapters between the flat shapes the backend LLM stages actually return

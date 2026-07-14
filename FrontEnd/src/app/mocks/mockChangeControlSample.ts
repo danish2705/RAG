@@ -41,26 +41,31 @@ export function buildSampleChangeControlResult(): PipelineResult {
         error: null,
         gate: passingGate(),
         parsed: {
-          impacted_systems_processes_studies: [
+          impacted_systems: [
             "Building A Cleanroom HVAC Control System",
             "Environmental Monitoring System (EMS) integration",
             "Batch record humidity logging process",
           ],
-          gxp_classification: "Direct",
-          validated_state_affected: true,
-          data_validation_impact_rationale:
-            "The HVAC control software directly manages environmental parameters that are part of the validated cleanroom qualification. Updating the setpoint logic requires re-verification of the validated state before the change can be released to production.",
+          gxp_classification: {
+            value: "Direct Impact",
+            rationale:
+              "The HVAC control software directly manages environmental parameters that are part of the validated cleanroom qualification.",
+          },
+          data_validation_impact: {
+            validated_state_affected: true,
+            rationale:
+              "Updating the setpoint logic requires re-verification of the validated state before the change can be released to production.",
+          },
           downstream_dependencies: [
             "EMS alarm thresholds (interface)",
             "Batch record environmental data report",
             "Building Management System (BMS) integration",
           ],
-          risk_scoring: "Moderate",
-          rationale: [
-            "Directly affects a GxP-classified, validated environmental control system.",
-            "Change is scoped to software configuration only — no hardware modifications required.",
-            "Vendor-supplied update with a documented change history and no open defects affecting cleanroom operation.",
-          ],
+          risk_scoring: {
+            level: "Moderate",
+            rationale:
+              "Directly affects a GxP-classified, validated environmental control system; change is scoped to software configuration only, using a vendor-supplied update with a documented change history and no open defects affecting cleanroom operation.",
+          },
           confidence_score: 85,
         },
       },

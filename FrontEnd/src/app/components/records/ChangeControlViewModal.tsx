@@ -14,7 +14,7 @@ import {
   getValidationLevelBadgeClass,
   getRiskLevelBadgeClass,
 } from "../../utils/records/badges";
-import { BulletList, ConfidenceBar } from "./RecordsShared";
+import { BulletList, ConfidenceBar } from "./recordsShared";
 
 export function ChangeControlViewModal({
   record,

@@ -8,7 +8,7 @@ import {
   DescriptionCard,
   ImmediateActionsCard,
   AttachmentsCard,
-} from "../components/inputQuery/InputQueryCards";
+} from "../components/inputQuery/inputQueryCards";
 
 export function NewDeviation() {
   const {

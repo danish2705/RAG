@@ -1,14 +1,9 @@
-import { useState } from "react";
 import {
   Bell,
   User,
   ArrowLeft,
   Sun,
   Moon,
-  Shield,
-  Building,
-  Key,
-  Award,
   AlertTriangle,
   CheckCircle,
   FileText,
@@ -23,23 +18,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "../ui/dialog";
 import { Badge } from "../ui/badge";
 import { useLocation, useNavigate } from "react-router";
 import type { Location } from "react-router";
 import { useTheme } from "../../context/ThemeContext";
+import { useAuth } from "../../context/AuthContext";
 
-const PAGE_META: Record<
-  string,
-  { title: string; subtitle: string; back?: string }
-> = {
+type PageMetaEntry = { title: string; subtitle: string; back?: string };
+
+const PAGE_META: Record<string, PageMetaEntry> = {
   "/deviation": {
     title: "Quality Event Intake",
     subtitle: "AI will classify and route your quality event automatically",
@@ -119,6 +106,11 @@ const PAGE_META: Record<
     title: "Settings",
     subtitle: "Manage your application preferences",
   },
+  "/profile": {
+    title: "Profile",
+    subtitle: "Your account details and permissions",
+    back: "/",
+  },
 };
 
 // Realistic domain-specific QMS notifications
@@ -185,9 +177,12 @@ export function Header() {
   const navigate = useNavigate();
   const meta = PAGE_META[location.pathname];
   const { theme, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
 
-  // State to control the Admin Profile Modal
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const handleLogout = () => {
+    logout();
+    navigate("/login", { replace: true });
+  };
 
   const fallbackTitle = (() => {
     const segment = location.pathname.split("/").filter(Boolean).pop();
@@ -307,24 +302,26 @@ export function Header() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>
-                <div>admin</div>
+                <div className="capitalize">{user?.username ?? "admin"}</div>
                 <div className="text-xs font-normal text-muted-foreground">
-                  Quality Manager & Lead
+                  {user?.role ?? "Quality Manager & Lead"}
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              
-              {/* Profile click triggers modal */}
+
+              {/* Profile navigates to the dedicated profile page */}
               <DropdownMenuItem
-                onSelect={(e) => {
-                  e.preventDefault();
-                  setIsProfileOpen(true);
-                }}
+                onSelect={() => navigate("/profile")}
                 className="cursor-pointer font-medium"
               >
                 Profile
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">Settings</DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => navigate("/settings")}
+                className="cursor-pointer"
+              >
+                Settings
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
 
               {/* Dark mode toggle */}
@@ -357,91 +354,16 @@ export function Header() {
               </DropdownMenuItem>
 
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer text-red-600 dark:text-red-400 focus:text-red-600">
+              <DropdownMenuItem
+                onSelect={handleLogout}
+                className="cursor-pointer text-red-600 dark:text-red-400 focus:text-red-600"
+              >
                 Log out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </header>
-
-      {/* 3. Streamlined Domain-Specific Administrative Profile Modal */}
-      <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl">
-              <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              Administrative Profile
-            </DialogTitle>
-            <DialogDescription>
-              Active QMS domain permissions and system authorizations.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="py-2 space-y-4">
-            {/* User Identity Card */}
-            <div className="flex items-center gap-3.5 p-3.5 rounded-lg bg-muted/60 border border-border">
-              <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900 border border-blue-200 dark:border-blue-800 flex items-center justify-center shrink-0">
-                <User className="h-6 w-6 text-blue-600 dark:text-blue-300" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-base text-foreground font-mono">
-                    Admin
-                  </h3>
-                  <Badge className="bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800 text-xs">
-                    Global Admin
-                  </Badge>
-                </div>
-              </div>
-            </div>
-
-            {/* Concise Domain Credentials */}
-            <div className="grid grid-cols-1 gap-2 text-sm">
-              <div className="flex items-center justify-between p-2 rounded-md bg-card border border-border/40">
-                <span className="flex items-center gap-2 text-muted-foreground text-xs">
-                  <Building className="h-4 w-4 text-blue-500" /> Department:
-                </span>
-                <span className="font-medium text-foreground text-xs">
-                  Quality Assurance & Compliance
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between p-2 rounded-md bg-card border border-border/40">
-                <span className="flex items-center gap-2 text-muted-foreground text-xs">
-                  <Key className="h-4 w-4 text-blue-500" /> Privileges:
-                </span>
-                <span className="font-medium text-green-600 dark:text-green-400 font-semibold text-xs">
-                  Read / Write / Override Authority
-                </span>
-              </div>
-            </div>
-
-            {/* Essential QMS Gateways Only */}
-            <div className="space-y-2 pt-2">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                <Award className="h-3.5 w-3.5 text-blue-500" /> Regulatory Authorizations
-              </span>
-              <div className="flex flex-wrap gap-1.5 pt-0.5">
-                <Badge variant="outline" className="text-xs font-normal">21 CFR Part 11</Badge>
-                <Badge variant="outline" className="text-xs font-normal">EU Annex 11 Compliance</Badge>
-                <Badge variant="outline" className="text-xs font-normal">AI Severity Override</Badge>
-                <Badge variant="outline" className="text-xs font-normal">CAPA Final Sign-off</Badge>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter className="pt-2">
-            <Button
-              variant="default"
-              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white text-xs h-9"
-              onClick={() => setIsProfileOpen(false)}
-            >
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

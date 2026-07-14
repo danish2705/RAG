@@ -1,5 +1,8 @@
 import { createBrowserRouter } from "react-router";
 import { Layout } from "./components/layout/Layout";
+import { ProtectedRoute } from "./components/layout/ProtectedRoute";
+import { Login } from "./pages/Login";
+import { Profile } from "./pages/Profile";
 import { Dashboard } from "./pages/Dashboard";
 import { NewDeviation } from "./pages/InputQuery";
 import { AIRecommendation } from "./pages/AIRecommendation";
@@ -18,35 +21,46 @@ import { ImplementationControl } from "./pages/changeControl/ImplementationContr
 import { ChangecontrolSummary } from "./pages/changeControl/Summary";
 
 export const router = createBrowserRouter([
+  { path: "/login", Component: Login },
   {
     path: "/",
-    Component: Layout,
+    Component: ProtectedRoute,
     children: [
-      { index: true, Component: Dashboard },
-      { path: "deviation", Component: NewDeviation },
-      { path: "deviation/ai-recommendation", Component: AIRecommendation },
-      { path: "deviation/impact-assessment", Component: ImpactAssessment },
-      { path: "deviation/root-cause", Component: RootCause },
-      { path: "deviation/capa", Component: Capa },
-      { path: "deviation/summary", Component: Summary },
       {
-        path: "change-control/change-impact-assessment",
-        Component: ChangeImpactAssessment,
+        path: "/",
+        Component: Layout,
+        children: [
+          { index: true, Component: Dashboard },
+          { path: "profile", Component: Profile },
+          { path: "deviation", Component: NewDeviation },
+          { path: "deviation/ai-recommendation", Component: AIRecommendation },
+          { path: "deviation/impact-assessment", Component: ImpactAssessment },
+          { path: "deviation/root-cause", Component: RootCause },
+          { path: "deviation/capa", Component: Capa },
+          { path: "deviation/summary", Component: Summary },
+          {
+            path: "change-control/change-impact-assessment",
+            Component: ChangeImpactAssessment,
+          },
+          {
+            path: "change-control/risk-criticality",
+            Component: RiskCriticality,
+          },
+          {
+            path: "change-control/validation-testing",
+            Component: ValidationTesting,
+          },
+          {
+            path: "change-control/implementation",
+            Component: ImplementationControl,
+          },
+          { path: "change-control/summary", Component: ChangecontrolSummary },
+          { path: "records", Component: Records },
+          { path: "audit-trail", Component: AuditTrail },
+          { path: "reports", Component: Reports },
+          { path: "settings", Component: Settings },
+        ],
       },
-      { path: "change-control/risk-criticality", Component: RiskCriticality },
-      {
-        path: "change-control/validation-testing",
-        Component: ValidationTesting,
-      },
-      {
-        path: "change-control/implementation",
-        Component: ImplementationControl,
-      },
-      { path: "change-control/summary", Component: ChangecontrolSummary },
-      { path: "records", Component: Records },
-      { path: "audit-trail", Component: AuditTrail },
-      { path: "reports", Component: Reports },
-      { path: "settings", Component: Settings },
     ],
   },
 ]);

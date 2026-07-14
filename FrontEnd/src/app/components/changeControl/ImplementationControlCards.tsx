@@ -114,6 +114,7 @@ export const ImplementationConfidenceCard = React.memo<{
 ImplementationConfidenceCard.displayName = "ImplementationConfidenceCard";
 
 export const ImplementationTextareaCard = React.memo<{
+  icon: React.ReactNode;
   title: string;
   fieldId: string;
   label: string;
@@ -125,6 +126,7 @@ export const ImplementationTextareaCard = React.memo<{
   onChange: (value: string) => void;
 }>(
   ({
+    icon,
     title,
     fieldId,
     label,
@@ -138,8 +140,8 @@ export const ImplementationTextareaCard = React.memo<{
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
+          {icon}
           {title}
-          <Sparkles className="h-5 w-5 text-blue-600" />
         </CardTitle>
       </CardHeader>
       <CardContent>

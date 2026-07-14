@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertTriangle, Sparkles } from "lucide-react";
 import { ModifiedBadge } from "../eventIntake";
 import { getSeverityBadgeClass } from "../../utils/deviation/impactAssessment";
-import type { AssessmentItem } from "../../hooks/deviation/useImpactAssessmentReview";
+import type { AssessmentItem } from "../../types/pipeline";
 
 export const NoImpactDataGuard: React.FC<{ onGoBack: () => void }> = ({ onGoBack }) => (
   <div className="p-6 w-full">

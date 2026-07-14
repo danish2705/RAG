@@ -38,6 +38,16 @@ export interface GateResult {
 // Impact
 export type ImpactSeverity = "None" | "Minor" | "Major" | "Critical";
 
+export interface AssessmentItem {
+  key: string;
+  category: string;
+  severity: ImpactSeverity;
+  description: string;
+  originalSeverity: ImpactSeverity;
+  originalDescription: string;
+  severityChangedWithoutDescription: boolean;
+}
+
 export interface ImpactParameter {
   severity: ImpactSeverity;
   rationale: string;

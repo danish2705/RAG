@@ -2,19 +2,17 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useWorkflowStore } from "../../store/workflowStore";
 import { generateRootCauseAnalysis } from "../../services/deviation/rcaApi";
-import { aiField, markModified, type ImpactAssessmentProvenance } from "../../types/dataProvenance";
-import type { ImpactSeverity, RCAApiResponse } from "../../types/pipeline";
+import {
+  aiField,
+  markModified,
+  type ImpactAssessmentProvenance,
+} from "../../types/dataProvenance";
+import type {
+  ImpactSeverity,
+  RCAApiResponse,
+  AssessmentItem,
+} from "../../types/pipeline";
 import { PARAMETER_LABELS } from "../../mocks/mockImpactAssessment";
-
-export interface AssessmentItem {
-  key: string;
-  category: string;
-  severity: ImpactSeverity;
-  description: string;
-  originalSeverity: ImpactSeverity;
-  originalDescription: string;
-  severityChangedWithoutDescription: boolean;
-}
 
 export function useImpactAssessmentReview() {
   const navigate = useNavigate();
@@ -39,7 +37,8 @@ export function useImpactAssessmentReview() {
     : [];
 
   const [isOverrideEditing, setIsOverrideEditing] = useState(false);
-  const [assessments, setAssessments] = useState<AssessmentItem[]>(initialAssessments);
+  const [assessments, setAssessments] =
+    useState<AssessmentItem[]>(initialAssessments);
   const [overrideConfirmed, setOverrideConfirmed] = useState(false);
 
   const [showOverrideDialog, setShowOverrideDialog] = useState(false);
@@ -75,22 +74,36 @@ export function useImpactAssessmentReview() {
     });
   };
 
-  const buildImpactProvenance = (confirmed: boolean): ImpactAssessmentProvenance => {
-    const keys = ["product_impact", "patient_impact", "data_integrity_impact", "compliance_impact"] as const;
+  const buildImpactProvenance = (
+    confirmed: boolean,
+  ): ImpactAssessmentProvenance => {
+    const keys = [
+      "product_impact",
+      "patient_impact",
+      "data_integrity_impact",
+      "compliance_impact",
+    ] as const;
 
     const entries = Object.fromEntries(
       keys.map((key, i) => {
         const a = assessments[i];
-        const modified = confirmed && (a?.severity !== a?.originalSeverity || a?.description !== a?.originalDescription);
+        const modified =
+          confirmed &&
+          (a?.severity !== a?.originalSeverity ||
+            a?.description !== a?.originalDescription);
 
         return [
           key,
           {
-            severity: modified ? markModified(aiField(a.originalSeverity), a.severity) : aiField(a.originalSeverity),
-            rationale: modified ? markModified(aiField(a.originalDescription), a.description) : aiField(a.originalDescription),
+            severity: modified
+              ? markModified(aiField(a.originalSeverity), a.severity)
+              : aiField(a.originalSeverity),
+            rationale: modified
+              ? markModified(aiField(a.originalDescription), a.description)
+              : aiField(a.originalDescription),
           },
         ];
-      })
+      }),
     );
 
     return {
@@ -101,8 +114,11 @@ export function useImpactAssessmentReview() {
 
   const buildApprovedImpactAssessment = () => {
     // Explicitly rebuild the object to bypass TypeScript's generic dictionary errors
-    const updatedImpact = {} as Record<string, { severity: ImpactSeverity; rationale: string }>;
-    
+    const updatedImpact = {} as Record<
+      string,
+      { severity: ImpactSeverity; rationale: string }
+    >;
+
     assessments.forEach((a) => {
       updatedImpact[a.key] = { severity: a.severity, rationale: a.description };
     });
@@ -116,12 +132,15 @@ export function useImpactAssessmentReview() {
   const navigateToRCA = (
     rcaStage: RCAApiResponse["stages"]["rca"],
     impactProvenance: ImpactAssessmentProvenance,
-    approvedImpactAssessment: any
+    approvedImpactAssessment: any,
   ) => {
     mergePipelineResult({
       stages: {
         ...result!.stages,
-        impactAssessment: { ...result!.stages.impactAssessment!, parsed: approvedImpactAssessment },
+        impactAssessment: {
+          ...result!.stages.impactAssessment!,
+          parsed: approvedImpactAssessment,
+        },
         rca: rcaStage,
       },
       provenance: { ...result!.provenance, impactAssessment: impactProvenance },
@@ -134,10 +153,22 @@ export function useImpactAssessmentReview() {
     setIsGeneratingRCA(true);
     const approvedImpactAssessment = buildApprovedImpactAssessment();
     try {
-      const rcaResult = await generateRootCauseAnalysis(result!.query, classificationParsed!, approvedImpactAssessment);
-      navigateToRCA(rcaResult.stages.rca, impactProvenance, approvedImpactAssessment);
+      const rcaResult = await generateRootCauseAnalysis(
+        result!.query,
+        classificationParsed!,
+        approvedImpactAssessment,
+      );
+      navigateToRCA(
+        rcaResult.stages.rca,
+        impactProvenance,
+        approvedImpactAssessment,
+      );
     } catch (err) {
-      setRcaError(err instanceof Error ? err.message : "Something went wrong generating the root cause analysis. Please try again.");
+      setRcaError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong generating the root cause analysis. Please try again.",
+      );
     } finally {
       setIsGeneratingRCA(false);
     }
@@ -146,19 +177,25 @@ export function useImpactAssessmentReview() {
   const handleAccept = () => {
     const impactProvenance = buildImpactProvenance(overrideConfirmed);
     const existingRCA = result!.stages?.rca;
-    
+
     if (!overrideConfirmed && existingRCA?.parsed) {
-      navigateToRCA(existingRCA, impactProvenance, buildApprovedImpactAssessment());
+      navigateToRCA(
+        existingRCA,
+        impactProvenance,
+        buildApprovedImpactAssessment(),
+      );
       return;
     }
-    
+
     void runRCA(impactProvenance);
   };
 
   const handleOverrideClick = () => setIsOverrideEditing(true);
 
   const handleSaveChanges = () => {
-    const needsDescription = assessments.filter((a) => a.severityChangedWithoutDescription).map((a) => a.category);
+    const needsDescription = assessments
+      .filter((a) => a.severityChangedWithoutDescription)
+      .map((a) => a.category);
     if (needsDescription.length > 0) {
       setWarningCards(needsDescription);
       setShowDescriptionWarning(true);
@@ -175,7 +212,7 @@ export function useImpactAssessmentReview() {
         severity: a.originalSeverity,
         description: a.originalDescription,
         severityChangedWithoutDescription: false,
-      }))
+      })),
     );
   };
 
@@ -195,13 +232,34 @@ export function useImpactAssessmentReview() {
   };
 
   return {
-    result, classificationParsed, impactParsed, chatOpen, setChatOpen,
-    assessments, isOverrideEditing, overrideConfirmed,
-    showOverrideDialog, setShowOverrideDialog, overrideJustification, setOverrideJustification,
-    showRejectDialog, setShowRejectDialog, rejectJustification, setRejectJustification,
-    showDescriptionWarning, setShowDescriptionWarning, warningCards,
-    isGeneratingRCA, rcaError,
-    updateSeverity, updateDescription, handleAccept, handleOverrideClick, handleSaveChanges,
-    handleCancelOverride, handleOverrideConfirm, handleReject
+    result,
+    classificationParsed,
+    impactParsed,
+    chatOpen,
+    setChatOpen,
+    assessments,
+    isOverrideEditing,
+    overrideConfirmed,
+    showOverrideDialog,
+    setShowOverrideDialog,
+    overrideJustification,
+    setOverrideJustification,
+    showRejectDialog,
+    setShowRejectDialog,
+    rejectJustification,
+    setRejectJustification,
+    showDescriptionWarning,
+    setShowDescriptionWarning,
+    warningCards,
+    isGeneratingRCA,
+    rcaError,
+    updateSeverity,
+    updateDescription,
+    handleAccept,
+    handleOverrideClick,
+    handleSaveChanges,
+    handleCancelOverride,
+    handleOverrideConfirm,
+    handleReject,
   };
 }

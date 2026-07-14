@@ -10,6 +10,7 @@ interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
   login: (username: string, password: string) => boolean;
+  loginWithSSO: () => void;
   logout: () => void;
 }
 
@@ -29,6 +30,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
   login: () => false,
+  loginWithSSO: () => {},
   logout: () => {},
 });
 
@@ -47,6 +49,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return false;
   };
 
+  // Simulated SSO — in a real app this would redirect to an identity
+  // provider and come back with a token. Here it logs the demo user in
+  // immediately so the flow can be demoed end to end.
+  const loginWithSSO = () => {
+    setUser(DEMO_USER);
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(DEMO_USER));
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem(AUTH_STORAGE_KEY);
@@ -54,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isAuthenticated: !!user, login, logout }}
+      value={{ user, isAuthenticated: !!user, login, loginWithSSO, logout }}
     >
       {children}
     </AuthContext.Provider>

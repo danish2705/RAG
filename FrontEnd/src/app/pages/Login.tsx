@@ -4,11 +4,18 @@ import { Card, CardContent } from "../components/ui/card";
 import { Label } from "../components/ui/label";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
-import { ShieldCheck, LogIn, Eye, EyeOff, AlertCircle } from "lucide-react";
+import {
+  ShieldCheck,
+  LogIn,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  Building2,
+} from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 export function Login() {
-  const { login } = useAuth();
+  const { login, loginWithSSO } = useAuth();
   const navigate = useNavigate();
   const location = useLocation() as { state?: { from?: string } };
 
@@ -34,6 +41,13 @@ export function Login() {
         setError("Incorrect username or password. Please try again.");
       }
     }, 300);
+  };
+
+  const handleSSOLogin = () => {
+    // Directly signs the user in — no separate identity-provider redirect
+    // in this demo build.
+    loginWithSSO();
+    navigate(location.state?.from || "/", { replace: true });
   };
 
   return (
@@ -127,6 +141,24 @@ export function Login() {
                 {isSubmitting ? "Signing in..." : "Sign In"}
               </Button>
             </form>
+
+            <div className="flex items-center gap-3 my-5">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-[11px] font-medium text-muted-foreground tracking-wide">
+                OR CONTINUE WITH
+              </span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handleSSOLogin}
+            >
+              <Building2 className="h-4 w-4 mr-2" />
+              Login with SSO
+            </Button>
           </CardContent>
         </Card>
 

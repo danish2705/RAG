@@ -15,12 +15,8 @@ export interface ImplementationControlStageResult {
   error: Error | null;
 }
 
-/**
- * Stage 4 of 5: implementation & control actions. Runs only after a human
- * has accepted/overridden Stage 3 (Validation & Testing Strategy). Receives
- * the full upstream chain so recommended actions/approval routing scale
- * with approved risk and validation rigor.
- */
+
+// Stage 4 of 5: implementation & control actions. Runs only after a human
 export async function runImplementationControlStage(
   query: string,
   approvedImpactAssessment: ChangeImpactAssessmentResult,

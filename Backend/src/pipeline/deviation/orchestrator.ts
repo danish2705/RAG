@@ -44,15 +44,7 @@ export interface PipelineResult {
   auditTrail: AuditEntry[];
 }
 
-/**
- * Stage 1 ONLY: classification/routing. This is the entire job of
- * POST /api/inputQuery. It does NOT run impact assessment, RCA, or CAPA —
- * those each require a separate human approval step in the frontend before
- * their corresponding endpoint is even called. This is the fix for the
- * "everything runs together" bug: each exported function here is one LLM
- * round trip, gated, and returned to the frontend for a human decision
- * before the next function is ever invoked.
- */
+// Stage 1 : classification/routing.
 export async function runClassificationOnly(
   query: string,
   contextText: string,

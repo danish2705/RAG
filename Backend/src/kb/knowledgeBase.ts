@@ -38,8 +38,8 @@ export function initKnowledgeBase(): Promise<void> {
         ),
       ]);
 
-      devIndex = await buildIndex(prepareChunks(deviationDocs));
-      ccIndex = await buildIndex(prepareChunks(ccDocs));
+      devIndex = await buildIndex(await prepareChunks(deviationDocs));
+      ccIndex = await buildIndex(await prepareChunks(ccDocs));
     })();
   }
 

@@ -13,9 +13,6 @@ export interface VectorIndex {
   source: string;
 }
 
-// Explicit allowlist mapping source -> table name. Table names can't be
-// parameterized with pg placeholders, so we never interpolate `source`
-// directly into SQL — only this pre-validated constant ever goes in.
 const TABLE_BY_SOURCE: Record<string, string> = {
   deviation: "deviation_chunks",
   change_control: "change_control_chunks",
@@ -47,20 +44,6 @@ interface PendingRow {
   text: string;
 }
 
-/**
- * Syncs a set of chunks for one source ('deviation' | 'change_control')
- * into its own dedicated table (deviation_chunks / change_control_chunks).
- *
- * Because each source now has its own table, doc_key + chunk_index is a
- * genuinely unique key within that table - no more risk of one source's
- * upsert silently overwriting another source's row.
- *
- * 1) fetches all existing hashes for the source's table in a single query,
- * 2) compares in memory using a Map (no per-chunk DB round-trip),
- * 3) embeds every changed/new chunk in one batched embedTexts() call,
- * 4) writes all changed/new rows in a single multi-row upsert,
- * 5) deletes stale rows (no longer present in source docs) in one query.
- */
 export async function buildIndex(chunks: DocChunk[]): Promise<VectorIndex> {
   if (chunks.length === 0) {
     throw new Error("No valid text found in chunks!");

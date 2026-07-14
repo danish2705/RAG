@@ -1,12 +1,5 @@
 import { pool } from "../db.js";
 
-/**
- * Data-access layer for persisted deviation / change-control cases.
- * Pulled out of server.ts so raw SQL doesn't live inside route handlers —
- * this is the one place `/api/save`, `/api/cases`, `/api/change-control/save`,
- * and `/api/change-control/cases` go through.
- */
-
 export interface SaveDeviationCaseInput {
   query: unknown;
   classification: unknown;

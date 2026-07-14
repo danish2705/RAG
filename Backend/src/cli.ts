@@ -13,11 +13,6 @@ Type: Process
 Description: Refrigerator exceeded temperature limits yesterday for 3 hours during storage of a commercial batch.
 `.trim();
 
-// NOTE: this CLI runs all 4 stages back-to-back for local testing
-// convenience. In the real app each stage only fires after a human clicks
-// Accept/Override on the corresponding frontend page — see server.ts for
-// the actual per-stage endpoints. Don't take this file as a model for how
-// the API should behave; it's a dev smoke test only.
 async function main(): Promise<void> {
   console.log("Loading knowledge base...");
   await initKnowledgeBase();

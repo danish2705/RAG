@@ -14,11 +14,8 @@ export interface ValidationTestingStageResult {
   error: Error | null;
 }
 
-/**
- * Stage 3 of 5: validation & testing strategy. Runs only after a human has
- * accepted/overridden Stage 2 (Risk & Criticality Evaluation). Receives the
- * full upstream chain so validation rigor scales with approved risk.
- */
+
+// Stage 3 : validation & testing strategy.
 export async function runValidationTestingStage(
   query: string,
   approvedImpactAssessment: ChangeImpactAssessmentResult,

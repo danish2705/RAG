@@ -21,11 +21,7 @@ function getServiceClient(): BlobServiceClient {
   return cachedServiceClient;
 }
 
-/**
- * Lists all PDF blobs under a "folder" prefix in the KB container.
- * Azure Blob Storage has no real folders - "deviation/foo.pdf" is just a
- * blob name with a "/" in it, so we list by prefix instead of readdir.
- */
+// Lists all PDF blobs under a "folder" prefix in the KB container.
 export async function listAzurePdfBlobs(folder: string): Promise<string[]> {
   const containerClient = getServiceClient().getContainerClient(
     config.azure.container,
@@ -83,9 +79,6 @@ export async function loadKnowledgeBaseFromAzure(
   const docs: SourceDoc[] = [];
   for (const blobName of blobNames) {
     const content = await loadPdfFromAzure(blobName);
-    // Use the blob name itself as doc_key - it's already a stable,
-    // container-relative path (e.g. "deviation/foo.pdf"), so no
-    // per-machine path normalization is needed like the local loader.
     docs.push({ content, source: blobName, type: docType });
   }
 

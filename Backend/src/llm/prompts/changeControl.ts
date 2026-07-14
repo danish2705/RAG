@@ -25,9 +25,7 @@ bullet in details actually present in the Change Description; never cite the
 Knowledge Base Context as if it were a fact about this change.
 `.trim();
 
-// ─────────────────────────────────────────────────────────────────────────
 // Stage 1: Change Impact Assessment
-// ─────────────────────────────────────────────────────────────────────────
 export const CHANGE_IMPACT_ASSESSMENT_PROMPT = `
 You are a GMP Change Control Impact Assessment assistant.
 
@@ -83,9 +81,7 @@ Required JSON (return ONLY this, no extra text):
 }
 `.trim();
 
-// ─────────────────────────────────────────────────────────────────────────
 // Stage 2: Risk & Criticality Evaluation
-// ─────────────────────────────────────────────────────────────────────────
 export const RISK_CRITICALITY_PROMPT = `
 You are a GMP Change Control Risk & Criticality Evaluation assistant.
 
@@ -130,9 +126,7 @@ Required JSON (return ONLY this):
 }
 `.trim();
 
-// ─────────────────────────────────────────────────────────────────────────
 // Stage 3: Validation & Testing Strategy
-// ─────────────────────────────────────────────────────────────────────────
 export const VALIDATION_TESTING_PROMPT = `
 You are a GMP Change Control Validation & Testing Strategy assistant.
 
@@ -181,9 +175,7 @@ Required JSON (return ONLY this):
 }
 `.trim();
 
-// ─────────────────────────────────────────────────────────────────────────
 // Stage 4: Implementation & Control Actions
-// ─────────────────────────────────────────────────────────────────────────
 export const IMPLEMENTATION_CONTROL_PROMPT = `
 You are a GMP Change Control Implementation & Control Actions assistant.
 
@@ -228,9 +220,7 @@ Required JSON (return ONLY this):
 }
 `.trim();
 
-// ─────────────────────────────────────────────────────────────────────────
 // Stage 5: Final Change Control Summary
-// ─────────────────────────────────────────────────────────────────────────
 export const FINAL_CHANGE_CONTROL_SUMMARY_PROMPT = `
 You are a GMP Change Control Final Summary assistant.
 

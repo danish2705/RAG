@@ -13,12 +13,6 @@ export interface ChangeImpactAssessmentStageResult {
   error: Error | null;
 }
 
-/**
- * Stage 1 of 5 for the Change Control pipeline (change impact assessment →
- * risk & criticality → validation & testing strategy → implementation &
- * control actions → final summary). Runs only after a human has accepted
- * (or overridden) the upstream "Change Control" classification.
- */
 export async function runChangeImpactAssessmentStage(
   query: string,
   contextText: string,

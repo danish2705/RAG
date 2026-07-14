@@ -5,14 +5,6 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
-// function required(name: string, fallback?: string): string {
-//   const val = process.env[name] ?? fallback;
-//   if (val === undefined) {
-//     throw new Error(`Missing required environment variable: ${name}`);
-//   }
-//   return val;
-// }
-
 export interface LlmConfig {
   apiUrl: string | undefined;
   apiKey: string | undefined;
@@ -70,13 +62,9 @@ export const config: Config = {
       `https://router.huggingface.co/hf-inference/models/${
         process.env.EMBEDDING_MODEL || "sentence-transformers/all-MiniLM-L6-v2"
       }/pipeline/feature-extraction`,
-    // Reuses the same HF token already used for chat completions (API_KEY).
     apiKey: process.env.API_KEY,
   },
   kb: {
-    // These are now blob-name prefixes ("folders") inside the Azure
-    // container, e.g. "deviation/*.pdf" and "change-control/*.pdf" -
-    // not paths on local disk.
     deviationFolder: process.env.DEVIATION_FOLDER || "deviation",
     changeControlFolder: process.env.CHANGE_CONTROL_FOLDER || "changecontrol",
   },

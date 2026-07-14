@@ -13,13 +13,9 @@ export interface ImpactAssessmentStageResult {
   error: Error | null;
 }
 
-/**
- * Stage 2 of 4. Only runs after a human has accepted or overridden the
- * Stage 1 classification (frontend: AIRecommendation page → Accept/Override
- * button). Receives the approved classification as context so severity is
- * rated against a routing decision a human has already signed off on —
- * it never re-runs or second-guesses the classification itself.
- */
+// Stage 2 Only runs after a human has accepted or overridden the
+// Stage 1 classification (frontend: AIRecommendation page → Accept/Override
+// button).
 export async function runImpactAssessmentStage(
   query: string,
   contextText: string,

@@ -12,13 +12,12 @@ import { Capa } from "./pages/deviation/Capa";
 import { Summary } from "./pages/deviation/Summary";
 import { Records } from "./pages/Records";
 import { AuditTrail } from "./pages/AuditTrail";
-import { Reports } from "./pages/Reports";
 import { Settings } from "./pages/Settings";
-import { ChangeImpactAssessment } from "./pages/changeControl/ChangeImpactAssessment";
-import { RiskCriticality } from "./pages/changeControl/RiskCriticality";
-import { ValidationTesting } from "./pages/changeControl/ValidationTesting";
-import { ImplementationControl } from "./pages/changeControl/ImplementationControl";
-import { ChangecontrolSummary } from "./pages/changeControl/Summary";
+import { ChangeImpactAssessment } from "./pages/ChangeControl/ChangeImpactAssessment";
+import { RiskCriticality } from "./pages/ChangeControl/RiskCriticality";
+import { ValidationTesting } from "./pages/ChangeControl/ValidationTesting";
+import { ImplementationControl } from "./pages/ChangeControl/ImplementationControl";
+import { ChangecontrolSummary } from "./pages/ChangeControl/Summary";
 
 export const router = createBrowserRouter([
   { path: "/login", Component: Login },
@@ -57,7 +56,6 @@ export const router = createBrowserRouter([
           { path: "change-control/summary", Component: ChangecontrolSummary },
           { path: "records", Component: Records },
           { path: "audit-trail", Component: AuditTrail },
-          { path: "reports", Component: Reports },
           { path: "settings", Component: Settings },
         ],
       },

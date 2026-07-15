@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useReducer, useState } from "react";
 import { useNavigate } from "react-router";
-import { apiFetch } from "../../utils/api";
+import { generateImplementationControl } from "../../services/changeControl/implementationControlApi";
 import {
   aiField,
   markModified,
@@ -294,22 +294,11 @@ export function useValidationTestingReview() {
       // Backend expects the flat LLM-schema shape for the upstream approved
       // stages, and returns implementationControl.parsed in that same flat
       // shape — flatten going out, nest coming back in.
-      const rawImplementationResult: any = await apiFetch(
-        "/api/change-control/implementation-control",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            query: result!.query,
-            changeImpactAssessment: nestedToFlatChangeImpactAssessment(
-              impactParsed!,
-            ),
-            riskCriticality: riskParsed,
-            validationTesting: nestedToFlatValidationTesting(
-              approvedValidationTesting,
-            ),
-          }),
-        },
+      const rawImplementationResult = await generateImplementationControl(
+        result!.query,
+        nestedToFlatChangeImpactAssessment(impactParsed!),
+        riskParsed,
+        nestedToFlatValidationTesting(approvedValidationTesting),
       );
       const rawStage = rawImplementationResult?.stages?.implementationControl;
       const implementationControlStage: ImplementationControlApiResponse["stages"]["implementationControl"] =

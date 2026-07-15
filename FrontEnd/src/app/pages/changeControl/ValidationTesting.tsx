@@ -24,7 +24,7 @@ import {
   Users,
 } from "lucide-react";
 import { AIAssistant } from "../../components/chat/AiAssistant";
-import { useValidationTestingReview } from "../../hooks/changeControl/useValidationTestingReview";
+import { useValidationTestingReview } from "../../hooks/changeControl/useValidationTesting";
 import {
   NoValidationDataGuard,
   ValidationConfidenceCard,

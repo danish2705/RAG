@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { apiFetch } from "../../utils/api";
 import { useWorkflowStore } from "../../store/workflowStore";
+import { saveChangeControlRecord } from "../../services/changeControl/summaryApi";
 
 export function useSummary() {
   const navigate = useNavigate();
@@ -40,7 +40,13 @@ export function useSummary() {
       setSavedByError("Please enter your name before saving.");
       return;
     }
-    if (!result || !classificationParsed || !changeImpactParsed || !riskParsed || !implementationParsed) {
+    if (
+      !result ||
+      !classificationParsed ||
+      !changeImpactParsed ||
+      !riskParsed ||
+      !implementationParsed
+    ) {
       return;
     }
     setSavedByError("");
@@ -49,22 +55,18 @@ export function useSummary() {
     setIsSaving(true);
 
     try {
-      await apiFetch("/api/change-control/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: result.query,
-          classification: classificationParsed,
-          change_impact_assessment: changeImpactParsed,
-          risk_criticality: riskParsed,
-          validation_testing: validationTestingParsed,
-          implementation_control: implementationParsed,
-          final_summary: null,
-          status: result.status,
-          halted_at: result.haltedAt,
-          saved_by: savedByName.trim(),
-          provenance: provenance ?? null,
-        }),
+      await saveChangeControlRecord({
+        query: result.query,
+        classification: classificationParsed,
+        change_impact_assessment: changeImpactParsed,
+        risk_criticality: riskParsed,
+        validation_testing: validationTestingParsed,
+        implementation_control: implementationParsed,
+        final_summary: null,
+        status: result.status,
+        halted_at: result.haltedAt,
+        saved_by: savedByName.trim(),
+        provenance: provenance ?? null,
       });
 
       setIsSaved(true);

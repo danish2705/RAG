@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useReducer, useState } from "react";
 import { useNavigate } from "react-router";
-import { apiFetch } from "../../utils/api";
+import { generateValidationTesting } from "../../services/changeControl/validationTestingApi";
 import {
   aiField,
   markModified,
@@ -478,17 +478,10 @@ export function useRiskCriticality() {
       // The backend returns validationTesting.parsed in its flat LLM-schema
       // shape — convert to the nested shape the UI expects before it ever
       // touches the store/page.
-      const rawValidationResult: any = await apiFetch(
-        "/api/change-control/validation-testing",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            query: result!.query,
-            changeImpactAssessment: flatChangeImpactAssessment,
-            riskCriticality: approvedRiskCriticality,
-          }),
-        },
+      const rawValidationResult = await generateValidationTesting(
+        result!.query,
+        flatChangeImpactAssessment,
+        approvedRiskCriticality,
       );
       const rawStage = rawValidationResult?.stages?.validationTesting;
       const validationTestingStage: ValidationTestingApiResponse["stages"]["validationTesting"] =

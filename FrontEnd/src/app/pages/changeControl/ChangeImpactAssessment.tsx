@@ -17,7 +17,7 @@ import {
 import { Button } from "../../components/ui/button";
 import { AlertTriangle } from "lucide-react";
 import { AIAssistant } from "../../components/chat/AiAssistant";
-import { useChangeImpactAssessmentReview } from "../../hooks/changeControl/useChangeImpactAssessmentReview";
+import { useChangeImpactAssessmentReview } from "../../hooks/changeControl/useChangeImpactAssessment";
 import {
   NoImpactAssessmentDataGuard,
   ImpactConfidenceCard,

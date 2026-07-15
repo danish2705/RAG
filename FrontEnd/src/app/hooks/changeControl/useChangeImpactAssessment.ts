@@ -1,6 +1,6 @@
 import { useCallback, useReducer, useState } from "react";
 import { useNavigate } from "react-router";
-import { apiFetch } from "../../utils/api";
+import { generateRiskCriticality } from "../../services/changeControl/riskCriticalityApi";
 import {
   aiField,
   markModified,
@@ -385,18 +385,12 @@ export function useChangeImpactAssessmentReview() {
       approvedChangeImpactAssessment,
     );
     try {
-      const riskResult: RiskCriticalityApiResponse = await apiFetch(
-        "/api/change-control/risk-criticality",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            query: result!.query,
-            classification: classificationParsed,
-            changeImpactAssessment: flatChangeImpactAssessment,
-          }),
-        },
-      );
+      const riskResult: RiskCriticalityApiResponse =
+        await generateRiskCriticality(
+          result!.query,
+          classificationParsed,
+          flatChangeImpactAssessment,
+        );
       override.submitSuccess();
       navigateToRiskCriticality(
         riskResult.stages.riskCriticality,

@@ -6,6 +6,7 @@ import deviationsRoutes from "./routes/deviation.routes.js";
 import changeControlRoutes from "./routes/changeControl.routes.js";
 import casesRoutes from "./routes/cases.routes.js";
 import authRoutes from "./routes/auth.routes.js";
+import dashboardRoutes from "./routes/dashboard.routes.js";
 
 export const app = express();
 
@@ -16,6 +17,7 @@ app.use("/api", authRoutes);
 app.use("/api", deviationsRoutes);
 app.use("/api/change-control", changeControlRoutes);
 app.use("/api", casesRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 app.get("/healthz", (_req, res) => {
   res.json({ status: "ok", ready: getReady() });

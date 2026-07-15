@@ -1,12 +1,11 @@
 import { useNavigate } from "react-router";
-import { Loader2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { AIAssistant } from "../components/chat/AiAssistant";
 import { useRecords } from "../hooks/records/useRecords";
 import { CaseViewModal } from "../components/records/CaseViewModal";
+import { DeleteRecordModal } from "../components/records/DeleteRecordModal";
 import { RecordsFilterBar } from "../components/records/RecordsFilterBar";
 import { RecordsTable } from "../components/records/RecordsTable";
-import { RecordsPagination } from "../components/records/RecordsPagination";
 
 export function Records() {
   const navigate = useNavigate();
@@ -16,9 +15,8 @@ export function Records() {
     error,
     selectedCase,
     setSelectedCase,
-    selectedCaseLoading,
-    selectedCaseError,
-    handleSelectCase,
+    caseToDelete,
+    setCaseToDelete,
     chatOpen,
     setChatOpen,
     handleSort,
@@ -27,17 +25,17 @@ export function Records() {
     classificationFilter,
     setClassificationFilter,
     filteredCases,
-    page,
-    setPage,
-    total,
-    totalPages,
+    handleDeleteRecord,
   } = useRecords();
 
   return (
     <div className="relative h-full w-full">
       <div
-        className={`h-full p-6 overflow-y-auto transition-[margin] duration-200 ${chatOpen ? "mr-80" : ""}`}
+        className={`h-full p-6 overflow-y-auto transition-[margin] duration-200 ${
+          chatOpen ? "mr-80" : ""
+        }`}
       >
+        {/* 1.8x Wider Case Details View Modal */}
         {selectedCase && (
           <CaseViewModal
             record={selectedCase}
@@ -45,40 +43,24 @@ export function Records() {
           />
         )}
 
-        {/* Small overlay while the full case detail is being fetched for
-            the View modal (the list only has summary columns). */}
-        {selectedCaseLoading && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-            <div className="flex items-center gap-2 bg-background rounded-lg px-4 py-3 shadow-lg">
-              <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-              <span className="text-sm text-foreground">Loading case…</span>
-            </div>
-          </div>
-        )}
-
-        {selectedCaseError && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-            <div className="bg-background rounded-lg px-4 py-3 shadow-lg max-w-sm text-center">
-              <p className="text-sm text-red-500 font-medium">
-                Couldn't load case details
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {selectedCaseError}
-              </p>
-            </div>
-          </div>
-        )}
+        {/* Two-Step Delete Confirmation Modal */}
+        <DeleteRecordModal
+          open={!!caseToDelete}
+          onOpenChange={(open) => !open && setCaseToDelete(null)}
+          record={caseToDelete}
+          onConfirmDelete={handleDeleteRecord}
+        />
 
         <div className="mb-6 flex items-center gap-3">
           <div>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {total} case{total === 1 ? "" : "s"}
+            <p className="text-sm text-muted-foreground mt-0.5 font-medium">
+              {filteredCases.length} case{filteredCases.length === 1 ? "" : "s"} found
             </p>
           </div>
           <Button
             variant="outline"
             size="sm"
-            className="ml-auto"
+            className="ml-auto bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm"
             onClick={() => navigate("/deviation")}
           >
             + New Case
@@ -90,7 +72,7 @@ export function Records() {
           onSubmittedByFilterChange={setSubmittedByFilter}
           classificationFilter={classificationFilter}
           onClassificationFilterChange={setClassificationFilter}
-          resultCount={total}
+          resultCount={filteredCases.length}
         />
 
         <RecordsTable
@@ -99,16 +81,11 @@ export function Records() {
           cases={cases}
           filteredCases={filteredCases}
           onSort={handleSort}
-          onSelectCase={handleSelectCase}
-        />
-
-        <RecordsPagination
-          page={page}
-          totalPages={totalPages}
-          total={total}
-          onPageChange={setPage}
+          onSelectCase={setSelectedCase}
+          onDeleteCase={setCaseToDelete}
         />
       </div>
+
       <div className="fixed top-16 right-0 bottom-0 z-40">
         <AIAssistant
           isOpen={chatOpen}

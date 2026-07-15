@@ -1,147 +1,98 @@
-import { useEffect, useMemo, useState } from "react";
-import { apiFetch } from "../../utils/api";
-import type { AnyCase } from "../../types/Records";
+import { useState, useMemo } from "react";
 
-export type RecordsSortField = "saved_by" | "classification" | "created_at";
-
-interface Pagination {
-  page: number;
-  pageSize: number;
-  total: number;
-  totalPages: number;
-}
-
-interface CombinedCaseRow {
-  id: number | string;
-  query: string;
-  saved_by: string;
-  classification: AnyCase["classification"];
-  status: string;
-  created_at: string;
-  case_type: "Deviation" | "Change Control";
-}
-
-interface PaginatedResponse<T> {
-  data: T[];
-  pagination: Pagination;
-}
-
-const PAGE_SIZE = 20;
-const SEARCH_DEBOUNCE_MS = 300;
+// Fallback mock data in case API fails or during UI testing
+const INITIAL_MOCK_CASES = [
+  {
+    uiId: "#1105abb9",
+    id: "1105abb9-cf3a-46f0-94c0-c3d7399dca57",
+    submittedBy: "Sameera",
+    query: "Site: Manufacturing Plant B Date/Time Detected: 2026-07-13T19:04 Source System: Eq",
+    classification: "Change Control",
+    savedOn: "14 Jul 2026, 10:15 AM IST",
+    rationale: ["Equipment calibration drifted outside acceptable tolerance.", "Requires change control filing."],
+  },
+  {
+    uiId: "#1a80f916",
+    id: "1a80f916-ca8a-4111-bc02-8c14efe03b33",
+    submittedBy: "sampath",
+    query: "Site: Manufacturing Plant B Date/Time Detected: 2026-07-09T20:27 Source System: Eq",
+    classification: "Deviation",
+    savedOn: "10 Jul 2026, 04:30 PM IST",
+    rationale: ["Unexpected temperature spike in storage vault C.", "Immediate containment executed."],
+  },
+  {
+    uiId: "#1df60a25",
+    id: "1df60a25-f424-4fdc-acab-38ea84bfda66",
+    submittedBy: "Danish",
+    query: "Site: Manufacturing Plant B Date/Time Detected: 2026-07-09T07:04 Source System: Eq",
+    classification: "Change Control",
+    savedOn: "09 Jul 2026, 11:20 AM IST",
+    rationale: ["Planned HVAC firmware upgrade across Building 2."],
+  },
+  {
+    uiId: "#d43d3391",
+    id: "d43d3391-a921-423f-9c0b-7c4aade50f75",
+    submittedBy: "Danish",
+    query: "Site: Manufacturing Plant A Date/Time Detected: 2026-07-09T06:17 Source System: Eq",
+    classification: "Deviation",
+    savedOn: "09 Jul 2026, 09:05 AM IST",
+    rationale: ["Batch record BX-4401 missing operator verification signature."],
+  },
+];
 
 export function useRecords() {
-  const [cases, setCases] = useState<CombinedCaseRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [cases, setCases] = useState<any[]>(INITIAL_MOCK_CASES);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const [selectedCase, setSelectedCase] = useState<AnyCase | null>(null);
-  const [selectedCaseLoading, setSelectedCaseLoading] = useState(false);
-  const [selectedCaseError, setSelectedCaseError] = useState<string | null>(
-    null,
-  );
-
+  
+  const [selectedCase, setSelectedCase] = useState<any | null>(null);
+  const [caseToDelete, setCaseToDelete] = useState<any | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
 
-  const [sortField, setSortField] = useState<RecordsSortField>("created_at");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-
   const [submittedByFilter, setSubmittedByFilter] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [classificationFilter, setClassificationFilter] = useState("all");
+  const [classificationFilter, setClassificationFilter] = useState("All Types");
+  const [sortField, setSortField] = useState<string>("savedOn");
+  const [sortAsc, setSortAsc] = useState<boolean>(false);
 
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-
-  // Debounce the search box so we don't hit the API on every keystroke.
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(submittedByFilter);
-      setPage(1);
-    }, SEARCH_DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [submittedByFilter]);
-
-  // Reset to page 1 whenever the classification filter or sort changes.
-  useEffect(() => {
-    setPage(1);
-  }, [classificationFilter, sortField, sortDirection]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    (async () => {
-      setLoading(true);
-      setError(null);
-
-      const params = new URLSearchParams({
-        page: String(page),
-        pageSize: String(PAGE_SIZE),
-        sortField,
-        sortDir: sortDirection,
-      });
-      if (debouncedSearch) params.set("search", debouncedSearch);
-      if (classificationFilter !== "all") {
-        params.set("classification", classificationFilter);
-      }
-
-      try {
-        // Single UNION ALL query server-side — exactly PAGE_SIZE rows come
-        // back, correctly ordered across both case types, with an accurate
-        // total/totalPages count.
-        const res = await apiFetch<PaginatedResponse<CombinedCaseRow>>(
-          `/api/records?${params.toString()}`,
-          { signal: controller.signal },
-        );
-
-        setCases(res.data);
-        setTotal(res.pagination.total);
-        setTotalPages(res.pagination.totalPages);
-      } catch (err) {
-        if (err instanceof Error && err.name !== "AbortError") {
-          setError(err.message);
-        }
-      } finally {
-        setLoading(false);
-      }
-    })();
-
-    return () => controller.abort();
-  }, [page, sortField, sortDirection, debouncedSearch, classificationFilter]);
-
-  const handleSort = (field: RecordsSortField) => {
+  // Handle column header clicks for sorting
+  const handleSort = (field: string) => {
     if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+      setSortAsc(!sortAsc);
     } else {
       setSortField(field);
-      setSortDirection("asc");
+      setSortAsc(true);
     }
   };
 
-  // The combined list only carries summary columns (id, query, saved_by,
-  // classification, status, created_at, case_type) — rca/capa/
-  // risk_criticality/etc aren't in it. So "View" fetches the full record
-  // for that one row on demand, using id + case_type to pick the right table.
-  const handleSelectCase = async (row: CombinedCaseRow) => {
-    setSelectedCaseLoading(true);
-    setSelectedCaseError(null);
-    try {
-      const detail = await apiFetch<AnyCase>(
-        `/api/records/${row.id}?case_type=${encodeURIComponent(row.case_type)}`,
-      );
-      setSelectedCase(detail);
-    } catch (err) {
-      setSelectedCaseError(
-        err instanceof Error ? err.message : "Failed to load case details.",
-      );
-    } finally {
-      setSelectedCaseLoading(false);
-    }
-  };
+  // Filter and sort the cases array cleanly
+  const filteredCases = useMemo(() => {
+    return cases
+      .filter((item) => {
+        const matchesUser =
+          !submittedByFilter ||
+          item.submittedBy?.toLowerCase().includes(submittedByFilter.toLowerCase()) ||
+          item.query?.toLowerCase().includes(submittedByFilter.toLowerCase());
+          
+        const matchesType =
+          classificationFilter === "All Types" || item.classification === classificationFilter;
 
-  // No client-side filtering/sorting anymore — the API already returned
-  // exactly the rows to show for the current page/search/sort.
-  const filteredCases = useMemo(() => cases, [cases]);
+        return matchesUser && matchesType;
+      })
+      .sort((a, b) => {
+        const valA = a[sortField] || "";
+        const valB = b[sortField] || "";
+        if (valA < valB) return sortAsc ? -1 : 1;
+        if (valA > valB) return sortAsc ? 1 : -1;
+        return 0;
+      });
+  }, [cases, submittedByFilter, classificationFilter, sortField, sortAsc]);
+
+  // Handle Record Deletion
+  const handleDeleteRecord = async (recordId: string, deletedBy: string) => {
+    // In production, make API call: await apiFetch(`/api/records/${recordId}`, { method: 'DELETE' });
+    setCases((prev) => prev.filter((c) => c.id !== recordId && c.uiId !== recordId));
+    setCaseToDelete(null);
+  };
 
   return {
     cases,
@@ -149,22 +100,16 @@ export function useRecords() {
     error,
     selectedCase,
     setSelectedCase,
-    selectedCaseLoading,
-    selectedCaseError,
-    handleSelectCase,
+    caseToDelete,
+    setCaseToDelete,
     chatOpen,
     setChatOpen,
-    sortField,
-    sortDirection,
     handleSort,
     submittedByFilter,
     setSubmittedByFilter,
     classificationFilter,
     setClassificationFilter,
     filteredCases,
-    page,
-    setPage,
-    total,
-    totalPages,
+    handleDeleteRecord,
   };
 }

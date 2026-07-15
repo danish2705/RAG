@@ -1,4 +1,5 @@
 import { createContext, useContext, useState } from "react";
+import { apiFetch } from "../utils/api";
 
 export interface AuthUser {
   username: string;
@@ -9,28 +10,18 @@ export interface AuthUser {
 interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
-  login: (username: string, password: string) => boolean;
-  loginWithSSO: () => void;
+  login: (username: string, password: string) => Promise<boolean>;
+  loginWithSSO: () => Promise<void>;
   logout: () => void;
 }
 
 const AUTH_STORAGE_KEY = "dc_auth_user";
 
-// Demo credentials — both username and password are "admin"
-const VALID_USERNAME = "admin";
-const VALID_PASSWORD = "admin";
-
-const DEMO_USER: AuthUser = {
-  username: "admin",
-  role: "Quality Manager & Lead",
-  department: "Quality Assurance & Compliance",
-};
-
 const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
-  login: () => false,
-  loginWithSSO: () => {},
+  login: async () => false,
+  loginWithSSO: async () => {},
   logout: () => {},
 });
 
@@ -40,21 +31,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return saved ? (JSON.parse(saved) as AuthUser) : null;
   });
 
-  const login = (username: string, password: string) => {
-    if (username === VALID_USERNAME && password === VALID_PASSWORD) {
-      setUser(DEMO_USER);
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(DEMO_USER));
+  const login = async (username: string, password: string) => {
+    try {
+      const { user: loggedInUser } = await apiFetch<{ user: AuthUser }>(
+        "/api/auth/login",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        },
+      );
+      setUser(loggedInUser);
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(loggedInUser));
       return true;
+    } catch {
+      return false;
     }
-    return false;
   };
 
   // Simulated SSO — in a real app this would redirect to an identity
-  // provider and come back with a token. Here it logs the demo user in
-  // immediately so the flow can be demoed end to end.
-  const loginWithSSO = () => {
-    setUser(DEMO_USER);
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(DEMO_USER));
+  // provider and come back with a token. Here it calls the backend, which
+  // signs the demo user in directly, so the click still goes straight to
+  // the dashboard just like before.
+  const loginWithSSO = async () => {
+    const { user: ssoUser } = await apiFetch<{ user: AuthUser }>(
+      "/api/auth/sso",
+      { method: "POST" },
+    );
+    setUser(ssoUser);
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(ssoUser));
   };
 
   const logout = () => {

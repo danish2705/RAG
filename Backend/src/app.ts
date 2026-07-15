@@ -5,12 +5,14 @@ import { errorHandler } from "./middleware/errorHandler.js";
 import deviationsRoutes from "./routes/deviation.routes.js";
 import changeControlRoutes from "./routes/changeControl.routes.js";
 import casesRoutes from "./routes/cases.routes.js";
+import authRoutes from "./routes/auth.routes.js";
 
 export const app = express();
 
 app.use(express.json());
 app.use(cors());
 
+app.use("/api", authRoutes);
 app.use("/api", deviationsRoutes);
 app.use("/api/change-control", changeControlRoutes);
 app.use("/api", casesRoutes);

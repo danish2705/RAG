@@ -25,28 +25,29 @@ export function Login() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsSubmitting(true);
 
-    // Small delay so the sign-in state is visible, mirrors a real auth call
-    setTimeout(() => {
-      const success = login(username.trim(), password);
-      setIsSubmitting(false);
-
+    try {
+      const success = await login(username.trim(), password);
       if (success) {
         navigate(location.state?.from || "/", { replace: true });
       } else {
         setError("Incorrect username or password. Please try again.");
       }
-    }, 300);
+    } catch {
+      setError("Something went wrong signing in. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleSSOLogin = () => {
-    // Directly signs the user in — no separate identity-provider redirect
-    // in this demo build.
-    loginWithSSO();
+  const handleSSOLogin = async () => {
+    // Backend signs the demo user in directly — clicking this goes
+    // straight to the dashboard, same as before.
+    await loginWithSSO();
     navigate(location.state?.from || "/", { replace: true });
   };
 

@@ -8,7 +8,8 @@ import {
   getClassificationBadgeClass,
   getSeverityBadgeClass,
 } from "../../utils/records/badges";
-import { BulletList, ConfidenceBar } from "./recordsShared";
+import { BulletList, ConfidenceBar } from "./RecordsShared";
+import { formatTimestamp } from "../../utils/timezone";
 
 export function DeviationViewModal({
   record,
@@ -45,7 +46,7 @@ export function DeviationViewModal({
               {record.saved_by}
             </span>
             {" · "}
-            {new Date(record.created_at).toLocaleString()}
+            {formatTimestamp(record.created_at)}
           </p>
         </DialogHeader>
 

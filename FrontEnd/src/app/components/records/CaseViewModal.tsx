@@ -1,20 +1,27 @@
 import React from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { Download, X, FileText, User, Calendar, Tag, ShieldCheck } from "lucide-react";
+import {
+  Download,
+  X,
+  FileText,
+  User,
+  Calendar,
+  Tag,
+  ShieldCheck,
+} from "lucide-react";
+import { formatTimestamp } from "../../utils/timezone";
 
 interface CaseViewModalProps {
   record: any | null;
   onClose: () => void;
 }
 
-export const CaseViewModal: React.FC<CaseViewModalProps> = ({ record, onClose }) => {
+export const CaseViewModal: React.FC<CaseViewModalProps> = ({
+  record,
+  onClose,
+}) => {
   if (!record) return null;
 
   // Helper to generate and download a text summary report
@@ -26,7 +33,7 @@ export const CaseViewModal: React.FC<CaseViewModalProps> = ({ record, onClose })
       `Record ID:       ${record.uiId || record.id || "N/A"}`,
       `Submitted By:    ${record.submittedBy || record.user || "N/A"}`,
       `Classification:  ${record.classification || "N/A"}`,
-      `Saved Timestamp: ${record.savedOn || record.timestamp || "N/A"}`,
+      `Saved Timestamp: ${formatTimestamp(record.savedOn || record.timestamp)}`,
       `----------------------------------------------------`,
       `EVENT QUERY / DESCRIPTION:`,
       `${record.query || record.description || "No description provided."}`,
@@ -34,10 +41,12 @@ export const CaseViewModal: React.FC<CaseViewModalProps> = ({ record, onClose })
       `AI RATIONALE / SUMMARY:`,
       `${Array.isArray(record.rationale) ? record.rationale.join("\n") : record.rationale || record.summary || "N/A"}`,
       `====================================================`,
-      `Report Generated: ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} IST`,
+      `Report Generated: ${formatTimestamp(new Date())}`,
     ].join("\n");
 
-    const blob = new Blob([reportContent], { type: "text/plain;charset=utf-8" });
+    const blob = new Blob([reportContent], {
+      type: "text/plain;charset=utf-8",
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -49,15 +58,19 @@ export const CaseViewModal: React.FC<CaseViewModalProps> = ({ record, onClose })
   };
 
   const getBadgeColor = (type: string) => {
-    if (type === "Deviation") return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-red-200";
-    if (type === "Change Control") return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200";
+    if (type === "Deviation")
+      return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-red-200";
+    if (type === "Change Control")
+      return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200";
     return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200";
   };
 
   return (
     <Dialog open={!!record} onOpenChange={(open) => !open && onClose()}>
       {/* 1.8x Wider Modal: sm:max-w-5xl (~1024px) */}
-<DialogContent className="!max-w-none sm:!max-w-none w-[70vw] max-h-[90vh] p-0 overflow-hidden flex flex-col bg-card shadow-2xl rounded-xl">        {/* Sticky Fixed Header */}
+      <DialogContent className="!max-w-none sm:!max-w-none w-[70vw] max-h-[90vh] p-0 overflow-hidden flex flex-col bg-card shadow-2xl rounded-xl">
+        {" "}
+        {/* Sticky Fixed Header */}
         <div className="sticky top-0 z-20 flex items-center justify-between px-6 py-4 bg-muted/80 backdrop-blur-md border-b border-border shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-blue-600/10 border border-blue-200 dark:border-blue-800">
@@ -66,7 +79,9 @@ export const CaseViewModal: React.FC<CaseViewModalProps> = ({ record, onClose })
             <div>
               <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2">
                 {record.uiId || record.id || "Case Record Details"}
-                <Badge className={`text-xs font-semibold px-2 py-0.5 ${getBadgeColor(record.classification)}`}>
+                <Badge
+                  className={`text-xs font-semibold px-2 py-0.5 ${getBadgeColor(record.classification)}`}
+                >
                   {record.classification || "Quality Event"}
                 </Badge>
               </DialogTitle>
@@ -100,7 +115,6 @@ export const CaseViewModal: React.FC<CaseViewModalProps> = ({ record, onClose })
             </Button>
           </div>
         </div>
-
         {/* Scrollable Modal Content utilizing multi-column width */}
         <div className="p-6 overflow-y-auto space-y-6 flex-1">
           {/* Metadata Grid */}
@@ -108,24 +122,36 @@ export const CaseViewModal: React.FC<CaseViewModalProps> = ({ record, onClose })
             <div className="flex items-center gap-3">
               <User className="h-5 w-5 text-blue-500 shrink-0" />
               <div>
-                <span className="text-xs font-medium text-muted-foreground block">Submitted By</span>
-                <span className="text-sm font-semibold text-foreground">{record.submittedBy || record.user || "N/A"}</span>
+                <span className="text-xs font-medium text-muted-foreground block">
+                  Submitted By
+                </span>
+                <span className="text-sm font-semibold text-foreground">
+                  {record.submittedBy || record.user || "N/A"}
+                </span>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
               <Calendar className="h-5 w-5 text-blue-500 shrink-0" />
               <div>
-                <span className="text-xs font-medium text-muted-foreground block">Saved Date & Time (IST)</span>
-                <span className="text-sm font-semibold text-foreground font-mono">{record.savedOn || record.timestamp || "N/A"}</span>
+                <span className="text-xs font-medium text-muted-foreground block">
+                  Saved Date & Time (IST)
+                </span>
+                <span className="text-sm font-semibold text-foreground font-mono">
+                  {formatTimestamp(record.savedOn || record.timestamp)}
+                </span>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
               <ShieldCheck className="h-5 w-5 text-green-500 shrink-0" />
               <div>
-                <span className="text-xs font-medium text-muted-foreground block">System Status</span>
-                <span className="text-sm font-semibold text-green-600 dark:text-green-400">Verified & Archived</span>
+                <span className="text-xs font-medium text-muted-foreground block">
+                  System Status
+                </span>
+                <span className="text-sm font-semibold text-green-600 dark:text-green-400">
+                  Verified & Archived
+                </span>
               </div>
             </div>
           </div>
@@ -133,17 +159,21 @@ export const CaseViewModal: React.FC<CaseViewModalProps> = ({ record, onClose })
           {/* Event Query / Description */}
           <div className="space-y-2">
             <h4 className="text-sm font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wider">
-              <Tag className="h-4 w-4 text-blue-500" /> Event Query & Description
+              <Tag className="h-4 w-4 text-blue-500" /> Event Query &
+              Description
             </h4>
             <div className="p-4 rounded-xl bg-background border border-border text-sm text-foreground leading-relaxed shadow-sm font-mono whitespace-pre-wrap">
-              {record.query || record.description || "No specific query details available for this case."}
+              {record.query ||
+                record.description ||
+                "No specific query details available for this case."}
             </div>
           </div>
 
           {/* AI Rationale / Full Analysis */}
           <div className="space-y-2">
             <h4 className="text-sm font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wider">
-              <FileText className="h-4 w-4 text-blue-500" /> AI Classification Rationale & Summary
+              <FileText className="h-4 w-4 text-blue-500" /> AI Classification
+              Rationale & Summary
             </h4>
             <div className="p-4 rounded-xl bg-muted/40 border border-border/80 text-sm text-muted-foreground leading-relaxed space-y-2">
               {Array.isArray(record.rationale) ? (
@@ -156,15 +186,21 @@ export const CaseViewModal: React.FC<CaseViewModalProps> = ({ record, onClose })
                   ))}
                 </ul>
               ) : (
-                <p>{record.rationale || record.summary || "AI rationale was recorded automatically during case intake."}</p>
+                <p>
+                  {record.rationale ||
+                    record.summary ||
+                    "AI rationale was recorded automatically during case intake."}
+                </p>
               )}
             </div>
           </div>
         </div>
-
         {/* Modal Footer */}
         <div className="px-6 py-3 bg-muted/40 border-t border-border flex justify-end shrink-0">
-          <Button onClick={onClose} className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-6">
+          <Button
+            onClick={onClose}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-6"
+          >
             Done
           </Button>
         </div>

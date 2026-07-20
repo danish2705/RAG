@@ -1,14 +1,14 @@
 import { Button } from "../components/ui/button";
 import { Sparkles, Loader2 } from "lucide-react";
 import { AIAssistant } from "../components/chat/AiAssistant";
-import { useInputQueryForm } from "../hooks/inputQuery/useInputQueryForm";
+import { useInputQueryForm } from "../hooks/useInputQueryForm";
 import {
   SubmitErrorBanner,
   BasicInformationCard,
   DescriptionCard,
   ImmediateActionsCard,
   AttachmentsCard,
-} from "../components/inputQuery/inputQueryCards";
+} from "../components/InputQueryCards";
 
 export function NewDeviation() {
   const {

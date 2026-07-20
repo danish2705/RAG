@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { apiFetch } from "../../utils/api";
-import type { DashboardSummary } from "../../types/dashboard";
+import { apiFetch } from "../utils/api";
+import type { DashboardSummary } from "../types/dashboard";
 
 export function useDashboard() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);

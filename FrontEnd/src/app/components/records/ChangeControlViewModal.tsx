@@ -14,7 +14,8 @@ import {
   getValidationLevelBadgeClass,
   getRiskLevelBadgeClass,
 } from "../../utils/records/badges";
-import { BulletList, ConfidenceBar } from "./recordsShared";
+import { BulletList, ConfidenceBar } from "./RecordsShared";
+import { formatTimestamp } from "../../utils/timezone";
 
 export function ChangeControlViewModal({
   record,
@@ -43,7 +44,7 @@ export function ChangeControlViewModal({
               {record.saved_by}
             </span>
             {" · "}
-            {new Date(record.created_at).toLocaleString()}
+            {formatTimestamp(record.created_at)}
           </p>
         </DialogHeader>
 

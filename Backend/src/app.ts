@@ -7,6 +7,7 @@ import changeControlRoutes from "./routes/changeControl.routes.js";
 import casesRoutes from "./routes/cases.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
+import auditRoutes from "./routes/audit.routes.js";
 
 export const app = express();
 
@@ -18,10 +19,10 @@ app.use("/api", deviationsRoutes);
 app.use("/api/change-control", changeControlRoutes);
 app.use("/api", casesRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/audit", auditRoutes);
 
 app.get("/healthz", (_req, res) => {
   res.json({ status: "ok", ready: getReady() });
 });
 
-// Must be registered LAST, after all routes/routers.
 app.use(errorHandler);

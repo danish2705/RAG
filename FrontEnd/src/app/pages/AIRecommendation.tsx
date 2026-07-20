@@ -24,7 +24,6 @@ export function AIRecommendation() {
     chatOpen,
     setChatOpen,
     isOverrideEditing,
-    setIsOverrideEditing,
     editedClassification,
     setEditedClassification,
     editedRationale,

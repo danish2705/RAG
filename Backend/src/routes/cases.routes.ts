@@ -26,4 +26,9 @@ router.get("/records", asyncHandler(casesController.listCombinedRecords));
 // by the View modal, since /records only returns summary columns.
 router.get("/records/:id", asyncHandler(casesController.getCaseDetail));
 
+// Hard-delete a record (by id + ?case_type=Deviation|Change Control), body:
+// { deleted_by: string, reason?: string }. The full row is snapshotted into
+// the audit log before it's removed.
+router.delete("/records/:id", asyncHandler(casesController.deleteCase));
+
 export default router;

@@ -297,6 +297,18 @@ export async function getDeviationCases(
   };
 }
 
+// Hard-delete a deviation case, returning the deleted row so the caller can
+// snapshot it into the audit log before it's gone for good.
+export async function deleteDeviationCase(
+  id: string,
+): Promise<Record<string, unknown> | null> {
+  const result = await pool.query(
+    `DELETE FROM deviation_cases WHERE id = $1 RETURNING *`,
+    [id],
+  );
+  return result.rows[0] ?? null;
+}
+
 // Retained for any internal/background code that still needs the full set
 // (e.g. exports). Prefer getDeviationCases() for anything user-facing.
 export async function getAllDeviationCases(): Promise<unknown[]> {
@@ -417,6 +429,18 @@ export async function getChangeControlCases(
       totalPages: Math.max(1, Math.ceil(total / pageSize)),
     },
   };
+}
+
+// Hard-delete a change control case, returning the deleted row so the
+// caller can snapshot it into the audit log before it's gone for good.
+export async function deleteChangeControlCase(
+  id: string,
+): Promise<Record<string, unknown> | null> {
+  const result = await pool.query(
+    `DELETE FROM change_control_cases WHERE id = $1 RETURNING *`,
+    [id],
+  );
+  return result.rows[0] ?? null;
 }
 
 // Retained for any internal/background code that still needs the full set.

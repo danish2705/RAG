@@ -1,11 +1,11 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { apiFetch } from "../../utils/api";
-import { buildQueryFromForm } from "../../utils/inputQuery/buildQuery";
-import { MAX_FILE_SIZE_BYTES, ALLOWED_FILE_TYPES } from "../../mocks/mockInputQuery";
-import { useWorkflowStore } from "../../store/workflowStore";
-import type { PipelineResult } from "../../types/pipeline";
-import type { FormState, FormErrors } from "../../types/InputQuery";
+import { apiFetch } from "../utils/api";
+import { buildQueryFromForm } from "../utils/inputQuery/buildQuery";
+import { MAX_FILE_SIZE_BYTES, ALLOWED_FILE_TYPES } from "../mocks/mockInputQuery";
+import { useWorkflowStore } from "../store/workflowStore";
+import type { PipelineResult } from "../types/pipeline";
+import type { FormState, FormErrors } from "../types/InputQuery";
 
 export function useInputQueryForm() {
   const navigate = useNavigate();

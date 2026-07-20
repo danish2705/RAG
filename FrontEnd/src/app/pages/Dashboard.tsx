@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { AIAssistantPanel } from "../components/chat/AiAssistant";
 import { KpiCardGrid } from "../components/dashboard/KpiCard";
 import { RecentRecordsList } from "../components/dashboard/RecentRecordsList";
-import { useDashboard } from "../hooks/dashboard/useDashboard";
+import { useDashboard } from "../hooks/useDashboard";
 import {
   eventTypeCardMeta,
   metricCardMeta,

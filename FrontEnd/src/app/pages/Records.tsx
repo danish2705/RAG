@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
 import { AIAssistant } from "../components/chat/AiAssistant";
-import { useRecords } from "../hooks/records/useRecords";
+import { useRecords } from "../hooks/useRecords";
 import { CaseViewModal } from "../components/records/CaseViewModal";
 import { DeleteRecordModal } from "../components/records/DeleteRecordModal";
 import { RecordsFilterBar } from "../components/records/RecordsFilterBar";
@@ -54,7 +54,8 @@ export function Records() {
         <div className="mb-6 flex items-center gap-3">
           <div>
             <p className="text-sm text-muted-foreground mt-0.5 font-medium">
-              {filteredCases.length} case{filteredCases.length === 1 ? "" : "s"} found
+              {filteredCases.length} case{filteredCases.length === 1 ? "" : "s"}{" "}
+              found
             </p>
           </div>
           <Button

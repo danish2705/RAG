@@ -11,7 +11,7 @@ import { RootCause } from "./pages/deviation/RootCause";
 import { Capa } from "./pages/deviation/Capa";
 import { Summary } from "./pages/deviation/Summary";
 import { Records } from "./pages/Records";
-import { AuditTrail } from "./pages/AuditTrail";
+import { AuditTrail } from "./pages/AuditLogs";
 import { Settings } from "./pages/Settings";
 import { ChangeImpactAssessment } from "./pages/ChangeControl/ChangeImpactAssessment";
 import { RiskCriticality } from "./pages/ChangeControl/RiskCriticality";

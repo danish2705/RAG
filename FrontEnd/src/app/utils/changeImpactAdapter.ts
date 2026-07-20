@@ -4,15 +4,6 @@ import type {
   RiskLevel,
 } from "../types/pipeline";
 
-/**
- * Mirrors backend's ChangeImpactAssessmentSchema
- * (backend/llm/schemas/changeControl.ts) — this is the flat shape the LLM is
- * prompted to produce, and the shape every downstream Change Control stage
- * (risk-criticality, validation-testing, implementation-control,
- * final-summary) expects to receive back. The backend is the source of
- * truth for this shape; do not change field names here without also
- * checking the backend schema.
- */
 export interface FlatChangeImpactAssessment {
   impacted_systems_processes_studies: string[];
   gxp_classification: "Direct" | "Indirect";

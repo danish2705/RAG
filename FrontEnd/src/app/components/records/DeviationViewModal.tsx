@@ -7,7 +7,7 @@ import { PARAMETER_LABELS } from "../../mocks/mockImpactAssessment";
 import {
   getClassificationBadgeClass,
   getSeverityBadgeClass,
-} from "../../utils/records/badges";
+} from "../../utils/badges";
 import { BulletList, ConfidenceBar } from "./RecordsShared";
 import { formatTimestamp } from "../../utils/timezone";
 

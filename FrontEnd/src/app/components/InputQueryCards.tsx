@@ -1,22 +1,22 @@
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Label } from "../ui/label";
-import { Input } from "../ui/input";
-import { Textarea } from "../ui/textarea";
-import { Button } from "../ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Label } from "./ui/label";
+import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
+import { Button } from "./ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../ui/select";
+} from "./ui/select";
 import { Upload, X, AlertCircle } from "lucide-react";
 import {
   siteOptions,
   eventTypeOptions,
   sourceSystemOptions,
-} from "../../mocks/mockInputQuery";
-import type { FormState, FormErrors } from "../../types/InputQuery";
+} from "../mocks/mockInputQuery";
+import type { FormState, FormErrors } from "../types/InputQuery";
 
 export function SubmitErrorBanner({ message }: { message: string }) {
   return (

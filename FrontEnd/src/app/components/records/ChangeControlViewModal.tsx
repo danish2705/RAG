@@ -13,7 +13,7 @@ import {
   getValidationImpactBadgeClass,
   getValidationLevelBadgeClass,
   getRiskLevelBadgeClass,
-} from "../../utils/records/badges";
+} from "../../utils/badges";
 import { BulletList, ConfidenceBar } from "./RecordsShared";
 import { formatTimestamp } from "../../utils/timezone";
 

@@ -9,7 +9,7 @@ import {
   metricCardMeta,
   severityColors,
   statusColors,
-} from "../utils/dashboard/dashboardConfig";
+} from "../utils/dashboardConfig";
 
 export function Dashboard() {
   const [aiOpen, setAiOpen] = useState(false);

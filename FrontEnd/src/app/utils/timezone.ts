@@ -27,6 +27,11 @@ function resolveZoneLabel(timeZone: string, date: Date): string {
 export interface FormatTimestampOptions {
   /** Override the detected timezone, e.g. force "Asia/Kolkata" or "America/New_York". */
   timeZone?: string;
+  /**
+   * "medium" (default): "06 Apr 2024, 02:32 PM IST"
+   * "numeric": "06-04-2024, 02:32 PM IST" (dd-mm-yyyy)
+   */
+  dateStyle?: "medium" | "numeric";
 }
 
 /**
@@ -48,6 +53,31 @@ export function formatTimestamp(
   }
 
   const timeZone = options.timeZone || detectTimeZone();
+  const zoneLabel = resolveZoneLabel(timeZone, date);
+
+  if (options.dateStyle === "numeric") {
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone,
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    }).formatToParts(date);
+
+    const get = (type: string) =>
+      parts.find((p) => p.type === type)?.value ?? "";
+    const dd = get("day");
+    const mm = get("month");
+    const yyyy = get("year");
+    const hh = get("hour");
+    const min = get("minute");
+    const dayPeriod = get("dayPeriod");
+
+    return `${dd}-${mm}-${yyyy}, ${hh}:${min} ${dayPeriod} ${zoneLabel}`;
+  }
+
   const formatted = new Intl.DateTimeFormat("en-US", {
     timeZone,
     day: "2-digit",
@@ -58,7 +88,7 @@ export function formatTimestamp(
     hour12: true,
   }).format(date);
 
-  return `${formatted} ${resolveZoneLabel(timeZone, date)}`;
+  return `${formatted} ${zoneLabel}`;
 }
 
 /** The viewer's detected IANA timezone name, e.g. "Asia/Kolkata". */

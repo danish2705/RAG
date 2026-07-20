@@ -3,6 +3,7 @@ import { AIAssistant } from "../components/chat/AiAssistant";
 import { AuditFilters } from "../components/auditLogs/AuditFilters";
 import { ActivityLogTable } from "../components/auditLogs/ActivityLogTable";
 import { Button } from "../components/ui/button";
+import { AlertCircle, RefreshCw } from "lucide-react";
 import { useAuditLogs } from "../hooks/useAuditLogs";
 
 export function AuditLogs() {
@@ -11,7 +12,6 @@ export function AuditLogs() {
     entries,
     loading,
     error,
-    usingFallback,
     startDate,
     setStartDate,
     endDate,
@@ -23,6 +23,7 @@ export function AuditLogs() {
     page,
     setPage,
     totalPages,
+    refetch,
   } = useAuditLogs();
 
   return (
@@ -42,22 +43,29 @@ export function AuditLogs() {
             onSearchChange={setSearch}
           />
 
-          {usingFallback && error && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 px-4 py-2 text-xs text-amber-800 dark:text-amber-400">
-              Couldn't reach the audit log API ({error}) — showing sample data
-              instead.
-            </div>
-          )}
-
           {loading ? (
             <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
               Loading activity log...
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-16 bg-red-50/50 dark:bg-red-950/10 rounded-xl border border-red-200 dark:border-red-900/50 text-red-600">
+              <AlertCircle className="h-8 w-8" />
+              <p className="text-sm font-semibold">Failed to load audit log</p>
+              <p className="text-xs text-muted-foreground">{error}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refetch}
+                className="mt-1 gap-1.5"
+              >
+                <RefreshCw className="h-3.5 w-3.5" /> Retry
+              </Button>
             </div>
           ) : (
             <ActivityLogTable entries={entries} />
           )}
 
-          {!usingFallback && totalPages > 1 && (
+          {!loading && !error && totalPages > 1 && (
             <div className="flex items-center justify-center gap-3">
               <Button
                 variant="outline"

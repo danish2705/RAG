@@ -107,15 +107,15 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
         <CardTitle>Activity Log</CardTitle>
       </CardHeader>
       <CardContent>
-        <Table>
+        <Table className="table-fixed">
           <TableHeader>
             <TableRow>
-              <TableHead className="w-48">Timestamp</TableHead>
-              <TableHead className="w-40">User / System</TableHead>
-              <TableHead className="w-32">Action</TableHead>
-              <TableHead className="w-32">Record</TableHead>
-              <TableHead>Details</TableHead>
-              <TableHead className="w-24">Source</TableHead>
+              <TableHead className="w-[20%]">Timestamp</TableHead>
+              <TableHead className="w-[14%]">User / System</TableHead>
+              <TableHead className="w-[11%]">Action</TableHead>
+              <TableHead className="w-[8%]">Record</TableHead>
+              <TableHead className="w-[37%]">Details</TableHead>
+              <TableHead className="w-[10%]">Source</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -133,17 +133,17 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
                 const meta = actionMeta(entry);
                 return (
                   <TableRow key={entry.id} className={meta.rowClass}>
-                    <TableCell className="text-sm font-mono whitespace-nowrap">
+                    <TableCell className="text-sm font-mono leading-snug break-words">
                       {formatTimestamp(entry.created_at)}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
                         {entry.source === "ai" ? (
-                          <Bot className="h-4 w-4 text-blue-600" />
+                          <Bot className="h-4 w-4 text-blue-600 shrink-0" />
                         ) : (
-                          <User className="h-4 w-4 text-muted-foreground" />
+                          <User className="h-4 w-4 text-muted-foreground shrink-0" />
                         )}
-                        <span className="text-sm font-medium">
+                        <span className="text-sm font-medium truncate">
                           {entry.performed_by}
                         </span>
                       </div>
@@ -157,12 +157,12 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
                         {meta.label}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-xs font-mono text-muted-foreground">
+                    <TableCell className="text-xs font-mono text-muted-foreground truncate">
                       {entry.entity_id
                         ? `#${entry.entity_id.slice(0, 8)}`
                         : "—"}
                     </TableCell>
-                    <TableCell className="text-sm">
+                    <TableCell className="text-sm break-words">
                       {describeEntry(entry)}
                     </TableCell>
                     <TableCell>

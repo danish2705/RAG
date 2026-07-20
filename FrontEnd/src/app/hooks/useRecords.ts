@@ -1,61 +1,35 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { apiFetch } from "../utils/api";
+import { fetchRecords } from "../services/recordsApi";
+import type { AnyCase } from "../types/Records";
 
-// Fallback mock data in case API fails or during UI testing
-const INITIAL_MOCK_CASES = [
-  {
-    uiId: "#1105abb9",
-    id: "1105abb9-cf3a-46f0-94c0-c3d7399dca57",
-    submittedBy: "Sameera",
-    query:
-      "Site: Manufacturing Plant B Date/Time Detected: 2026-07-13T19:04 Source System: Eq",
-    classification: "Change Control",
-    savedOn: "14 Jul 2026, 10:15 AM IST",
-    rationale: [
-      "Equipment calibration drifted outside acceptable tolerance.",
-      "Requires change control filing.",
-    ],
-  },
-  {
-    uiId: "#1a80f916",
-    id: "1a80f916-ca8a-4111-bc02-8c14efe03b33",
-    submittedBy: "sampath",
-    query:
-      "Site: Manufacturing Plant B Date/Time Detected: 2026-07-09T20:27 Source System: Eq",
-    classification: "Deviation",
-    savedOn: "10 Jul 2026, 04:30 PM IST",
-    rationale: [
-      "Unexpected temperature spike in storage vault C.",
-      "Immediate containment executed.",
-    ],
-  },
-  {
-    uiId: "#1df60a25",
-    id: "1df60a25-f424-4fdc-acab-38ea84bfda66",
-    submittedBy: "Danish",
-    query:
-      "Site: Manufacturing Plant B Date/Time Detected: 2026-07-09T07:04 Source System: Eq",
-    classification: "Change Control",
-    savedOn: "09 Jul 2026, 11:20 AM IST",
-    rationale: ["Planned HVAC firmware upgrade across Building 2."],
-  },
-  {
-    uiId: "#d43d3391",
-    id: "d43d3391-a921-423f-9c0b-7c4aade50f75",
-    submittedBy: "Danish",
-    query:
-      "Site: Manufacturing Plant A Date/Time Detected: 2026-07-09T06:17 Source System: Eq",
-    classification: "Deviation",
-    savedOn: "09 Jul 2026, 09:05 AM IST",
-    rationale: [
-      "Batch record BX-4401 missing operator verification signature.",
-    ],
-  },
-];
+// UI-shaped row the table/modals expect. Mapped from the backend's
+// AnyCase (id, query, saved_by, classification jsonb, case_type, ...).
+interface RecordRow {
+  uiId: string;
+  id: string;
+  submittedBy: string;
+  query: string;
+  classification: "Deviation" | "Change Control";
+  savedOn: string;
+  raw: AnyCase;
+}
+
+function toRecordRow(row: AnyCase): RecordRow {
+  return {
+    uiId: `#${String(row.id).slice(0, 8)}`,
+    id: String(row.id),
+    submittedBy: row.saved_by || "N/A",
+    query: row.query || "",
+    classification: row.case_type,
+    savedOn: row.created_at,
+    raw: row,
+  };
+}
 
 export function useRecords() {
-  const [cases, setCases] = useState<any[]>(INITIAL_MOCK_CASES);
-  const [loading, setLoading] = useState(false);
+  const [cases, setCases] = useState<RecordRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [selectedCase, setSelectedCase] = useState<any | null>(null);
@@ -66,6 +40,24 @@ export function useRecords() {
   const [classificationFilter, setClassificationFilter] = useState("All Types");
   const [sortField, setSortField] = useState<string>("savedOn");
   const [sortAsc, setSortAsc] = useState<boolean>(false);
+
+  const loadRecords = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await fetchRecords();
+      setCases(result.data.map(toRecordRow));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load records.");
+      setCases([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadRecords();
+  }, [loadRecords]);
 
   // Handle column header clicks for sorting
   const handleSort = (field: string) => {
@@ -95,8 +87,8 @@ export function useRecords() {
         return matchesUser && matchesType;
       })
       .sort((a, b) => {
-        const valA = a[sortField] || "";
-        const valB = b[sortField] || "";
+        const valA = (a as any)[sortField] || "";
+        const valB = (b as any)[sortField] || "";
         if (valA < valB) return sortAsc ? -1 : 1;
         if (valA > valB) return sortAsc ? 1 : -1;
         return 0;
@@ -143,5 +135,6 @@ export function useRecords() {
     setClassificationFilter,
     filteredCases,
     handleDeleteRecord,
+    refetch: loadRecords,
   };
 }

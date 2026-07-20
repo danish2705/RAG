@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { NavLink } from "react-router";
 import {
   LayoutDashboard,
-  BarChart3,
   Settings,
   FolderOpen,
   ClipboardPlus,
@@ -13,7 +12,7 @@ const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Quality Event Intake", href: "/deviation", icon: ClipboardPlus },
   { name: "Records", href: "/records", icon: FolderOpen },
-  { name: "Audit Trail", href: "/audit-trail", icon: ScrollText },
+  { name: "Audit Logs", href: "/audit-trail", icon: ScrollText },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 

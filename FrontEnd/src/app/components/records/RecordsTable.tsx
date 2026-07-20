@@ -31,6 +31,7 @@ interface RecordsTableProps {
 export const RecordsTable: React.FC<RecordsTableProps> = ({
   loading,
   error,
+  cases,
   filteredCases,
   onSort,
   onSelectCase,
@@ -116,7 +117,9 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                   colSpan={6}
                   className="h-32 text-center text-muted-foreground text-sm"
                 >
-                  No records found matching your filters.
+                  {cases.length === 0
+                    ? "No data available."
+                    : "No records found matching your filters."}
                 </TableCell>
               </TableRow>
             ) : (
@@ -141,9 +144,11 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                       {record.classification || "N/A"}
                     </Badge>
                   </TableCell>
-                  {/* Formatted timestamp, auto-detected to the viewer's own timezone */}
+                  {/* Formatted timestamp, auto-detected to the viewer's own timezone, dd-mm-yyyy */}
                   <TableCell className="text-xs font-mono text-muted-foreground whitespace-nowrap">
-                    {formatTimestamp(record.savedOn || record.timestamp)}
+                    {formatTimestamp(record.savedOn || record.timestamp, {
+                      dateStyle: "numeric",
+                    })}
                   </TableCell>
 
                   {/* Side-by-Side Eye & Delete Icons in Actions Column */}

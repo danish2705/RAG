@@ -118,7 +118,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                   className="h-32 text-center text-muted-foreground text-sm"
                 >
                   {cases.length === 0
-                    ? "No data available."
+                    ? "No records found yet. Create your first case to get started."
                     : "No records found matching your filters."}
                 </TableCell>
               </TableRow>

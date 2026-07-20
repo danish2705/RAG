@@ -1,6 +1,7 @@
 import { Button } from "../components/ui/button";
 import { Sparkles, Loader2 } from "lucide-react";
 import { AIAssistant } from "../components/chat/AiAssistant";
+import { LlmFailureDialog } from "../components/LlmFailureDialog";
 import { useInputQueryForm } from "../hooks/useInputQueryForm";
 import {
   SubmitErrorBanner,
@@ -29,10 +30,13 @@ export function NewDeviation() {
     handleDragOver,
     removeFile,
     handleSubmit,
+    llmFailure,
   } = useInputQueryForm();
 
   return (
     <div className="relative h-full w-full">
+      <LlmFailureDialog control={llmFailure} />
+
       <div
         className={`h-full p-6 overflow-y-auto transition-[margin] duration-200 ${chatOpen ? "mr-80" : ""}`}
       >

@@ -7,6 +7,7 @@ import {
 } from "../../components/eventIntake";
 import { Button } from "../../components/ui/button";
 import { AIAssistant } from "../../components/chat/AiAssistant";
+import { LlmFailureDialog } from "../../components/LlmFailureDialog";
 import { useImplementationControl } from "../../hooks/changeControl/useImplementationControl";
 import {
   NoChangeControlDataGuard,
@@ -15,7 +16,13 @@ import {
   ImplementationTextareaCard,
 } from "../../components/changeControl/ImplementationControlCards";
 import { IMPLEMENTATION_CONTROL_FIELD_LABELS } from "../../mocks/mockImplementation";
-import { ClipboardList, FileText, Route, ListChecks, RotateCcw } from "lucide-react";
+import {
+  ClipboardList,
+  FileText,
+  Route,
+  ListChecks,
+  RotateCcw,
+} from "lucide-react";
 
 export function ImplementationControl() {
   const {
@@ -58,6 +65,7 @@ export function ImplementationControl() {
     handleCancelOverride,
     handleOverrideConfirm,
     handleReject,
+    llmFailure,
   } = useImplementationControl();
 
   // Guard: no submission yet
@@ -68,17 +76,21 @@ export function ImplementationControl() {
   // Guard: still generating / failed to generate and nothing to show yet
   if (!implementationParsed) {
     return (
-      <GeneratingImplementationGuard
-        classification={classificationParsed?.classification}
-        isGenerating={isGenerating}
-        generateError={generateError}
-        onGoBack={() => navigate("/change-control/validation-testing")}
-      />
+      <>
+        <LlmFailureDialog control={llmFailure} />
+        <GeneratingImplementationGuard
+          classification={classificationParsed?.classification}
+          isGenerating={isGenerating}
+          generateError={generateError}
+          onGoBack={() => navigate("/change-control/validation-testing")}
+        />
+      </>
     );
   }
 
   return (
     <div className="relative h-full w-full">
+      <LlmFailureDialog control={llmFailure} />
       <div
         className={`min-h-screen p-6 transition-[padding] duration-200 ${chatOpen ? "pr-80" : "pr-6"}`}
       >
@@ -154,7 +166,9 @@ export function ImplementationControl() {
 
           <ImplementationTextareaCard
             icon={<RotateCcw className="h-5 w-5 text-blue-600" />}
-            title={IMPLEMENTATION_CONTROL_FIELD_LABELS.rollback_contingency_plan}
+            title={
+              IMPLEMENTATION_CONTROL_FIELD_LABELS.rollback_contingency_plan
+            }
             fieldId="rollbackPlan"
             label="What happens if the change needs to be reversed"
             rows={4}

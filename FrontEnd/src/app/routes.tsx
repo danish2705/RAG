@@ -12,6 +12,7 @@ import { Capa } from "./pages/deviation/Capa";
 import { Summary } from "./pages/deviation/Summary";
 import { Records } from "./pages/Records";
 import { AuditLogs } from "./pages/AuditLogs";
+import { PendingAiReviews } from "./pages/PendingAiReviews";
 import { Settings } from "./pages/Settings";
 import { ChangeImpactAssessment } from "./pages/changeControl/ChangeImpactAssessment";
 import { RiskCriticality } from "./pages/changeControl/RiskCriticality";
@@ -56,6 +57,7 @@ export const router = createBrowserRouter([
           { path: "change-control/summary", Component: ChangecontrolSummary },
           { path: "records", Component: Records },
           { path: "audit-trail", Component: AuditLogs },
+          { path: "pending-ai-reviews", Component: PendingAiReviews },
           { path: "settings", Component: Settings },
         ],
       },

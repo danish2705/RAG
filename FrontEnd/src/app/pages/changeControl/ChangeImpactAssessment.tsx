@@ -17,6 +17,7 @@ import {
 import { Button } from "../../components/ui/button";
 import { AlertTriangle } from "lucide-react";
 import { AIAssistant } from "../../components/chat/AiAssistant";
+import { LlmFailureDialog } from "../../components/LlmFailureDialog";
 import { useChangeImpactAssessmentReview } from "../../hooks/changeControl/useChangeImpactAssessment";
 import {
   NoImpactAssessmentDataGuard,
@@ -81,6 +82,7 @@ export function ChangeImpactAssessment() {
     handleCancelOverride,
     handleOverrideConfirm,
     handleReject,
+    llmFailure,
   } = useChangeImpactAssessmentReview();
 
   // Guard
@@ -92,6 +94,7 @@ export function ChangeImpactAssessment() {
 
   return (
     <div className="relative h-full w-full bg-gray-50/50 dark:bg-background">
+      <LlmFailureDialog control={llmFailure} />
       <div
         className={`min-h-screen p-6 transition-[padding] duration-200 ${chatOpen ? "pr-80" : "pr-6"}`}
       >

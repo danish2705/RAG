@@ -14,6 +14,7 @@ import {
   nestedToFlatValidationTesting,
 } from "../../utils/changeControlAdapters";
 import { useOverrideDialogState } from "../shared/useOverRideDialogState";
+import { useLlmFailureRecovery } from "../shared/useLlmFailureRecovery";
 
 // Helpers — mirrors the list <-> textarea convention used on
 // RiskCriticality.tsx / ValidationTesting.tsx
@@ -111,6 +112,7 @@ export function useImplementationControl() {
   // visited, mirroring how earlier stages hand data forward on Accept.
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const llmFailure = useLlmFailureRecovery();
 
   useEffect(() => {
     if (!result || implementationParsed || isGenerating) return;
@@ -153,11 +155,18 @@ export function useImplementationControl() {
       })
       .catch((err) => {
         if (cancelled) return;
-        setGenerateError(
+        const message =
           err instanceof Error
             ? err.message
-            : "Something went wrong generating implementation & control actions. Please try again.",
-        );
+            : "Something went wrong generating implementation & control actions. Please try again.";
+        setGenerateError(message);
+        llmFailure.openLlmFailureDialog({
+          entityType: "Change Control",
+          pipelineStage: "implementation_control",
+          queryText: result.query,
+          errorMessage: message,
+          pipelineContext: result,
+        });
       })
       .finally(() => {
         if (!cancelled) setIsGenerating(false);
@@ -416,6 +425,7 @@ export function useImplementationControl() {
     decisionMade,
     confidenceScore,
     riskLevel,
+    llmFailure,
 
     proceed,
     handleAccept,

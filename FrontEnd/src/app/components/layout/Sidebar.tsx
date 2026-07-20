@@ -6,6 +6,7 @@ import {
   FolderOpen,
   ClipboardPlus,
   ScrollText,
+  Clock,
 } from "lucide-react";
 
 const navigation = [
@@ -13,12 +14,13 @@ const navigation = [
   { name: "Quality Event Intake", href: "/deviation", icon: ClipboardPlus },
   { name: "Records", href: "/records", icon: FolderOpen },
   { name: "Audit Logs", href: "/audit-trail", icon: ScrollText },
+  { name: "Pending AI Reviews", href: "/pending-ai-reviews", icon: Clock },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 function useDarkMode() {
-  const [isDark, setIsDark] = useState(
-    () => document.documentElement.classList.contains("dark")
+  const [isDark, setIsDark] = useState(() =>
+    document.documentElement.classList.contains("dark"),
   );
 
   useEffect(() => {
@@ -41,16 +43,16 @@ export function Sidebar() {
   const isDark = useDarkMode();
 
   // Theme tokens
-  const bg        = isDark ? "#000000" : "#ffffff";
-  const border    = isDark ? "#1e232a" : "#e2e8f0";
-  const textMain  = isDark ? "#e2e8f0" : "#1e293b";
+  const bg = isDark ? "#000000" : "#ffffff";
+  const border = isDark ? "#1e232a" : "#e2e8f0";
+  const textMain = isDark ? "#e2e8f0" : "#1e293b";
   const textMuted = isDark ? "#94a3b8" : "#475569";
-  const hoverBg   = isDark ? "#1e293b" : "#eff6ff";
+  const hoverBg = isDark ? "#1e293b" : "#eff6ff";
   const hoverText = isDark ? "#e2e8f0" : "#2563eb";
 
   // Tooltip tokens
-  const tooltipBg     = isDark ? "#1e232a" : "#ffffff";
-  const tooltipText   = "#2563eb";
+  const tooltipBg = isDark ? "#1e232a" : "#ffffff";
+  const tooltipText = "#2563eb";
 
   return (
     <aside
@@ -112,7 +114,8 @@ export function Sidebar() {
                 })}
                 onMouseEnter={(e) => {
                   const el = e.currentTarget;
-                  const isActive = el.style.backgroundColor === "rgb(37, 99, 235)";
+                  const isActive =
+                    el.style.backgroundColor === "rgb(37, 99, 235)";
                   if (!isActive) {
                     el.style.backgroundColor = hoverBg;
                     el.style.color = hoverText;
@@ -121,7 +124,8 @@ export function Sidebar() {
                 }}
                 onMouseLeave={(e) => {
                   const el = e.currentTarget;
-                  const isActive = el.style.backgroundColor === "rgb(37, 99, 235)";
+                  const isActive =
+                    el.style.backgroundColor === "rgb(37, 99, 235)";
                   if (!isActive) {
                     el.style.backgroundColor = "transparent";
                     el.style.color = textMuted;
@@ -132,7 +136,8 @@ export function Sidebar() {
                 <item.icon
                   className="h-5 w-5 shrink-0"
                   style={{
-                    transform: hoveredItem === item.name ? "scale(1.2)" : "scale(1)",
+                    transform:
+                      hoveredItem === item.name ? "scale(1.2)" : "scale(1)",
                     transition: "transform 150ms ease",
                   }}
                 />
@@ -141,7 +146,8 @@ export function Sidebar() {
                     className="whitespace-nowrap"
                     style={{
                       display: "inline-block",
-                      transform: hoveredItem === item.name ? "scale(1.1)" : "scale(1)",
+                      transform:
+                        hoveredItem === item.name ? "scale(1.1)" : "scale(1)",
                       transformOrigin: "left center",
                       transition: "transform 150ms ease",
                     }}
@@ -164,8 +170,10 @@ export function Sidebar() {
                         : "translateY(-50%) scale(0.8)",
                     transformOrigin: "left center",
                     opacity: hoveredItem === item.name ? 1 : 0,
-                    visibility: hoveredItem === item.name ? "visible" : "hidden",
-                    transition: "transform 150ms ease, opacity 150ms ease, visibility 150ms",
+                    visibility:
+                      hoveredItem === item.name ? "visible" : "hidden",
+                    transition:
+                      "transform 150ms ease, opacity 150ms ease, visibility 150ms",
                     backgroundColor: tooltipBg,
                     color: tooltipText,
                     borderRadius: "0.375rem",

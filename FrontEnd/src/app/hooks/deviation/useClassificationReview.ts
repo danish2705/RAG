@@ -15,6 +15,7 @@ import type {
   ClassificationType,
 } from "../../types/pipeline";
 import { flatToNestedChangeImpactAssessment } from "../../utils/changeImpactAdapter";
+import { useLlmFailureRecovery } from "../shared/useLlmFailureRecovery";
 
 export function useClassificationReview() {
   const navigate = useNavigate();
@@ -46,6 +47,7 @@ export function useClassificationReview() {
   const [isAssessing, setIsAssessing] = useState(false);
   const [assessError, setAssessError] = useState<string | null>(null);
   const [overrideConfirmed, setOverrideConfirmed] = useState(false);
+  const llmFailure = useLlmFailureRecovery();
 
   const rationaleLines = useMemo(
     () => parseRationaleLines(editedRationale),
@@ -141,16 +143,44 @@ export function useClassificationReview() {
           navigate("/deviation/impact-assessment");
         }
       } catch (err) {
-        setAssessError(
+        const message =
           err instanceof Error
             ? err.message
-            : "Something went wrong running the impact assessment. Please try again.",
-        );
+            : "Something went wrong running the impact assessment. Please try again.";
+        setAssessError(message);
+        // Same reasoning as the later stages: `result` predates this
+        // Accept, so patch in the just-approved classification manually
+        // rather than saving the stale pre-accept snapshot.
+        const patchedResult = result
+          ? {
+              ...result,
+              stages: {
+                ...result.stages,
+                classification: {
+                  ...result.stages.classification!,
+                  parsed: approvedClassification,
+                },
+              },
+              provenance: {
+                ...result.provenance,
+                classification: classificationProvenance,
+              },
+            }
+          : null;
+        llmFailure.openLlmFailureDialog({
+          entityType: isChangeControl ? "Change Control" : "Deviation",
+          pipelineStage: isChangeControl
+            ? "change_impact_assessment"
+            : "impact_assessment",
+          queryText: result?.query ?? "",
+          errorMessage: message,
+          pipelineContext: patchedResult,
+        });
       } finally {
         setIsAssessing(false);
       }
     },
-    [result, mergePipelineResult, navigate],
+    [result, mergePipelineResult, navigate, llmFailure],
   );
 
   const handleAccept = useCallback(() => {
@@ -285,5 +315,6 @@ export function useClassificationReview() {
     handleCancelOverride,
     handleOverrideConfirm,
     handleReject,
+    llmFailure,
   };
 }

@@ -2,8 +2,12 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { apiFetch } from "../utils/api";
 import { buildQueryFromForm } from "../utils/buildQuery";
-import { MAX_FILE_SIZE_BYTES, ALLOWED_FILE_TYPES } from "../mocks/mockInputQuery";
+import {
+  MAX_FILE_SIZE_BYTES,
+  ALLOWED_FILE_TYPES,
+} from "../mocks/mockInputQuery";
 import { useWorkflowStore } from "../store/workflowStore";
+import { useLlmFailureRecovery } from "./shared/useLlmFailureRecovery";
 import type { PipelineResult } from "../types/pipeline";
 import type { FormState, FormErrors } from "../types/InputQuery";
 
@@ -30,6 +34,7 @@ export function useInputQueryForm() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const setPipelineResult = useWorkflowStore((s) => s.setPipelineResult);
+  const llmFailure = useLlmFailureRecovery();
 
   const isFormReady =
     !!formData.site &&
@@ -119,8 +124,9 @@ export function useInputQueryForm() {
 
     setIsSubmitting(true);
 
+    const query = buildQueryFromForm(formData);
+
     try {
-      const query = buildQueryFromForm(formData);
       const result: PipelineResult = await apiFetch("/api/inputQuery", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -130,11 +136,20 @@ export function useInputQueryForm() {
       setPipelineResult(result);
       navigate("/deviation/ai-recommendation");
     } catch (err) {
-      setSubmitError(
+      const message =
         err instanceof Error
           ? err.message
-          : "Something went wrong submitting this event. Please try again.",
-      );
+          : "Something went wrong submitting this event. Please try again.";
+      setSubmitError(message);
+      // Classification hasn't run yet, so we don't know Deviation vs Change
+      // Control — default to "Deviation" (the queue entry is still
+      // findable by name/reference code either way).
+      llmFailure.openLlmFailureDialog({
+        entityType: "Deviation",
+        pipelineStage: "classification",
+        queryText: query,
+        errorMessage: message,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -158,5 +173,6 @@ export function useInputQueryForm() {
     handleDragOver,
     removeFile,
     handleSubmit,
+    llmFailure,
   };
 }

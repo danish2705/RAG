@@ -6,7 +6,10 @@ export type AuditAction =
   | "field_edited"
   | "deleted"
   | "ai_suggestion"
-  | "status_changed";
+  | "status_changed"
+  // Recorded whenever the LLM is unreachable/erroring mid-pipeline and the
+  // user's in-progress query gets saved to llm_retry_queue instead of lost.
+  | "llm_unavailable";
 export type AuditSource = "ai" | "human" | "system";
 
 export interface AuditLogInput {

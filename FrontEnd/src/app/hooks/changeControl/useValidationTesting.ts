@@ -18,6 +18,7 @@ import {
   nestedToFlatValidationTesting,
 } from "../../utils/changeControlAdapters";
 import { useOverrideDialogState } from "../shared/useOverRideDialogState";
+import { useLlmFailureRecovery } from "../shared/useLlmFailureRecovery";
 
 // Helpers — mirrors the list <-> textarea convention used on
 // RiskCriticality.tsx / ImplementationControl.tsx
@@ -132,6 +133,7 @@ export function useValidationTestingReview() {
     initialValidationFormState,
   );
   const override = useOverrideDialogState();
+  const llmFailure = useLlmFailureRecovery();
 
   // Re-hydrate local editable state whenever a *new* validation strategy
   // lands in the store (mirrors RiskCriticality.tsx / ImplementationControl.tsx).
@@ -317,11 +319,37 @@ export function useValidationTestingReview() {
         approvedValidationTesting,
       );
     } catch (err) {
-      override.submitFailure(
+      const message =
         err instanceof Error
           ? err.message
-          : "Something went wrong submitting the validation & testing strategy. Please try again.",
-      );
+          : "Something went wrong submitting the validation & testing strategy. Please try again.";
+      override.submitFailure(message);
+      // `result` predates this Accept — patch in the just-approved
+      // validation & testing strategy so Resume doesn't lose the approval
+      // just made.
+      const patchedResult = result
+        ? {
+            ...result,
+            stages: {
+              ...result.stages,
+              validationTesting: {
+                ...result.stages.validationTesting!,
+                parsed: approvedValidationTesting,
+              },
+            },
+            provenance: {
+              ...result.provenance,
+              validationTesting: validationProvenance,
+            },
+          }
+        : null;
+      llmFailure.openLlmFailureDialog({
+        entityType: "Change Control",
+        pipelineStage: "implementation_control",
+        queryText: result!.query,
+        errorMessage: message,
+        pipelineContext: patchedResult,
+      });
     }
   };
 
@@ -419,6 +447,7 @@ export function useValidationTestingReview() {
 
     isSubmitting: override.isSubmitting,
     submitError: override.submitError,
+    llmFailure,
 
     handleAccept,
     handleOverrideClick,

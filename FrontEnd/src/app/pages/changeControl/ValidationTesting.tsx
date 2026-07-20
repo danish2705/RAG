@@ -24,6 +24,7 @@ import {
   Users,
 } from "lucide-react";
 import { AIAssistant } from "../../components/chat/AiAssistant";
+import { LlmFailureDialog } from "../../components/LlmFailureDialog";
 import { useValidationTestingReview } from "../../hooks/changeControl/useValidationTesting";
 import {
   NoValidationDataGuard,
@@ -77,6 +78,7 @@ export function ValidationTesting() {
     handleCancelOverride,
     handleOverrideConfirm,
     handleReject,
+    llmFailure,
   } = useValidationTestingReview();
 
   // Guard
@@ -95,6 +97,7 @@ export function ValidationTesting() {
 
   return (
     <div className="relative h-full w-full bg-gray-50/50 dark:bg-background">
+      <LlmFailureDialog control={llmFailure} />
       <div
         className={`min-h-screen p-6 transition-[padding] duration-200 ${chatOpen ? "pr-80" : "pr-6"}`}
       >

@@ -17,6 +17,7 @@ import {
 } from "../../components/ui/dialog";
 import { AlertTriangle } from "lucide-react";
 import { AIAssistant } from "../../components/chat/AiAssistant";
+import { LlmFailureDialog } from "../../components/LlmFailureDialog";
 import {
   useRiskCriticality,
   RISK_FIELD_LABELS,
@@ -90,6 +91,7 @@ export function RiskCriticality() {
     handleCancelOverride,
     handleOverrideConfirm,
     handleReject,
+    llmFailure,
   } = useRiskCriticality();
 
   // Stabilized so RiskLevelCard (React.memo) doesn't see a "new" prop and
@@ -117,6 +119,7 @@ export function RiskCriticality() {
 
   return (
     <div className="relative h-full w-full bg-gray-50/50 dark:bg-background">
+      <LlmFailureDialog control={llmFailure} />
       <div
         className={`min-h-screen p-6 transition-[padding] duration-200 ${chatOpen ? "pr-80" : "pr-6"}`}
       >

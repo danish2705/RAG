@@ -7,6 +7,7 @@ import {
   StepProgressBar,
 } from "../../components/eventIntake";
 import { AIAssistant } from "../../components/chat/AiAssistant";
+import { LlmFailureDialog } from "../../components/LlmFailureDialog";
 import { useRootCauseReview } from "../../hooks/deviation/useRootCauseReview";
 import {
   NoRcaDataGuard,
@@ -48,6 +49,7 @@ export function RootCause() {
     handleCancelOverride,
     handleOverrideConfirm,
     handleReject,
+    llmFailure,
   } = useRootCauseReview();
 
   if (!rcaParsed || !result) {
@@ -56,6 +58,7 @@ export function RootCause() {
 
   return (
     <div className="relative h-full w-full">
+      <LlmFailureDialog control={llmFailure} />
       <div
         className={`min-h-screen p-6 transition-[padding] duration-200 ${chatOpen ? "pr-80" : "pr-6"}`}
       >

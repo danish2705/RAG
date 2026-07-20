@@ -16,6 +16,7 @@ import { useWorkflowStore } from "../../store/workflowStore";
 import { CHANGE_IMPACT_FIELD_LABELS } from "../../mocks/mockImpactAssessment";
 import { nestedToFlatChangeImpactAssessment } from "../../utils/changeImpactAdapter";
 import { useOverrideDialogState } from "../shared/useOverRideDialogState";
+import { useLlmFailureRecovery } from "../shared/useLlmFailureRecovery";
 
 // ---------------------------------------------------------------------------
 // Form reducer: the editable change-impact fields, previously 13 separate
@@ -164,6 +165,7 @@ export function useChangeImpactAssessmentReview() {
       : initialImpactFormState,
   );
   const override = useOverrideDialogState();
+  const llmFailure = useLlmFailureRecovery();
 
   const setImpactedSystems = useCallback(
     (value: string[]) => dispatchForm({ type: "SET_IMPACTED_SYSTEMS", value }),
@@ -398,11 +400,36 @@ export function useChangeImpactAssessmentReview() {
         approvedChangeImpactAssessment,
       );
     } catch (err) {
-      override.submitFailure(
+      const message =
         err instanceof Error
           ? err.message
-          : "Something went wrong submitting the change impact assessment. Please try again.",
-      );
+          : "Something went wrong submitting the change impact assessment. Please try again.";
+      override.submitFailure(message);
+      // `result` predates this Accept — patch in the just-approved change
+      // impact assessment so Resume doesn't lose the approval just made.
+      const patchedResult = result
+        ? {
+            ...result,
+            stages: {
+              ...result.stages,
+              changeImpactAssessment: {
+                ...result.stages.changeImpactAssessment!,
+                parsed: approvedChangeImpactAssessment,
+              },
+            },
+            provenance: {
+              ...result.provenance,
+              changeImpactAssessment: changeImpactProvenance,
+            },
+          }
+        : null;
+      llmFailure.openLlmFailureDialog({
+        entityType: "Change Control",
+        pipelineStage: "risk_criticality",
+        queryText: result!.query,
+        errorMessage: message,
+        pipelineContext: patchedResult,
+      });
     }
   };
 
@@ -547,5 +574,6 @@ export function useChangeImpactAssessmentReview() {
     handleCancelOverride,
     handleOverrideConfirm,
     handleReject,
+    llmFailure,
   };
 }

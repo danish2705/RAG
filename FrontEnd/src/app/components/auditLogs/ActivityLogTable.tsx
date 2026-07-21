@@ -84,8 +84,7 @@ function actionMeta(entry: AuditLogEntry): {
         label: "AI Suggestion",
         badgeClass:
           "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-        rowClass:
-          "bg-blue-50 dark:bg-blue-900/40 border-l-2 border-l-blue-500 dark:border-l-blue-400",
+        rowClass: "",
       };
   }
 }
@@ -180,7 +179,7 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
                             entry.source === "ai"
                               ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
                               : entry.source === "system"
-                                ? "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
+                                ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
                                 : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
                           }
                         >

@@ -75,7 +75,7 @@ export function PendingAiReviewsTable({
           <TableBody>
             {entries.map((entry) => (
               <TableRow key={entry.id}>
-                <TableCell>{entry.full_name}</TableCell>
+                <TableCell className="font-bold text-foreground">{entry.full_name}</TableCell>
                 <TableCell>
                   <Badge
                     variant="outline"
@@ -138,56 +138,42 @@ export function PendingAiReviewsTable({
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          disabled={resumingId === entry.id}
-                          onClick={() => onResume(entry)}
-                          aria-label="Resume"
-                          className="text-blue-600 hover:text-blue-800 disabled:opacity-50 dark:text-blue-400 dark:hover:text-blue-300"
-                        >
-                          {resumingId === entry.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <PlayCircle className="h-4 w-4" />
-                          )}
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" className="text-xs">
-                        Resume
-                      </TooltipContent>
-                    </Tooltip>
+                    <button
+                      type="button"
+                      disabled={resumingId === entry.id}
+                      onClick={() => onResume(entry)}
+                      aria-label="Resume"
+                      className="text-blue-600 hover:text-blue-800 disabled:opacity-50 dark:text-blue-400 dark:hover:text-blue-300"
+                    >
+                      {resumingId === entry.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <PlayCircle className="h-4 w-4" />
+                      )}
+                    </button>
 
                     {onDelete && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            disabled={deletingId === entry.id}
-                            onClick={() => {
-                              if (
-                                window.confirm(
-                                  "Delete this pending AI review entry? This cannot be undone.",
-                                )
-                              ) {
-                                onDelete(entry);
-                              }
-                            }}
-                            aria-label="Delete"
-                            className="text-red-600 hover:text-red-800 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
-                          >
-                            {deletingId === entry.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom" className="text-xs">
-                          Delete
-                        </TooltipContent>
-                      </Tooltip>
+                      <button
+                        type="button"
+                        disabled={deletingId === entry.id}
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              "Delete this pending AI review entry? This cannot be undone.",
+                            )
+                          ) {
+                            onDelete(entry);
+                          }
+                        }}
+                        aria-label="Delete"
+                        className="text-red-600 hover:text-red-800 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
+                      >
+                        {deletingId === entry.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </button>
                     )}
                   </div>
                 </TableCell>

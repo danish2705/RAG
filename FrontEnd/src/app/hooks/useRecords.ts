@@ -1,10 +1,9 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { apiFetch } from "../utils/api";
-import { fetchRecords } from "../services/recordsApi";
+import { fetchRecords, fetchCaseDetail } from "../services/recordsApi";
+import { useAuth } from "../context/AuthContext";
 import type { AnyCase } from "../types/Records";
 
-// UI-shaped row the table/modals expect. Mapped from the backend's
-// AnyCase (id, query, saved_by, classification jsonb, case_type, ...).
 interface RecordRow {
   uiId: string;
   id: string;
@@ -28,11 +27,18 @@ function toRecordRow(row: AnyCase): RecordRow {
 }
 
 export function useRecords() {
+  const { user } = useAuth();
+  const role = user?.role?.toLowerCase();
   const [cases, setCases] = useState<RecordRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [selectedCase, setSelectedCase] = useState<any | null>(null);
+  const [selectedCase, setSelectedCaseRaw] = useState<any | null>(null);
+  const [selectedCaseDetail, setSelectedCaseDetail] = useState<AnyCase | null>(
+    null,
+  );
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
   const [caseToDelete, setCaseToDelete] = useState<any | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
 
@@ -70,8 +76,16 @@ export function useRecords() {
   };
 
   // Filter and sort the cases array cleanly
+  // Users can only view and manage their own records; Admins see everything.
+  const ownRecordsOnly = useMemo(() => {
+    if (role !== "user" || !user?.username) return cases;
+    return cases.filter(
+      (item) => item.submittedBy?.toLowerCase() === user.username.toLowerCase(),
+    );
+  }, [cases, role, user?.username]);
+
   const filteredCases = useMemo(() => {
-    return cases
+    return ownRecordsOnly
       .filter((item) => {
         const matchesUser =
           !submittedByFilter ||
@@ -93,7 +107,7 @@ export function useRecords() {
         if (valA > valB) return sortAsc ? 1 : -1;
         return 0;
       });
-  }, [cases, submittedByFilter, classificationFilter, sortField, sortAsc]);
+  }, [ownRecordsOnly, submittedByFilter, classificationFilter, sortField, sortAsc]);
 
   // Handle Record Deletion
   const handleDeleteRecord = async (recordId: string, deletedBy: string) => {
@@ -118,12 +132,37 @@ export function useRecords() {
     setCaseToDelete(null);
   };
 
+  // Opens the View modal immediately (showing a loading state) and fetches
+  // the full pipeline detail in the background — /api/records only returns
+  // summary columns, so the modal needs the dedicated detail endpoint to
+  // show classification/impact/rca/capa/etc.
+  const setSelectedCase = useCallback((record: RecordRow | null) => {
+    setSelectedCaseRaw(record);
+    setSelectedCaseDetail(null);
+    setDetailError(null);
+
+    if (!record) return;
+
+    setDetailLoading(true);
+    fetchCaseDetail(record.id, record.classification)
+      .then((detail) => setSelectedCaseDetail(detail))
+      .catch((err) =>
+        setDetailError(
+          err instanceof Error ? err.message : "Failed to load case detail.",
+        ),
+      )
+      .finally(() => setDetailLoading(false));
+  }, []);
+
   return {
-    cases,
+    cases: ownRecordsOnly,
     loading,
     error,
     selectedCase,
     setSelectedCase,
+    selectedCaseDetail,
+    detailLoading,
+    detailError,
     caseToDelete,
     setCaseToDelete,
     chatOpen,

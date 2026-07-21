@@ -26,6 +26,9 @@ export function PendingAiReviews() {
     resumingId,
     resumeError,
     handleResume,
+    deletingId,
+    deleteError,
+    handleDelete,
     refetch,
   } = usePendingAiReviews();
 
@@ -35,17 +38,6 @@ export function PendingAiReviews() {
         className={`h-full p-6 overflow-y-auto transition-[margin] duration-200 ${chatOpen ? "mr-80" : ""}`}
       >
         <div className="space-y-6">
-          <div>
-            <h1 className="text-xl font-semibold text-foreground">
-              Pending AI Reviews
-            </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Queries saved when the AI service was unavailable, so nothing gets
-              lost. Retry them once the service is back up, and mark each one
-              Pending or Not Executed as you work through the list.
-            </p>
-          </div>
-
           <PendingAiReviewsFilters
             statusFilter={statusFilter}
             onStatusFilterChange={setStatusFilter}
@@ -58,6 +50,12 @@ export function PendingAiReviews() {
           {resumeError && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/10 p-3 text-sm text-amber-800 dark:text-amber-400">
               {resumeError}
+            </div>
+          )}
+
+          {deleteError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-950/10 p-3 text-sm text-red-800 dark:text-red-400">
+              {deleteError}
             </div>
           )}
 
@@ -91,6 +89,8 @@ export function PendingAiReviews() {
               onToggleStatus={toggleStatus}
               resumingId={resumingId}
               onResume={handleResume}
+              deletingId={deletingId}
+              onDelete={handleDelete}
             />
           )}
 

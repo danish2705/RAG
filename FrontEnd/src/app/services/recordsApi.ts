@@ -16,3 +16,12 @@ export const fetchRecords = async (): Promise<RecordsListResponse> => {
     `/api/records?pageSize=100&sortField=created_at&sortDir=desc`,
   );
 };
+
+export const fetchCaseDetail = async (
+  id: string,
+  caseType: "Deviation" | "Change Control",
+): Promise<AnyCase> => {
+  return apiFetch(
+    `/api/records/${encodeURIComponent(id)}?case_type=${encodeURIComponent(caseType)}`,
+  );
+};

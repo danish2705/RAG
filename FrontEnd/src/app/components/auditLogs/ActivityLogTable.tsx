@@ -84,8 +84,7 @@ function actionMeta(entry: AuditLogEntry): {
         label: "AI Suggestion",
         badgeClass:
           "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-        rowClass:
-          "bg-blue-50 dark:bg-blue-900/40 border-l-2 border-l-blue-500 dark:border-l-blue-400",
+        rowClass: "",
       };
   }
 }
@@ -118,12 +117,12 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
           <Table className="table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[16%]">Timestamp</TableHead>
+                <TableHead className="w-[10%]">UID</TableHead>
                 <TableHead className="w-[14%]">User / System</TableHead>
-                <TableHead className="w-[11%]">Action</TableHead>
-                <TableHead className="w-[8%]">Record</TableHead>
-                <TableHead className="w-[31%]">Details</TableHead>
+                <TableHead className="w-[41%]">Details</TableHead>
                 <TableHead className="w-[10%]">Source</TableHead>
+                <TableHead className="w-[11%]">Action</TableHead>
+                <TableHead className="w-[14%]">Timestamp</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -141,10 +140,10 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
                   const meta = actionMeta(entry);
                   return (
                     <TableRow key={entry.id} className={meta.rowClass}>
-                      <TableCell className="text-xs font-mono text-muted-foreground whitespace-nowrap">
-                        {formatTimestamp(entry.created_at, {
-                          dateStyle: "numeric",
-                        })}
+                      <TableCell className="text-sm font-medium text-blue-600 dark:text-blue-400 truncate">
+                        {entry.entity_id
+                          ? `#${entry.entity_id.slice(0, 8)}`
+                          : "—"}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2 min-w-0">
@@ -157,20 +156,6 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
                             {entry.performed_by}
                           </span>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={`text-xs gap-1 ${meta.badgeClass}`}
-                        >
-                          {meta.icon}
-                          {meta.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-xs font-mono text-muted-foreground truncate">
-                        {entry.entity_id
-                          ? `#${entry.entity_id.slice(0, 8)}`
-                          : "—"}
                       </TableCell>
                       <TableCell className="text-sm overflow-hidden">
                         <Tooltip>
@@ -194,7 +179,7 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
                             entry.source === "ai"
                               ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
                               : entry.source === "system"
-                                ? "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
+                                ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
                                 : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
                           }
                         >
@@ -204,6 +189,20 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
                               ? "System"
                               : "Human"}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={`text-xs gap-1 ${meta.badgeClass}`}
+                        >
+                          {meta.icon}
+                          {meta.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs font-mono text-muted-foreground whitespace-nowrap">
+                        {formatTimestamp(entry.created_at, {
+                          dateStyle: "numeric",
+                        })}
                       </TableCell>
                     </TableRow>
                   );

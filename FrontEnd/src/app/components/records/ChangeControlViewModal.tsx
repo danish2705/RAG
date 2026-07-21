@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
-import { Database } from "lucide-react";
+import { Database, Download } from "lucide-react";
 import type { ChangeControlCase } from "../../types/Records";
 import { CHANGE_IMPACT_FIELD_LABELS } from "../../mocks/mockImpactAssessment";
 import { VALIDATION_TESTING_FIELD_LABELS } from "../../mocks/mockValidationTesting";
@@ -14,7 +15,12 @@ import {
   getValidationLevelBadgeClass,
   getRiskLevelBadgeClass,
 } from "../../utils/badges";
-import { BulletList, ConfidenceBar } from "./RecordsShared";
+import {
+  BulletList,
+  ConfidenceBar,
+  buildFullSummaryText,
+  downloadTextFile,
+} from "./RecordsShared";
 import { formatTimestamp } from "../../utils/timezone";
 
 export function ChangeControlViewModal({
@@ -30,22 +36,42 @@ export function ChangeControlViewModal({
   const validation = record.validation_testing;
   const implementation = record.implementation_control;
 
+  const handleDownloadSummary = () => {
+    downloadTextFile(
+      `QMS_Summary_${record.id}.txt`,
+      buildFullSummaryText({ ...record, case_type: "Change Control" }),
+    );
+  };
+
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="!max-w-none sm:!max-w-none w-[70vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-lg">
-            <Database className="h-5 w-5 text-blue-600" />
-            Case #{record.id} — Full Summary
-          </DialogTitle>
-          <p className="text-xs text-muted-foreground mt-1">
-            Saved by{" "}
-            <span className="font-medium text-foreground">
-              {record.saved_by}
-            </span>
-            {" · "}
-            {formatTimestamp(record.created_at)}
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <DialogTitle className="flex items-center gap-2 text-lg">
+                <Database className="h-5 w-5 text-blue-600" />
+                Case #{record.id} — Full Summary
+              </DialogTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                Saved by{" "}
+                <span className="font-medium text-foreground">
+                  {record.saved_by}
+                </span>
+                {" · "}
+                {formatTimestamp(record.created_at)}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadSummary}
+              className="shrink-0 gap-1.5 text-xs h-8"
+            >
+              <Download className="h-3.5 w-3.5 text-blue-600" />
+              Download Summary
+            </Button>
+          </div>
         </DialogHeader>
 
         <div className="space-y-6 pt-2">
@@ -442,6 +468,25 @@ export function ChangeControlViewModal({
                 </CardContent>
               </Card>
             </>
+          )}
+
+          {record.final_summary != null && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Final Summary</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {typeof record.final_summary === "string" ? (
+                  <p className="text-sm text-muted-foreground leading-relaxed bg-muted/50 rounded-md p-3 whitespace-pre-wrap">
+                    {record.final_summary}
+                  </p>
+                ) : (
+                  <pre className="text-sm text-muted-foreground leading-relaxed bg-muted/50 rounded-md p-3 whitespace-pre-wrap font-mono overflow-x-auto">
+                    {JSON.stringify(record.final_summary, null, 2)}
+                  </pre>
+                )}
+              </CardContent>
+            </Card>
           )}
         </div>
       </DialogContent>

@@ -172,6 +172,14 @@ export function Login() {
             <span className="text-muted-foreground">Admin</span>
             <span className="font-mono text-foreground">admin / admin</span>
           </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">User</span>
+            <span className="font-mono text-foreground">user / user</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Guest</span>
+            <span className="font-mono text-foreground">guest / guest</span>
+          </div>
         </div>
       </div>
     </div>

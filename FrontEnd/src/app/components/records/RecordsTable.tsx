@@ -17,6 +17,7 @@ import {
   TooltipTrigger,
 } from "../ui/tooltip";
 import { formatTimestamp } from "../../utils/timezone";
+import { getQueryPreview, extractDescription } from "../../utils/queryPreview";
 
 interface RecordsTableProps {
   loading: boolean;
@@ -82,7 +83,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                   <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
               </TableHead>
-              <TableHead className="font-semibold min-w-[280px]">
+              <TableHead className="font-semibold min-w-[180px] max-w-[220px]">
                 Query
               </TableHead>
               <TableHead className="w-44 font-semibold">
@@ -134,8 +135,29 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                   <TableCell className="font-medium text-sm text-foreground">
                     {record.submittedBy || record.user || "N/A"}
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground max-w-md truncate font-mono">
-                    {record.query || record.description || "N/A"}
+                  <TableCell className="text-xs text-muted-foreground min-w-[180px] max-w-[220px] truncate">
+                    {record.query || record.description ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-default">
+                            {getQueryPreview(
+                              record.query || record.description,
+                              12,
+                            )}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="bottom"
+                          className="max-w-sm whitespace-pre-wrap text-xs"
+                        >
+                          {extractDescription(
+                            record.query || record.description,
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      "N/A"
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -154,47 +176,27 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                   {/* Side-by-Side Eye & Delete Icons in Actions Column */}
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1.5">
-                      {/* View Button with Tooltip */}
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => onSelectCase(record)}
-                            className="h-8 w-8 rounded-full hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/50 dark:hover:text-blue-400 transition-colors"
-                            aria-label="View record details"
-                          >
-                            <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent
-                          side="top"
-                          className="bg-foreground text-background font-semibold text-xs px-2 py-1"
-                        >
-                          View
-                        </TooltipContent>
-                      </Tooltip>
+                      {/* View Button */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onSelectCase(record)}
+                        className="h-8 w-8 rounded-full hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/50 dark:hover:text-blue-400 transition-colors"
+                        aria-label="View record details"
+                      >
+                        <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      </Button>
 
-                      {/* Delete Button with Tooltip */}
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => onDeleteCase?.(record)}
-                            className="h-8 w-8 rounded-full hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50 dark:hover:text-red-400 transition-colors"
-                            aria-label="Delete record"
-                          >
-                            <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent
-                          side="top"
-                          className="bg-red-600 text-white font-semibold text-xs px-2 py-1"
-                        >
-                          Delete
-                        </TooltipContent>
-                      </Tooltip>
+                      {/* Delete Button */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onDeleteCase?.(record)}
+                        className="h-8 w-8 rounded-full hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50 dark:hover:text-red-400 transition-colors"
+                        aria-label="Delete record"
+                      >
+                        <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>

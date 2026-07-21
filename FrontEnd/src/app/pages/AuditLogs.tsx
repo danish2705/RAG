@@ -3,7 +3,7 @@ import { AIAssistant } from "../components/chat/AiAssistant";
 import { AuditFilters } from "../components/auditLogs/AuditFilters";
 import { ActivityLogTable } from "../components/auditLogs/ActivityLogTable";
 import { Button } from "../components/ui/button";
-import { AlertCircle, RefreshCw } from "lucide-react";
+import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import { useAuditLogs } from "../hooks/useAuditLogs";
 
 export function AuditLogs() {
@@ -44,8 +44,11 @@ export function AuditLogs() {
           />
 
           {loading ? (
-            <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
-              Loading activity log...
+            <div className="flex flex-col items-center justify-center py-20 bg-card rounded-xl border border-border">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-2" />
+              <p className="text-sm font-medium text-muted-foreground">
+                Loading activity log...
+              </p>
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center gap-3 py-16 bg-red-50/50 dark:bg-red-950/10 rounded-xl border border-red-200 dark:border-red-900/50 text-red-600">

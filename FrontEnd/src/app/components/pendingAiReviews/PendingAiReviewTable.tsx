@@ -58,7 +58,7 @@ export function PendingAiReviewsTable({
       <TooltipProvider delayDuration={150}>
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="bg-muted/50 dark:bg-muted/30">
               <TableHead>Name</TableHead>
               <TableHead>Pipeline</TableHead>
               <TableHead>Stage</TableHead>
@@ -68,7 +68,7 @@ export function PendingAiReviewsTable({
               <TableHead>Resume</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="bg-white">
             {entries.map((entry) => (
               <TableRow key={entry.id}>
                 <TableCell>{entry.full_name}</TableCell>

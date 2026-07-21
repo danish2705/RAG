@@ -1,11 +1,9 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { apiFetch } from "../utils/api";
-import { fetchRecords } from "../services/recordsApi";
+import { fetchRecords, fetchCaseDetail } from "../services/recordsApi";
 import { useAuth } from "../context/AuthContext";
 import type { AnyCase } from "../types/Records";
 
-// UI-shaped row the table/modals expect. Mapped from the backend's
-// AnyCase (id, query, saved_by, classification jsonb, case_type, ...).
 interface RecordRow {
   uiId: string;
   id: string;
@@ -35,7 +33,12 @@ export function useRecords() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [selectedCase, setSelectedCase] = useState<any | null>(null);
+  const [selectedCase, setSelectedCaseRaw] = useState<any | null>(null);
+  const [selectedCaseDetail, setSelectedCaseDetail] = useState<AnyCase | null>(
+    null,
+  );
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
   const [caseToDelete, setCaseToDelete] = useState<any | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
 
@@ -129,12 +132,37 @@ export function useRecords() {
     setCaseToDelete(null);
   };
 
+  // Opens the View modal immediately (showing a loading state) and fetches
+  // the full pipeline detail in the background — /api/records only returns
+  // summary columns, so the modal needs the dedicated detail endpoint to
+  // show classification/impact/rca/capa/etc.
+  const setSelectedCase = useCallback((record: RecordRow | null) => {
+    setSelectedCaseRaw(record);
+    setSelectedCaseDetail(null);
+    setDetailError(null);
+
+    if (!record) return;
+
+    setDetailLoading(true);
+    fetchCaseDetail(record.id, record.classification)
+      .then((detail) => setSelectedCaseDetail(detail))
+      .catch((err) =>
+        setDetailError(
+          err instanceof Error ? err.message : "Failed to load case detail.",
+        ),
+      )
+      .finally(() => setDetailLoading(false));
+  }, []);
+
   return {
     cases: ownRecordsOnly,
     loading,
     error,
     selectedCase,
     setSelectedCase,
+    selectedCaseDetail,
+    detailLoading,
+    detailError,
     caseToDelete,
     setCaseToDelete,
     chatOpen,

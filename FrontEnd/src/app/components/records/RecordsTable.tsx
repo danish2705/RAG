@@ -83,9 +83,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                   <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
               </TableHead>
-              <TableHead className="font-semibold min-w-[180px] max-w-[220px]">
-                Query
-              </TableHead>
+              <TableHead className="font-semibold w-[220px] pl-12">Query</TableHead>
               <TableHead className="w-44 font-semibold">
                 <button
                   onClick={() => onSort?.("classification")}
@@ -135,7 +133,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                   <TableCell className="font-medium text-sm text-foreground">
                     {record.submittedBy || record.user || "N/A"}
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground min-w-[180px] max-w-[220px] truncate">
+                  <TableCell className="text-xs text-muted-foreground w-[220px] truncate">
                     {record.query || record.description ? (
                       <Tooltip>
                         <TooltipTrigger asChild>

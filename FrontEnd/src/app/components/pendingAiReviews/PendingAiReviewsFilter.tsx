@@ -72,7 +72,7 @@ export function PendingAiReviewsFilters({
           </div>
           <div>
             <Input
-              placeholder="Search by name or reference code..."
+              placeholder="Search by name..."
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
             />

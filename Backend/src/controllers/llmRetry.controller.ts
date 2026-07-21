@@ -84,12 +84,12 @@ export async function createEntry(req: Request, res: Response): Promise<void> {
   // up on the Audit Logs page alongside everything else.
   await recordAuditEntry({
     entity_type: entityType,
-    entity_id: entry.reference_code,
+    entity_id: String(entry.id),
     action: "llm_unavailable",
     source: "system",
     performed_by: fullName,
     field_name: pipelineStage,
-    reason: `AI service was unavailable during "${pipelineStage}" — saved for retry under reference code ${entry.reference_code}.${
+    reason: `AI service was unavailable during "${pipelineStage}" — saved for retry.${
       errorMessage ? ` (${errorMessage})` : ""
     }`,
   });

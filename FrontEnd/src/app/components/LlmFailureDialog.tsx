@@ -25,7 +25,7 @@ export function LlmFailureDialog({
     nameError,
     isSaving,
     saveError,
-    savedReferenceCode,
+    isSaved,
     submitLlmFailure,
   } = control;
 
@@ -35,7 +35,7 @@ export function LlmFailureDialog({
       onOpenChange={(open) => !open && closeLlmFailureDialog()}
     >
       <DialogContent className="sm:max-w-md">
-        {savedReferenceCode ? (
+        {isSaved ? (
           <>
             <DialogHeader>
               <div className="flex items-center gap-2 text-green-600 dark:text-green-500">
@@ -50,13 +50,6 @@ export function LlmFailureDialog({
                 once the AI service is back up.
               </DialogDescription>
             </DialogHeader>
-
-            <div className="rounded-lg border border-border bg-muted/40 p-4 text-center">
-              <p className="text-xs text-muted-foreground">Reference code</p>
-              <p className="mt-1 text-2xl font-semibold tracking-widest text-foreground">
-                {savedReferenceCode}
-              </p>
-            </div>
 
             <DialogFooter>
               <Button onClick={closeLlmFailureDialog}>Done</Button>

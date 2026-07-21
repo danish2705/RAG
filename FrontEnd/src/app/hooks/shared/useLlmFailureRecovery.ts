@@ -25,7 +25,7 @@ export interface LlmFailureContext {
  * the catch block instead of — or in addition to — showing an inline error.
  * It captures the user's name, saves the in-progress query to
  * llm_retry_queue (visible later on the "Pending AI Reviews" page), and
- * shows the 5-digit reference code back to them.
+ * confirms back to the user that it was saved.
  *
  * Render <LlmFailureDialog control={llmFailure} /> once per page that uses
  * this hook.
@@ -40,9 +40,7 @@ export function useLlmFailureRecovery() {
   const [nameError, setNameError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [savedReferenceCode, setSavedReferenceCode] = useState<string | null>(
-    null,
-  );
+  const [isSaved, setIsSaved] = useState(false);
 
   const openLlmFailureDialog = useCallback(
     (ctx: LlmFailureContext) => {
@@ -50,7 +48,7 @@ export function useLlmFailureRecovery() {
       setName(user?.username ?? "");
       setNameError("");
       setSaveError(null);
-      setSavedReferenceCode(null);
+      setIsSaved(false);
       setIsOpen(true);
     },
     [user],
@@ -59,7 +57,7 @@ export function useLlmFailureRecovery() {
   const closeLlmFailureDialog = useCallback(() => {
     setIsOpen(false);
     setContext(null);
-    setSavedReferenceCode(null);
+    setIsSaved(false);
   }, []);
 
   const submitLlmFailure = useCallback(async () => {
@@ -74,7 +72,7 @@ export function useLlmFailureRecovery() {
     setIsSaving(true);
 
     try {
-      const entry = await saveLlmFailure({
+      await saveLlmFailure({
         full_name: name.trim(),
         entity_type: context.entityType,
         pipeline_stage: context.pipelineStage,
@@ -82,7 +80,7 @@ export function useLlmFailureRecovery() {
         error_message: context.errorMessage ?? null,
         pipeline_context: context.pipelineContext ?? null,
       });
-      setSavedReferenceCode(entry.reference_code);
+      setIsSaved(true);
     } catch (err) {
       setSaveError(
         err instanceof Error
@@ -103,7 +101,7 @@ export function useLlmFailureRecovery() {
     nameError,
     isSaving,
     saveError,
-    savedReferenceCode,
+    isSaved,
     submitLlmFailure,
   };
 }

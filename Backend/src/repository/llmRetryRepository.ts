@@ -32,7 +32,6 @@ export interface CreateLlmRetryInput {
 
 export interface LlmRetryRow {
   id: number;
-  reference_code: string;
   full_name: string;
   entity_type: LlmRetryEntityType;
   pipeline_stage: LlmRetryStage;
@@ -46,48 +45,28 @@ export interface LlmRetryRowWithContext extends LlmRetryRow {
   pipeline_context: unknown;
 }
 
-function generateReferenceCode(): string {
-  // 5-digit code, zero-padded (e.g. "04213").
-  return String(Math.floor(Math.random() * 100000)).padStart(5, "0");
-}
-
-// Inserts a new row, retrying with a fresh 5-digit code on the rare unique
-// collision (reference_code has a UNIQUE constraint — see the DDL).
+// Inserts a new row.
 export async function createLlmRetryEntry(
   input: CreateLlmRetryInput,
 ): Promise<LlmRetryRow> {
-  const MAX_ATTEMPTS = 5;
-
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    const referenceCode = generateReferenceCode();
-    try {
-      const result = await pool.query(
-        `INSERT INTO llm_retry_queue
-          (reference_code, full_name, entity_type, pipeline_stage, query_text, error_message, status, pipeline_context)
-         VALUES ($1, $2, $3, $4, $5, $6, 'pending', $7)
-         RETURNING id, reference_code, full_name, entity_type, pipeline_stage,
-                   query_text, error_message, status, created_at`,
-        [
-          referenceCode,
-          input.full_name,
-          input.entity_type,
-          input.pipeline_stage,
-          input.query_text,
-          input.error_message ?? null,
-          input.pipeline_context !== undefined
-            ? JSON.stringify(input.pipeline_context)
-            : null,
-        ],
-      );
-      return result.rows[0];
-    } catch (err: any) {
-      // 23505 = unique_violation on Postgres; retry with a new code.
-      if (err?.code === "23505" && attempt < MAX_ATTEMPTS) continue;
-      throw err;
-    }
-  }
-
-  throw new Error("Could not generate a unique reference code, please retry.");
+  const result = await pool.query(
+    `INSERT INTO llm_retry_queue
+      (full_name, entity_type, pipeline_stage, query_text, error_message, status, pipeline_context)
+     VALUES ($1, $2, $3, $4, $5, 'pending', $6)
+     RETURNING id, full_name, entity_type, pipeline_stage,
+               query_text, error_message, status, created_at`,
+    [
+      input.full_name,
+      input.entity_type,
+      input.pipeline_stage,
+      input.query_text,
+      input.error_message ?? null,
+      input.pipeline_context !== undefined
+        ? JSON.stringify(input.pipeline_context)
+        : null,
+    ],
+  );
+  return result.rows[0];
 }
 
 export interface ListLlmRetryParams {
@@ -95,7 +74,7 @@ export interface ListLlmRetryParams {
   pageSize?: number;
   status?: LlmRetryStatus | "all";
   entityType?: LlmRetryEntityType | "all";
-  search?: string; // matches full_name OR reference_code
+  search?: string; // matches full_name
 }
 
 export interface PaginatedLlmRetry {
@@ -129,7 +108,7 @@ export async function listLlmRetryEntries(
   if (params.search) {
     values.push(`%${params.search}%`);
     const idx = values.length;
-    where.push(`(full_name ILIKE $${idx} OR reference_code ILIKE $${idx})`);
+    where.push(`full_name ILIKE $${idx}`);
   }
 
   const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
@@ -146,7 +125,7 @@ export async function listLlmRetryEntries(
   const offsetIdx = values.length;
 
   const dataResult = await pool.query(
-    `SELECT id, reference_code, full_name, entity_type, pipeline_stage,
+    `SELECT id, full_name, entity_type, pipeline_stage,
             query_text, error_message, status, created_at
      FROM llm_retry_queue
      ${whereSql}
@@ -170,7 +149,7 @@ export async function getLlmRetryEntryById(
   id: string,
 ): Promise<LlmRetryRowWithContext | null> {
   const result = await pool.query(
-    `SELECT id, reference_code, full_name, entity_type, pipeline_stage,
+    `SELECT id, full_name, entity_type, pipeline_stage,
             query_text, error_message, status, created_at, pipeline_context
      FROM llm_retry_queue
      WHERE id = $1`,
@@ -187,7 +166,7 @@ export async function updateLlmRetryStatus(
     `UPDATE llm_retry_queue
      SET status = $2
      WHERE id = $1
-     RETURNING id, reference_code, full_name, entity_type, pipeline_stage,
+     RETURNING id, full_name, entity_type, pipeline_stage,
                query_text, error_message, status, created_at`,
     [id, status],
   );

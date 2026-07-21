@@ -56,7 +56,6 @@ export function PendingAiReviewsTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Reference Code</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Pipeline</TableHead>
             <TableHead>Stage</TableHead>
@@ -69,9 +68,6 @@ export function PendingAiReviewsTable({
         <TableBody>
           {entries.map((entry) => (
             <TableRow key={entry.id}>
-              <TableCell className="font-mono font-medium tracking-wider">
-                {entry.reference_code}
-              </TableCell>
               <TableCell>{entry.full_name}</TableCell>
               <TableCell>
                 <Badge variant="outline">{entry.entity_type}</Badge>

@@ -15,7 +15,6 @@ export type LlmRetryStage =
 
 export interface LlmRetryEntry {
   id: number;
-  reference_code: string;
   full_name: string;
   entity_type: LlmRetryEntityType;
   pipeline_stage: LlmRetryStage;

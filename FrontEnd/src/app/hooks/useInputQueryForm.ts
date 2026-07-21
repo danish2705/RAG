@@ -143,7 +143,7 @@ export function useInputQueryForm() {
       setSubmitError(message);
       // Classification hasn't run yet, so we don't know Deviation vs Change
       // Control — default to "Deviation" (the queue entry is still
-      // findable by name/reference code either way).
+      // findable by name either way).
       llmFailure.openLlmFailureDialog({
         entityType: "Deviation",
         pipelineStage: "classification",

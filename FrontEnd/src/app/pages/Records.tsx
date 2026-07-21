@@ -1,8 +1,11 @@
 import { useNavigate } from "react-router";
+import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { Dialog, DialogContent } from "../components/ui/dialog";
 import { AIAssistant } from "../components/chat/AiAssistant";
 import { useRecords } from "../hooks/useRecords";
-import { CaseViewModal } from "../components/records/CaseViewModal";
+import { DeviationViewModal } from "../components/records/DeviationViewModal";
+import { ChangeControlViewModal } from "../components/records/ChangeControlViewModal";
 import { DeleteRecordModal } from "../components/records/DeleteRecordModal";
 import { RecordsFilterBar } from "../components/records/RecordsFilterBar";
 import { RecordsTable } from "../components/records/RecordsTable";
@@ -15,6 +18,9 @@ export function Records() {
     error,
     selectedCase,
     setSelectedCase,
+    selectedCaseDetail,
+    detailLoading,
+    detailError,
     caseToDelete,
     setCaseToDelete,
     chatOpen,
@@ -35,10 +41,48 @@ export function Records() {
           chatOpen ? "mr-80" : ""
         }`}
       >
-        {/* 1.8x Wider Case Details View Modal */}
-        {selectedCase && (
-          <CaseViewModal
-            record={selectedCase}
+        {/* Case Details View Modal — full pipeline detail, fetched on demand */}
+        {selectedCase && (detailLoading || detailError) && (
+          <Dialog open onOpenChange={() => setSelectedCase(null)}>
+            <DialogContent className="max-w-md">
+              {detailLoading ? (
+                <div className="flex flex-col items-center justify-center py-10 gap-2">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Loading case details...
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-10 gap-2 text-red-600">
+                  <AlertCircle className="h-8 w-8" />
+                  <p className="text-sm font-semibold">
+                    Failed to load case details
+                  </p>
+                  <p className="text-xs text-muted-foreground">{detailError}</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => setSelectedCase(selectedCase)}
+                  >
+                    Retry
+                  </Button>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {selectedCaseDetail?.case_type === "Deviation" && (
+          <DeviationViewModal
+            record={selectedCaseDetail}
+            onClose={() => setSelectedCase(null)}
+          />
+        )}
+
+        {selectedCaseDetail?.case_type === "Change Control" && (
+          <ChangeControlViewModal
+            record={selectedCaseDetail}
             onClose={() => setSelectedCase(null)}
           />
         )}

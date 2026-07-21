@@ -135,7 +135,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                   <TableCell className="font-medium text-sm text-foreground">
                     {record.submittedBy || record.user || "N/A"}
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground min-w-[180px] max-w-[220px] truncate">
+                  <TableCell className="text-xs text-muted-foreground w-[220px] truncate">
                     {record.query || record.description ? (
                       <Tooltip>
                         <TooltipTrigger asChild>

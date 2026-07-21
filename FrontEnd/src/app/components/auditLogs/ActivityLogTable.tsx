@@ -118,11 +118,11 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
           <Table className="table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[16%]">Timestamp</TableHead>
+                <TableHead className="w-[14%]">Timestamp</TableHead>
                 <TableHead className="w-[14%]">User / System</TableHead>
                 <TableHead className="w-[11%]">Action</TableHead>
                 <TableHead className="w-[8%]">Record</TableHead>
-                <TableHead className="w-[31%]">Details</TableHead>
+                <TableHead className="w-[43%]">Details</TableHead>
                 <TableHead className="w-[10%]">Source</TableHead>
               </TableRow>
             </TableHeader>

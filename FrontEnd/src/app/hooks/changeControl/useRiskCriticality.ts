@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useReducer, useState } from "react";
 import { useNavigate } from "react-router";
-import { apiFetch } from "../../utils/api";
+import { generateValidationTesting } from "../../services/changeControl/validationTestingApi";
 import {
   aiField,
   markModified,
@@ -15,6 +15,7 @@ import { useWorkflowStore } from "../../store/workflowStore";
 import { nestedToFlatChangeImpactAssessment } from "../../utils/changeImpactAdapter";
 import { flatToNestedValidationTesting } from "../../utils/changeControlAdapters";
 import { useOverrideDialogState } from "../shared/useOverRideDialogState";
+import { useLlmFailureRecovery } from "../shared/useLlmFailureRecovery";
 
 // Field labels — mirrors CHANGE_IMPACT_FIELD_LABELS convention in mockImpactAssessment.ts
 export const RISK_FIELD_LABELS = {
@@ -191,6 +192,7 @@ export function useRiskCriticality() {
     initialRiskFormState,
   );
   const override = useOverrideDialogState();
+  const llmFailure = useLlmFailureRecovery();
 
   // Re-hydrate local editable state whenever a *new* risk evaluation lands
   // in the store. A plain useState initializer only runs on first mount —
@@ -478,17 +480,10 @@ export function useRiskCriticality() {
       // The backend returns validationTesting.parsed in its flat LLM-schema
       // shape — convert to the nested shape the UI expects before it ever
       // touches the store/page.
-      const rawValidationResult: any = await apiFetch(
-        "/api/change-control/validation-testing",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            query: result!.query,
-            changeImpactAssessment: flatChangeImpactAssessment,
-            riskCriticality: approvedRiskCriticality,
-          }),
-        },
+      const rawValidationResult = await generateValidationTesting(
+        result!.query,
+        flatChangeImpactAssessment,
+        approvedRiskCriticality,
       );
       const rawStage = rawValidationResult?.stages?.validationTesting;
       const validationTestingStage: ValidationTestingApiResponse["stages"]["validationTesting"] =
@@ -507,11 +502,36 @@ export function useRiskCriticality() {
         approvedRiskCriticality,
       );
     } catch (err) {
-      override.submitFailure(
+      const message =
         err instanceof Error
           ? err.message
-          : "Something went wrong submitting the risk & criticality evaluation. Please try again.",
-      );
+          : "Something went wrong submitting the risk & criticality evaluation. Please try again.";
+      override.submitFailure(message);
+      // `result` predates this Accept — patch in the just-approved risk
+      // criticality so Resume doesn't lose the approval just made.
+      const patchedResult = result
+        ? {
+            ...result,
+            stages: {
+              ...result.stages,
+              riskCriticality: {
+                ...result.stages.riskCriticality!,
+                parsed: approvedRiskCriticality,
+              },
+            },
+            provenance: {
+              ...result.provenance,
+              riskCriticality: riskProvenance,
+            },
+          }
+        : null;
+      llmFailure.openLlmFailureDialog({
+        entityType: "Change Control",
+        pipelineStage: "validation_testing",
+        queryText: result!.query,
+        errorMessage: message,
+        pipelineContext: patchedResult,
+      });
     }
   };
 
@@ -664,6 +684,7 @@ export function useRiskCriticality() {
     isSubmitting: override.isSubmitting,
     submitError: override.submitError,
     confidenceScore,
+    llmFailure,
 
     handleAccept,
     handleOverrideClick,

@@ -16,6 +16,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../ui/tooltip";
+import { formatTimestamp } from "../../utils/timezone";
+import { getQueryPreview, extractDescription } from "../../utils/queryPreview";
 
 interface RecordsTableProps {
   loading: boolean;
@@ -27,32 +29,10 @@ interface RecordsTableProps {
   onDeleteCase?: (record: any) => void;
 }
 
-// Helper to format date/timestamp cleanly into Indian Standard Time (IST)
-function formatToIST(dateVal: string | undefined): string {
-  if (!dateVal) return "N/A";
-  try {
-    const date = new Date(dateVal);
-    if (isNaN(date.getTime())) {
-      // If it's already a clean string like "14 Jul 2026", append IST if not present
-      return dateVal.includes("IST") ? dateVal : `${dateVal} (IST)`;
-    }
-    return new Intl.DateTimeFormat("en-IN", {
-      timeZone: "Asia/Kolkata",
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    }).format(date) + " IST";
-  } catch {
-    return dateVal;
-  }
-}
-
 export const RecordsTable: React.FC<RecordsTableProps> = ({
   loading,
   error,
+  cases,
   filteredCases,
   onSort,
   onSelectCase,
@@ -70,7 +50,9 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
     return (
       <div className="flex flex-col items-center justify-center py-20 bg-card rounded-xl border border-border">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-2" />
-        <p className="text-sm font-medium text-muted-foreground">Loading case records...</p>
+        <p className="text-sm font-medium text-muted-foreground">
+          Loading case records...
+        </p>
       </div>
     );
   }
@@ -97,16 +79,18 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                   onClick={() => onSort?.("submittedBy")}
                   className="flex items-center gap-1 hover:text-foreground transition-colors"
                 >
-                  Submitted By <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                  Submitted By{" "}
+                  <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
               </TableHead>
-              <TableHead className="font-semibold min-w-[280px]">Query</TableHead>
+              <TableHead className="font-semibold w-[220px]">Query</TableHead>
               <TableHead className="w-44 font-semibold">
                 <button
                   onClick={() => onSort?.("classification")}
                   className="flex items-center gap-1 hover:text-foreground transition-colors"
                 >
-                  Classification <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                  Classification{" "}
+                  <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
               </TableHead>
               {/* 1. Renamed Column: Saved Date & Time */}
@@ -115,80 +99,102 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                   onClick={() => onSort?.("savedOn")}
                   className="flex items-center gap-1 hover:text-foreground transition-colors"
                 >
-                  Saved Date & Time <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                  Saved Date & Time{" "}
+                  <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
               </TableHead>
               {/* 2. Renamed Column: Actions */}
-              <TableHead className="w-28 text-center font-semibold">Actions</TableHead>
+              <TableHead className="w-28 text-center font-semibold">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="divide-y divide-border">
             {filteredCases.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center text-muted-foreground text-sm">
-                  No records found matching your filters.
+                <TableCell
+                  colSpan={6}
+                  className="h-32 text-center text-muted-foreground text-sm"
+                >
+                  {cases.length === 0
+                    ? "No records found yet. Create your first case to get started."
+                    : "No records found matching your filters."}
                 </TableCell>
               </TableRow>
             ) : (
               filteredCases.map((record, idx) => (
-                <TableRow key={record.uiId || record.id || idx} className="hover:bg-muted/40 transition-colors">
+                <TableRow
+                  key={record.uiId || record.id || idx}
+                  className="hover:bg-muted/40 transition-colors"
+                >
                   <TableCell className="font-mono text-xs font-semibold text-blue-600 dark:text-blue-400">
                     {record.uiId || `#${record.id?.slice(0, 8)}`}
                   </TableCell>
                   <TableCell className="font-medium text-sm text-foreground">
                     {record.submittedBy || record.user || "N/A"}
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground max-w-md truncate font-mono">
-                    {record.query || record.description || "N/A"}
+                  <TableCell className="text-xs text-muted-foreground w-[220px] truncate">
+                    {record.query || record.description ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-default">
+                            {getQueryPreview(
+                              record.query || record.description,
+                              12,
+                            )}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="bottom"
+                          className="max-w-sm whitespace-pre-wrap text-xs"
+                        >
+                          {extractDescription(
+                            record.query || record.description,
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      "N/A"
+                    )}
                   </TableCell>
                   <TableCell>
-                    <Badge className={`text-xs px-2.5 py-0.5 font-medium shadow-none ${getBadgeColor(record.classification)}`}>
+                    <Badge
+                      className={`text-xs px-2.5 py-0.5 font-medium shadow-none ${getBadgeColor(record.classification)}`}
+                    >
                       {record.classification || "N/A"}
                     </Badge>
                   </TableCell>
-                  {/* Formatted timestamp in local IST */}
+                  {/* Formatted timestamp, auto-detected to the viewer's own timezone, dd-mm-yyyy */}
                   <TableCell className="text-xs font-mono text-muted-foreground whitespace-nowrap">
-                    {formatToIST(record.savedOn || record.timestamp)}
+                    {formatTimestamp(record.savedOn || record.timestamp, {
+                      dateStyle: "numeric",
+                    })}
                   </TableCell>
-                  
+
                   {/* Side-by-Side Eye & Delete Icons in Actions Column */}
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1.5">
-                      {/* View Button with Tooltip */}
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => onSelectCase(record)}
-                            className="h-8 w-8 rounded-full hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/50 dark:hover:text-blue-400 transition-colors"
-                            aria-label="View record details"
-                          >
-                            <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="bg-foreground text-background font-semibold text-xs px-2 py-1">
-                          View
-                        </TooltipContent>
-                      </Tooltip>
+                      {/* View Button */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onSelectCase(record)}
+                        className="h-8 w-8 rounded-full hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/50 dark:hover:text-blue-400 transition-colors"
+                        aria-label="View record details"
+                      >
+                        <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      </Button>
 
-                      {/* Delete Button with Tooltip */}
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => onDeleteCase?.(record)}
-                            className="h-8 w-8 rounded-full hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50 dark:hover:text-red-400 transition-colors"
-                            aria-label="Delete record"
-                          >
-                            <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="bg-red-600 text-white font-semibold text-xs px-2 py-1">
-                          Delete
-                        </TooltipContent>
-                      </Tooltip>
+                      {/* Delete Button */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onDeleteCase?.(record)}
+                        className="h-8 w-8 rounded-full hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50 dark:hover:text-red-400 transition-colors"
+                        aria-label="Delete record"
+                      >
+                        <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>

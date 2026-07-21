@@ -1,14 +1,21 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
-import { Sparkles, Database } from "lucide-react";
+import { Sparkles, Database, Download } from "lucide-react";
 import type { DeviationCase } from "../../types/Records";
 import { PARAMETER_LABELS } from "../../mocks/mockImpactAssessment";
 import {
   getClassificationBadgeClass,
   getSeverityBadgeClass,
-} from "../../utils/records/badges";
-import { BulletList, ConfidenceBar } from "./recordsShared";
+} from "../../utils/badges";
+import {
+  BulletList,
+  ConfidenceBar,
+  buildFullSummaryText,
+  downloadTextFile,
+} from "./RecordsShared";
+import { formatTimestamp } from "../../utils/timezone";
 
 export function DeviationViewModal({
   record,
@@ -31,22 +38,42 @@ export function DeviationViewModal({
       }))
     : [];
 
+  const handleDownloadSummary = () => {
+    downloadTextFile(
+      `QMS_Summary_${record.id}.txt`,
+      buildFullSummaryText({ ...record, case_type: "Deviation" }),
+    );
+  };
+
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="!max-w-none sm:!max-w-none w-[70vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-lg">
-            <Database className="h-5 w-5 text-blue-600" />
-            Case #{record.id} — Full Summary
-          </DialogTitle>
-          <p className="text-xs text-muted-foreground mt-1">
-            Saved by{" "}
-            <span className="font-medium text-foreground">
-              {record.saved_by}
-            </span>
-            {" · "}
-            {new Date(record.created_at).toLocaleString()}
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <DialogTitle className="flex items-center gap-2 text-lg">
+                <Database className="h-5 w-5 text-blue-600" />
+                Case #{record.id} — Full Summary
+              </DialogTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                Saved by{" "}
+                <span className="font-medium text-foreground">
+                  {record.saved_by}
+                </span>
+                {" · "}
+                {formatTimestamp(record.created_at)}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadSummary}
+              className="shrink-0 gap-1.5 text-xs h-8"
+            >
+              <Download className="h-3.5 w-3.5 text-blue-600" />
+              Download Summary
+            </Button>
+          </div>
         </DialogHeader>
 
         <div className="space-y-6 pt-2">
@@ -151,6 +178,12 @@ export function DeviationViewModal({
                 <CardContent className="space-y-4">
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-foreground">
+                      Sequence of Events
+                    </p>
+                    <BulletList items={rca.sequence_of_events} />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-foreground">
                       Underlying Root Cause
                     </p>
                     <p className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
@@ -177,6 +210,14 @@ export function DeviationViewModal({
                     </p>
                     <BulletList items={rca.evidence} />
                   </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-foreground">
+                      Impact Summary
+                    </p>
+                    <p className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
+                      {rca.impact_summary}
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             </>
@@ -193,6 +234,22 @@ export function DeviationViewModal({
                 </CardHeader>
                 <CardContent>
                   <ConfidenceBar score={capa.confidence_score} />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">CAPA Required</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <span
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                      capa.capa_required
+                        ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                        : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
+                    }`}
+                  >
+                    {capa.capa_required ? "Yes" : "No"}
+                  </span>
                 </CardContent>
               </Card>
               <Card>

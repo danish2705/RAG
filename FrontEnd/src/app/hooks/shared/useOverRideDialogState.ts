@@ -1,27 +1,5 @@
 import { useReducer, useCallback } from "react";
 
-/**
- * Every "review" hook (RiskCriticality, ChangeImpactAssessment,
- * ValidationTesting, Capa, ImplementationControl, ClassificationReview)
- * repeats the same 8-10 useState calls for: override-editing mode, the
- * override/reject confirmation dialogs, the "changed value without
- * updating rationale" warning, and submit-in-flight/error tracking.
- *
- * That was previously copy-pasted into every hook (drifting slightly each
- * time). This consolidates it into one reducer so:
- *  - related fields can only change together in valid combinations
- *    (e.g. confirming an override always closes the dialog AND clears
- *    the justification text AND sets isOverrideEditing false, in one
- *    dispatch, instead of 4 separate setter calls that could theoretically
- *    fire out of sync).
- *  - it's defined once and reused, instead of duplicated per hook.
- *
- * Every returned setter matches the original per-hook naming
- * (setShowOverrideDialog, setOverrideJustification, etc.) so existing
- * page components that call these directly (e.g. Dialog's onOpenChange)
- * don't need to change at all.
- */
-
 interface OverrideDialogState {
   isOverrideEditing: boolean;
   overrideConfirmed: boolean;

@@ -13,10 +13,12 @@ import type {
   AssessmentItem,
 } from "../../types/pipeline";
 import { PARAMETER_LABELS } from "../../mocks/mockImpactAssessment";
+import { useLlmFailureRecovery } from "../shared/useLlmFailureRecovery";
 
 export function useImpactAssessmentReview() {
   const navigate = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
+  const llmFailure = useLlmFailureRecovery();
 
   const result = useWorkflowStore((s) => s.pipelineResult);
   const mergePipelineResult = useWorkflowStore((s) => s.mergePipelineResult);
@@ -164,11 +166,38 @@ export function useImpactAssessmentReview() {
         approvedImpactAssessment,
       );
     } catch (err) {
-      setRcaError(
+      const message =
         err instanceof Error
           ? err.message
-          : "Something went wrong generating the root cause analysis. Please try again.",
-      );
+          : "Something went wrong generating the root cause analysis. Please try again.";
+      setRcaError(message);
+      // `result` in the store still has the pre-Accept impact assessment —
+      // the human's just-approved values (approvedImpactAssessment /
+      // impactProvenance) only get merged in on success. Patch them in here
+      // so Resume doesn't silently lose the approval that was just made.
+      const patchedResult = result
+        ? {
+            ...result,
+            stages: {
+              ...result.stages,
+              impactAssessment: {
+                ...result.stages.impactAssessment!,
+                parsed: approvedImpactAssessment,
+              },
+            },
+            provenance: {
+              ...result.provenance,
+              impactAssessment: impactProvenance,
+            },
+          }
+        : null;
+      llmFailure.openLlmFailureDialog({
+        entityType: "Deviation",
+        pipelineStage: "rca",
+        queryText: result?.query ?? "",
+        errorMessage: message,
+        pipelineContext: patchedResult,
+      });
     } finally {
       setIsGeneratingRCA(false);
     }
@@ -261,5 +290,6 @@ export function useImpactAssessmentReview() {
     handleCancelOverride,
     handleOverrideConfirm,
     handleReject,
+    llmFailure,
   };
 }

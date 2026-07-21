@@ -18,7 +18,7 @@ import {
   SummaryRcaSection,
   SummaryCapaSection,
   SummarySaveSection,
-}  from "../../components/deviation/summaryCards";
+}  from "../../components/deviation/SummaryCards";
 
 export function Summary() {
   const {

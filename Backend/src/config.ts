@@ -6,15 +6,20 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 export interface LlmConfig {
-  apiUrl: string | undefined;
+  endpoint: string | undefined; // e.g. https://<resource>.services.ai.azure.com/openai/v1
   apiKey: string | undefined;
-  model: string;
+  deployment: string; // Azure deployment name, sent as "model" in the body (e.g. "gpt-4.1")
+  apiVersion: string | undefined; // optional on the v1 surface
 }
 
 export interface EmbeddingsConfig {
-  model: string;
-  apiUrl: string;
+  endpoint: string | undefined; // e.g. https://<resource>.services.ai.azure.com/openai/v1
   apiKey: string | undefined;
+  deployment: string; // Azure deployment name (e.g. "text-embedding-3-small")
+  apiVersion: string | undefined; // optional on the v1 surface
+  // text-embedding-3-small defaults to 1536 dims; Azure/OpenAI let you
+  // request a smaller size via the "dimensions" param if set.
+  dimensions: number | undefined;
 }
 
 export interface DatabaseConfig {
@@ -50,19 +55,20 @@ export const config: Config = {
     url: process.env.DATABASE_URL!,
   },
   llm: {
-    apiUrl: process.env.API_URL,
-    apiKey: process.env.API_KEY,
-    model: process.env.LLM_MODEL || "meta-llama/Llama-3.1-8B-Instruct",
+    endpoint: process.env.AZURE_OPENAI_ENDPOINT,
+    apiKey: process.env.AZURE_OPENAI_API_KEY,
+    deployment: process.env.AZURE_OPENAI_LLM_DEPLOYMENT || "gpt-4.1",
+    apiVersion: process.env.AZURE_OPENAI_API_VERSION || undefined,
   },
   embeddings: {
-    model:
-      process.env.EMBEDDING_MODEL || "sentence-transformers/all-MiniLM-L6-v2",
-    apiUrl:
-      process.env.EMBEDDING_API_URL ||
-      `https://router.huggingface.co/hf-inference/models/${
-        process.env.EMBEDDING_MODEL || "sentence-transformers/all-MiniLM-L6-v2"
-      }/pipeline/feature-extraction`,
-    apiKey: process.env.API_KEY,
+    endpoint: process.env.AZURE_OPENAI_ENDPOINT,
+    apiKey: process.env.AZURE_OPENAI_API_KEY,
+    deployment:
+      process.env.AZURE_OPENAI_EMBEDDING_DEPLOYMENT || "text-embedding-3-small",
+    apiVersion: process.env.AZURE_OPENAI_API_VERSION || undefined,
+    dimensions: process.env.AZURE_OPENAI_EMBEDDING_DIMENSIONS
+      ? Number(process.env.AZURE_OPENAI_EMBEDDING_DIMENSIONS)
+      : undefined,
   },
   kb: {
     deviationFolder: process.env.DEVIATION_FOLDER || "deviation",

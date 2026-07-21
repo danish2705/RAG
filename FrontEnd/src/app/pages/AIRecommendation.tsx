@@ -7,6 +7,7 @@ import {
   StepProgressBar,
 } from "../components/eventIntake";
 import { AIAssistant } from "../components/chat/AiAssistant";
+import { LlmFailureDialog } from "../components/LlmFailureDialog";
 import { useClassificationReview } from "../hooks/deviation/useClassificationReview";
 import { ClassificationCard } from "../components/deviation/ClassificationCard";
 import {
@@ -24,7 +25,6 @@ export function AIRecommendation() {
     chatOpen,
     setChatOpen,
     isOverrideEditing,
-    setIsOverrideEditing,
     editedClassification,
     setEditedClassification,
     editedRationale,
@@ -48,6 +48,7 @@ export function AIRecommendation() {
     handleCancelOverride,
     handleOverrideConfirm,
     handleReject,
+    llmFailure,
   } = useClassificationReview();
 
   if (!result) {
@@ -71,6 +72,8 @@ export function AIRecommendation() {
 
   return (
     <div className="relative h-full w-full">
+      <LlmFailureDialog control={llmFailure} />
+
       <div
         className={`min-h-screen p-6 transition-[padding] duration-200 ${
           chatOpen ? "pr-80" : "pr-6"

@@ -7,8 +7,15 @@ import {
   getCombinedCases,
   getDeviationCaseById,
   getChangeControlCaseById,
+  deleteDeviationCase,
+  deleteChangeControlCase,
   type ListCasesParams,
 } from "../repository/caseRepository.js";
+import {
+  recordAuditEntries,
+  recordAuditEntry,
+} from "../repository/auditRepository.js";
+import { buildAuditEntriesForSave } from "../utils/provenanceDiff.js";
 
 function parseListParams(req: Request): ListCasesParams {
   const q = req.query;
@@ -27,7 +34,20 @@ function parseListParams(req: Request): ListCasesParams {
 
 // SAVE: Persist a completed deviation case to the DB.
 export async function saveCase(req: Request, res: Response): Promise<void> {
-  const id = await saveDeviationCase(req.body ?? {});
+  const body = req.body ?? {};
+  const id = await saveDeviationCase(body);
+
+  // The frontend already sends `provenance` carrying every field's
+  // ai-vs-human-edited state — capture it as audit entries now that we
+  // have a case id to attach them to.
+  const auditEntries = buildAuditEntriesForSave({
+    entityType: "Deviation",
+    entityId: String(id),
+    savedBy: String(body.saved_by ?? "Unknown"),
+    provenance: body.provenance,
+  });
+  await recordAuditEntries(auditEntries);
+
   res.json({ id });
 }
 
@@ -43,7 +63,17 @@ export async function saveChangeControlCaseHandler(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const id = await saveChangeControlCase(req.body ?? {});
+  const body = req.body ?? {};
+  const id = await saveChangeControlCase(body);
+
+  const auditEntries = buildAuditEntriesForSave({
+    entityType: "Change Control",
+    entityId: String(id),
+    savedBy: String(body.saved_by ?? "Unknown"),
+    provenance: body.provenance,
+  });
+  await recordAuditEntries(auditEntries);
+
   res.json({ id });
 }
 
@@ -94,4 +124,45 @@ export async function getCaseDetail(
     return;
   }
   res.json({ ...record, case_type: "Deviation" });
+}
+
+// DELETE ONE CASE (by id + case_type): hard-deletes the row from the DB.
+// Before deleting, the full row is snapshotted into audit_log so the
+// Audit Trail page can still show that the record existed, what it
+// contained, who deleted it, and when — even though it's gone from
+// deviation_cases / change_control_cases.
+export async function deleteCase(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const caseType = req.query.case_type;
+  const deletedBy =
+    typeof req.body?.deleted_by === "string" && req.body.deleted_by.trim()
+      ? req.body.deleted_by.trim()
+      : "Unknown";
+  const reason = typeof req.body?.reason === "string" ? req.body.reason : null;
+
+  const isChangeControl = caseType === "Change Control";
+  const deletedRow = isChangeControl
+    ? await deleteChangeControlCase(id)
+    : await deleteDeviationCase(id);
+
+  if (!deletedRow) {
+    res.status(404).json({
+      error: isChangeControl
+        ? "Change control case not found"
+        : "Deviation case not found",
+    });
+    return;
+  }
+
+  await recordAuditEntry({
+    entity_type: isChangeControl ? "Change Control" : "Deviation",
+    entity_id: id,
+    action: "deleted",
+    source: "human",
+    performed_by: deletedBy,
+    record_snapshot: deletedRow,
+    reason,
+  });
+
+  res.json({ success: true, id });
 }

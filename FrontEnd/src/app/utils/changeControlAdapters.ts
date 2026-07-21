@@ -9,15 +9,6 @@ import type {
   RiskLevel,
 } from "../types/pipeline";
 
-/**
- * Adapters between the flat shapes the backend LLM stages actually return
- * (backend/llm/schemas/changeControl.ts is the source of truth) and the
- * nested shapes the Change Control UI is built around. Mirrors the
- * flat/nested pattern already used for Stage 1 in changeImpactAdapter.ts.
- * Keep in sync with the backend schema if either side changes.
- */
-
-// ── Stage 3: Validation & Testing Strategy ─────────────────────────────
 
 export interface FlatValidationTesting {
   required_validation_level: ValidationLevel;

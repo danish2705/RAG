@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { apiFetch } from "../../utils/api";
+import { generateImplementationControl } from "../../services/changeControl/implementationControlApi";
 import {
   aiField,
   markModified,
@@ -14,6 +14,7 @@ import {
   nestedToFlatValidationTesting,
 } from "../../utils/changeControlAdapters";
 import { useOverrideDialogState } from "../shared/useOverRideDialogState";
+import { useLlmFailureRecovery } from "../shared/useLlmFailureRecovery";
 
 // Helpers — mirrors the list <-> textarea convention used on
 // RiskCriticality.tsx / ValidationTesting.tsx
@@ -28,10 +29,6 @@ function linesToText(lines: string[]): string {
   return lines.join("\n");
 }
 
-// ---------------------------------------------------------------------------
-// Form reducer: the 5 editable fields, previously 5 separate useState calls.
-// Same pattern as the sibling change-control hooks.
-// ---------------------------------------------------------------------------
 interface ImplementationFormState {
   requiredActions: string;
   sopWiUpdates: string;
@@ -115,6 +112,7 @@ export function useImplementationControl() {
   // visited, mirroring how earlier stages hand data forward on Accept.
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const llmFailure = useLlmFailureRecovery();
 
   useEffect(() => {
     if (!result || implementationParsed || isGenerating) return;
@@ -128,20 +126,16 @@ export function useImplementationControl() {
     const validationTestingParsed =
       result.stages?.validationTesting?.parsed ?? null;
 
-    apiFetch<any>("/api/change-control/implementation-control", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        query: result.query,
-        changeImpactAssessment: changeImpactAssessmentParsed
-          ? nestedToFlatChangeImpactAssessment(changeImpactAssessmentParsed)
-          : null,
-        riskCriticality: result.stages?.riskCriticality?.parsed ?? null,
-        validationTesting: validationTestingParsed
-          ? nestedToFlatValidationTesting(validationTestingParsed)
-          : null,
-      }),
-    })
+    generateImplementationControl(
+      result.query,
+      changeImpactAssessmentParsed
+        ? nestedToFlatChangeImpactAssessment(changeImpactAssessmentParsed)
+        : null,
+      result.stages?.riskCriticality?.parsed ?? null,
+      validationTestingParsed
+        ? nestedToFlatValidationTesting(validationTestingParsed)
+        : null,
+    )
       .then((res) => {
         if (cancelled) return;
         const rawStage = res?.stages?.implementationControl;
@@ -161,11 +155,18 @@ export function useImplementationControl() {
       })
       .catch((err) => {
         if (cancelled) return;
-        setGenerateError(
+        const message =
           err instanceof Error
             ? err.message
-            : "Something went wrong generating implementation & control actions. Please try again.",
-        );
+            : "Something went wrong generating implementation & control actions. Please try again.";
+        setGenerateError(message);
+        llmFailure.openLlmFailureDialog({
+          entityType: "Change Control",
+          pipelineStage: "implementation_control",
+          queryText: result.query,
+          errorMessage: message,
+          pipelineContext: result,
+        });
       })
       .finally(() => {
         if (!cancelled) setIsGenerating(false);
@@ -424,6 +425,7 @@ export function useImplementationControl() {
     decisionMade,
     confidenceScore,
     riskLevel,
+    llmFailure,
 
     proceed,
     handleAccept,

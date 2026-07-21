@@ -8,9 +8,16 @@ import {
 } from "../ui/table";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
 import { Loader2, PlayCircle } from "lucide-react";
 import type { LlmRetryEntry, LlmRetryStage } from "../../services/llmRetryApi";
 import { formatTimestamp } from "../../utils/timezone";
+import { getQueryPreview, extractDescription } from "../../utils/queryPreview";
 
 const STAGE_LABELS: Record<LlmRetryStage, string> = {
   classification: "Classification",
@@ -23,11 +30,6 @@ const STAGE_LABELS: Record<LlmRetryStage, string> = {
   implementation_control: "Implementation & Control",
   final_summary: "Final Summary",
 };
-
-function truncate(text: string, max = 90): string {
-  if (!text) return "—";
-  return text.length > max ? `${text.slice(0, max)}…` : text;
-}
 
 export function PendingAiReviewsTable({
   entries,
@@ -53,80 +55,97 @@ export function PendingAiReviewsTable({
 
   return (
     <div className="rounded-xl border overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Pipeline</TableHead>
-            <TableHead>Stage</TableHead>
-            <TableHead>Query</TableHead>
-            <TableHead>Saved At</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Resume</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {entries.map((entry) => (
-            <TableRow key={entry.id}>
-              <TableCell>{entry.full_name}</TableCell>
-              <TableCell>
-                <Badge variant="outline">{entry.entity_type}</Badge>
-              </TableCell>
-              <TableCell className="text-sm text-muted-foreground">
-                {STAGE_LABELS[entry.pipeline_stage] ?? entry.pipeline_stage}
-              </TableCell>
-              <TableCell
-                className="max-w-xs text-sm text-muted-foreground"
-                title={entry.query_text}
-              >
-                {truncate(entry.query_text)}
-              </TableCell>
-              <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                {formatTimestamp(entry.created_at)}
-              </TableCell>
-              <TableCell>
-                <Button
-                  size="sm"
-                  variant={entry.status === "pending" ? "secondary" : "outline"}
-                  disabled={updatingId === entry.id}
-                  onClick={() => onToggleStatus(entry)}
-                  className={
-                    entry.status === "pending"
-                      ? "bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
-                      : "bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 border-transparent"
-                  }
-                >
-                  {updatingId === entry.id ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : entry.status === "pending" ? (
-                    "Pending"
-                  ) : (
-                    "Not Executed"
-                  )}
-                </Button>
-              </TableCell>
-              <TableCell>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={resumingId === entry.id}
-                  onClick={() => onResume(entry)}
-                  className="gap-1.5 border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-900/50 dark:text-blue-400 dark:hover:bg-blue-950/30"
-                >
-                  {resumingId === entry.id ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <>
-                      <PlayCircle className="h-3.5 w-3.5" />
-                      Resume
-                    </>
-                  )}
-                </Button>
-              </TableCell>
+      <TooltipProvider delayDuration={150}>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Pipeline</TableHead>
+              <TableHead>Stage</TableHead>
+              <TableHead>Query</TableHead>
+              <TableHead>Saved At</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Resume</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {entries.map((entry) => (
+              <TableRow key={entry.id}>
+                <TableCell>{entry.full_name}</TableCell>
+                <TableCell>
+                  <Badge variant="outline">{entry.entity_type}</Badge>
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {STAGE_LABELS[entry.pipeline_stage] ?? entry.pipeline_stage}
+                </TableCell>
+                <TableCell className="max-w-[220px] text-sm text-muted-foreground truncate">
+                  {entry.query_text ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="cursor-default">
+                          {getQueryPreview(entry.query_text, 12)}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent
+                        side="bottom"
+                        className="max-w-sm whitespace-pre-wrap text-xs"
+                      >
+                        {extractDescription(entry.query_text)}
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    "—"
+                  )}
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                  {formatTimestamp(entry.created_at)}
+                </TableCell>
+                <TableCell>
+                  <Button
+                    size="sm"
+                    variant={
+                      entry.status === "pending" ? "secondary" : "outline"
+                    }
+                    disabled={updatingId === entry.id}
+                    onClick={() => onToggleStatus(entry)}
+                    className={
+                      entry.status === "pending"
+                        ? "bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+                        : "bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 border-transparent"
+                    }
+                  >
+                    {updatingId === entry.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : entry.status === "pending" ? (
+                      "Pending"
+                    ) : (
+                      "Not Executed"
+                    )}
+                  </Button>
+                </TableCell>
+                <TableCell>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={resumingId === entry.id}
+                    onClick={() => onResume(entry)}
+                    className="gap-1.5 border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-900/50 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                  >
+                    {resumingId === entry.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <>
+                        <PlayCircle className="h-3.5 w-3.5" />
+                        Resume
+                      </>
+                    )}
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TooltipProvider>
     </div>
   );
 }

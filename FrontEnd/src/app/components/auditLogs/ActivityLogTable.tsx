@@ -8,9 +8,16 @@ import {
   TableRow,
 } from "../ui/table";
 import { Badge } from "../ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
 import { Bot, User, Trash2, Pencil, PlusCircle, Settings2 } from "lucide-react";
 import type { AuditLogEntry } from "../../types/audit";
 import { formatTimestamp } from "../../utils/timezone";
+import { truncateWords } from "../../utils/queryPreview";
 
 function renderValue(val: unknown): string {
   if (val === null || val === undefined) return "—";
@@ -107,88 +114,104 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
         <CardTitle>Activity Log</CardTitle>
       </CardHeader>
       <CardContent>
-        <Table className="table-fixed">
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[20%]">Timestamp</TableHead>
-              <TableHead className="w-[14%]">User / System</TableHead>
-              <TableHead className="w-[11%]">Action</TableHead>
-              <TableHead className="w-[8%]">Record</TableHead>
-              <TableHead className="w-[37%]">Details</TableHead>
-              <TableHead className="w-[10%]">Source</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {entries.length === 0 ? (
+        <TooltipProvider delayDuration={150}>
+          <Table className="table-fixed">
+            <TableHeader>
               <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="h-24 text-center text-muted-foreground text-sm"
-                >
-                  No audit activity found for the selected filters.
-                </TableCell>
+                <TableHead className="w-[16%]">Timestamp</TableHead>
+                <TableHead className="w-[14%]">User / System</TableHead>
+                <TableHead className="w-[11%]">Action</TableHead>
+                <TableHead className="w-[8%]">Record</TableHead>
+                <TableHead className="w-[31%]">Details</TableHead>
+                <TableHead className="w-[10%]">Source</TableHead>
               </TableRow>
-            ) : (
-              entries.map((entry) => {
-                const meta = actionMeta(entry);
-                return (
-                  <TableRow key={entry.id} className={meta.rowClass}>
-                    <TableCell className="text-sm font-mono leading-snug break-words">
-                      {formatTimestamp(entry.created_at)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 min-w-0">
-                        {entry.source === "ai" ? (
-                          <Bot className="h-4 w-4 text-blue-600 shrink-0" />
-                        ) : (
-                          <User className="h-4 w-4 text-muted-foreground shrink-0" />
-                        )}
-                        <span className="text-sm font-medium truncate">
-                          {entry.performed_by}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={`text-xs gap-1 ${meta.badgeClass}`}
-                      >
-                        {meta.icon}
-                        {meta.label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs font-mono text-muted-foreground truncate">
-                      {entry.entity_id
-                        ? `#${entry.entity_id.slice(0, 8)}`
-                        : "—"}
-                    </TableCell>
-                    <TableCell className="text-sm break-words">
-                      {describeEntry(entry)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={
-                          entry.source === "ai"
-                            ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+            </TableHeader>
+            <TableBody>
+              {entries.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="h-24 text-center text-muted-foreground text-sm"
+                  >
+                    No audit activity found for the selected filters.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                entries.map((entry) => {
+                  const meta = actionMeta(entry);
+                  return (
+                    <TableRow key={entry.id} className={meta.rowClass}>
+                      <TableCell className="text-xs font-mono text-muted-foreground whitespace-nowrap">
+                        {formatTimestamp(entry.created_at, {
+                          dateStyle: "numeric",
+                        })}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2 min-w-0">
+                          {entry.source === "ai" ? (
+                            <Bot className="h-4 w-4 text-blue-600 shrink-0" />
+                          ) : (
+                            <User className="h-4 w-4 text-muted-foreground shrink-0" />
+                          )}
+                          <span className="text-sm font-medium truncate">
+                            {entry.performed_by}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={`text-xs gap-1 ${meta.badgeClass}`}
+                        >
+                          {meta.icon}
+                          {meta.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs font-mono text-muted-foreground truncate">
+                        {entry.entity_id
+                          ? `#${entry.entity_id.slice(0, 8)}`
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="text-sm overflow-hidden">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="block break-words">
+                              {truncateWords(describeEntry(entry), 12)}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent
+                            side="bottom"
+                            className="max-w-sm whitespace-pre-wrap text-xs"
+                          >
+                            {describeEntry(entry)}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={
+                            entry.source === "ai"
+                              ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                              : entry.source === "system"
+                                ? "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
+                                : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                          }
+                        >
+                          {entry.source === "ai"
+                            ? "AI"
                             : entry.source === "system"
-                              ? "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
-                              : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                        }
-                      >
-                        {entry.source === "ai"
-                          ? "AI"
-                          : entry.source === "system"
-                            ? "System"
-                            : "Human"}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
+                              ? "System"
+                              : "Human"}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </TooltipProvider>
       </CardContent>
     </Card>
   );

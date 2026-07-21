@@ -4,6 +4,7 @@ import {
   listLlmRetryEntries,
   getLlmRetryEntry,
   updateLlmRetryStatus,
+  deleteLlmRetryEntry,
 } from "../services/llmRetryApi";
 import type {
   LlmRetryEntry,
@@ -56,6 +57,10 @@ export function usePendingAiReviews() {
   // but keeping them independent avoids one action disabling the other).
   const [resumingId, setResumingId] = useState<number | null>(null);
   const [resumeError, setResumeError] = useState<string | null>(null);
+
+  // Delete flow state — tracks which row id is mid-delete for its spinner.
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const navigate = useNavigate();
   const setPipelineResult = useWorkflowStore((s) => s.setPipelineResult);
@@ -163,6 +168,31 @@ export function usePendingAiReviews() {
     [navigate, setPipelineResult],
   );
 
+  const handleDelete = useCallback(
+    async (entry: LlmRetryEntry) => {
+      setDeleteError(null);
+      setDeletingId(entry.id);
+
+      // Optimistic removal — restored if the request fails.
+      const previous = entries;
+      setEntries((prev) => prev.filter((e) => e.id !== entry.id));
+
+      try {
+        await deleteLlmRetryEntry(entry.id);
+      } catch (err) {
+        setEntries(previous);
+        setDeleteError(
+          err instanceof Error
+            ? err.message
+            : "Could not delete this entry. Please try again.",
+        );
+      } finally {
+        setDeletingId(null);
+      }
+    },
+    [entries],
+  );
+
   return {
     entries,
     loading,
@@ -181,6 +211,9 @@ export function usePendingAiReviews() {
     resumingId,
     resumeError,
     handleResume,
+    deletingId,
+    deleteError,
+    handleDelete,
     refetch: load,
   };
 }

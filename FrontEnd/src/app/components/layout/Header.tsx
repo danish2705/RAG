@@ -98,6 +98,11 @@ const PAGE_META: Record<string, PageMetaEntry> = {
     title: "Audit Trail",
     subtitle: "Track changes and activity across the system",
   },
+  "/pending-ai-reviews": {
+    title: "Pending AI Reviews",
+    subtitle:
+      "Queries saved when the AI service was unavailable, so nothing gets lost. Retry them once the service is back up, and mark each one Pending or Not Executed as you work through the list.",
+  },
   "/reports": {
     title: "Reports",
     subtitle: "Generate and review quality reports",

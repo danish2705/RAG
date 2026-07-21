@@ -14,7 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../ui/tooltip";
-import { Loader2, PlayCircle } from "lucide-react";
+import { Loader2, PlayCircle, Trash2 } from "lucide-react";
 import type { LlmRetryEntry, LlmRetryStage } from "../../services/llmRetryApi";
 import { formatTimestamp } from "../../utils/timezone";
 import { getQueryPreview, extractDescription } from "../../utils/queryPreview";
@@ -37,12 +37,16 @@ export function PendingAiReviewsTable({
   onToggleStatus,
   resumingId,
   onResume,
+  deletingId,
+  onDelete,
 }: {
   entries: LlmRetryEntry[];
   updatingId: number | null;
   onToggleStatus: (entry: LlmRetryEntry) => void;
   resumingId: number | null;
   onResume: (entry: LlmRetryEntry) => void;
+  deletingId?: number | null;
+  onDelete?: (entry: LlmRetryEntry) => void;
 }) {
   if (entries.length === 0) {
     return (
@@ -65,15 +69,24 @@ export function PendingAiReviewsTable({
               <TableHead>Query</TableHead>
               <TableHead>Saved At</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Resume</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody className="bg-white">
+          <TableBody>
             {entries.map((entry) => (
               <TableRow key={entry.id}>
                 <TableCell>{entry.full_name}</TableCell>
                 <TableCell>
-                  <Badge variant="outline">{entry.entity_type}</Badge>
+                  <Badge
+                    variant="outline"
+                    className={
+                      entry.entity_type === "Deviation"
+                        ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/50"
+                        : "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900/50"
+                    }
+                  >
+                    {entry.entity_type}
+                  </Badge>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {STAGE_LABELS[entry.pipeline_stage] ?? entry.pipeline_stage}
@@ -124,22 +137,59 @@ export function PendingAiReviewsTable({
                   </Button>
                 </TableCell>
                 <TableCell>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={resumingId === entry.id}
-                    onClick={() => onResume(entry)}
-                    className="gap-1.5 border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-900/50 dark:text-blue-400 dark:hover:bg-blue-950/30"
-                  >
-                    {resumingId === entry.id ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <>
-                        <PlayCircle className="h-3.5 w-3.5" />
+                  <div className="flex items-center gap-3">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          disabled={resumingId === entry.id}
+                          onClick={() => onResume(entry)}
+                          aria-label="Resume"
+                          className="text-blue-600 hover:text-blue-800 disabled:opacity-50 dark:text-blue-400 dark:hover:text-blue-300"
+                        >
+                          {resumingId === entry.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <PlayCircle className="h-4 w-4" />
+                          )}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="text-xs">
                         Resume
-                      </>
+                      </TooltipContent>
+                    </Tooltip>
+
+                    {onDelete && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            disabled={deletingId === entry.id}
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  "Delete this pending AI review entry? This cannot be undone.",
+                                )
+                              ) {
+                                onDelete(entry);
+                              }
+                            }}
+                            aria-label="Delete"
+                            className="text-red-600 hover:text-red-800 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
+                          >
+                            {deletingId === entry.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="text-xs">
+                          Delete
+                        </TooltipContent>
+                      </Tooltip>
                     )}
-                  </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

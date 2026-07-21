@@ -97,3 +97,9 @@ export const updateLlmRetryStatus = async (
     body: JSON.stringify({ status }),
   });
 };
+
+export const deleteLlmRetryEntry = async (id: number): Promise<void> => {
+  return apiFetch(`/api/llm-retry-queue/${id}`, {
+    method: "DELETE",
+  });
+};

@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router";
 import { Layout } from "./components/layout/Layout";
 import { ProtectedRoute } from "./components/layout/ProtectedRoute";
+import { RoleProtectedRoute } from "./components/layout/RoleProtectedRoute";
 import { Login } from "./pages/Login";
 import { Profile } from "./pages/Profile";
 import { Dashboard } from "./pages/Dashboard";
@@ -30,35 +31,64 @@ export const router = createBrowserRouter([
         path: "/",
         Component: Layout,
         children: [
-          { index: true, Component: Dashboard },
-          { path: "profile", Component: Profile },
-          { path: "deviation", Component: NewDeviation },
-          { path: "deviation/ai-recommendation", Component: AIRecommendation },
-          { path: "deviation/impact-assessment", Component: ImpactAssessment },
-          { path: "deviation/root-cause", Component: RootCause },
-          { path: "deviation/capa", Component: Capa },
-          { path: "deviation/summary", Component: Summary },
+          // Quality Event Intake flow — reachable by every role, including Guest.
           {
-            path: "change-control/change-impact-assessment",
-            Component: ChangeImpactAssessment,
+            Component: () => (
+              <RoleProtectedRoute allowedRoles={["Admin", "User", "Guest"]} />
+            ),
+            children: [
+              { path: "deviation", Component: NewDeviation },
+              {
+                path: "deviation/ai-recommendation",
+                Component: AIRecommendation,
+              },
+              {
+                path: "deviation/impact-assessment",
+                Component: ImpactAssessment,
+              },
+              { path: "deviation/root-cause", Component: RootCause },
+              { path: "deviation/capa", Component: Capa },
+              { path: "deviation/summary", Component: Summary },
+            ],
           },
+          // Everything else is off-limits to Guests (view-only intake role).
           {
-            path: "change-control/risk-criticality",
-            Component: RiskCriticality,
+            Component: () => (
+              <RoleProtectedRoute allowedRoles={["Admin", "User"]} />
+            ),
+            children: [
+              { index: true, Component: Dashboard },
+              { path: "profile", Component: Profile },
+              {
+                path: "change-control/change-impact-assessment",
+                Component: ChangeImpactAssessment,
+              },
+              {
+                path: "change-control/risk-criticality",
+                Component: RiskCriticality,
+              },
+              {
+                path: "change-control/validation-testing",
+                Component: ValidationTesting,
+              },
+              {
+                path: "change-control/implementation",
+                Component: ImplementationControl,
+              },
+              {
+                path: "change-control/summary",
+                Component: ChangecontrolSummary,
+              },
+              { path: "records", Component: Records },
+              { path: "pending-ai-reviews", Component: PendingAiReviews },
+              { path: "settings", Component: Settings },
+            ],
           },
+          // Audit Trail — Admin only.
           {
-            path: "change-control/validation-testing",
-            Component: ValidationTesting,
+            Component: () => <RoleProtectedRoute allowedRoles={["Admin"]} />,
+            children: [{ path: "audit-trail", Component: AuditLogs }],
           },
-          {
-            path: "change-control/implementation",
-            Component: ImplementationControl,
-          },
-          { path: "change-control/summary", Component: ChangecontrolSummary },
-          { path: "records", Component: Records },
-          { path: "audit-trail", Component: AuditLogs },
-          { path: "pending-ai-reviews", Component: PendingAiReviews },
-          { path: "settings", Component: Settings },
         ],
       },
     ],

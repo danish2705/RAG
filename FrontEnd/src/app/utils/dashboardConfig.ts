@@ -6,7 +6,7 @@ import {
   BarChart2,
   CheckCircle,
 } from "lucide-react";
-import type { SeverityColors, StatusColors } from "../../types/dashboard";
+import type { SeverityColors, StatusColors } from "../types/dashboard";
 
 export const severityColors: SeverityColors = {
   High: "bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-400",
@@ -21,6 +21,36 @@ export const statusColors: StatusColors = {
   Completed:
     "bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-400",
 };
+
+// Colors for the chart series, kept separate from the badge classes above.
+// These are for reference / potential client-side reuse; the server already
+// attaches a `color` to each DonutDatum in the /api/dashboard/summary
+// response, so most chart components just use `d.color` directly.
+export const eventTypeChartColors: Record<string, string> = {
+  Deviation: "#3B82F6", // blue
+  "Change Control": "#8B5CF6", // purple
+};
+
+export const severityChartColors: Record<string, string> = {
+  High: "#EF4444", // red
+  Medium: "#F59E0B", // orange
+  Low: "#22C55E", // green
+};
+
+export const statusChartColors: Record<string, string> = {
+  "Pending Review": "#3B82F6", // blue
+  "In Progress": "#22C55E", // green
+  Completed: "#F59E0B", // gold
+  Closed: "#EF4444", // red
+};
+
+export const eventsOverTimeColors = {
+  allEvents: "#3B82F6",
+  deviation: "#8B5CF6",
+  changeControl: "#22C55E",
+};
+
+export const eventsBySiteColor = "#3B82F6";
 
 // Static presentation metadata (label/sub/icon) for each KPI card. The
 // numeric `value` is filled in from the live /api/dashboard/summary response.

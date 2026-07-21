@@ -3,6 +3,13 @@ import { useNavigate } from "react-router";
 import { AIAssistantPanel } from "../components/chat/AiAssistant";
 import { KpiCardGrid } from "../components/dashboard/KpiCard";
 import { RecentRecordsList } from "../components/dashboard/RecentRecordsList";
+import { Loader } from "../components/dashboard/Loader";
+import {
+  ChartCard,
+  DonutChart,
+  EventsOverTimeChart,
+  EventsBySiteChart,
+} from "../components/dashboard/Charts";
 import { useDashboard } from "../hooks/useDashboard";
 import {
   eventTypeCardMeta,
@@ -30,6 +37,11 @@ export function Dashboard() {
     value: summary ? meta.format(summary.metricCards[meta.key]) : "\u2013",
   }));
 
+  // Only show the full-page loader on the very first load. If a background
+  // refetch happens later while data's already on screen, don't yank the
+  // existing content away — just let it update quietly in place.
+  const isInitialLoad = loading && !summary;
+
   return (
     <div className="relative h-full w-full">
       <div
@@ -52,18 +64,60 @@ export function Dashboard() {
           </div>
         )}
 
-        <KpiCardGrid title="Events by Type" cards={eventTypeCards} />
-        <KpiCardGrid title="Performance Metrics" cards={metricCards} />
+        {isInitialLoad ? (
+          <Loader message="Loading dashboard..." minHeight="h-[60vh]" />
+        ) : (
+          <>
+            <KpiCardGrid title="Events by Type" cards={eventTypeCards} />
+            <KpiCardGrid title="Performance Metrics" cards={metricCards} />
 
-        <RecentRecordsList
-          records={summary?.recentRecords ?? []}
-          severityColors={severityColors}
-          statusColors={statusColors}
-        />
-        {!loading && summary && summary.recentRecords.length === 0 && (
-          <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">
-            No records yet.
-          </p>
+            {summary && (
+              <>
+                {/* Row: Events by Type / Events Over Time / Events by Site */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <ChartCard title="Events by Type">
+                    <DonutChart
+                      data={summary.charts.eventsByType}
+                      centerLabel="Total"
+                    />
+                  </ChartCard>
+                  <ChartCard title="Events Over Time (Monthly)">
+                    <EventsOverTimeChart data={summary.charts.eventsOverTime} />
+                  </ChartCard>
+                  <ChartCard title="Events by Site">
+                    <EventsBySiteChart data={summary.charts.eventsBySite} />
+                  </ChartCard>
+                </div>
+
+                {/* Row: Severity Distribution / Events by Status */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <ChartCard title="Severity Distribution">
+                    <DonutChart
+                      data={summary.charts.severityDistribution}
+                      centerLabel="Total"
+                    />
+                  </ChartCard>
+                  <ChartCard title="Events by Status">
+                    <DonutChart
+                      data={summary.charts.eventsByStatus}
+                      centerLabel="Total"
+                    />
+                  </ChartCard>
+                </div>
+              </>
+            )}
+
+            <RecentRecordsList
+              records={summary?.recentRecords ?? []}
+              severityColors={severityColors}
+              statusColors={statusColors}
+            />
+            {!loading && summary && summary.recentRecords.length === 0 && (
+              <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">
+                No records yet.
+              </p>
+            )}
+          </>
         )}
       </div>
 

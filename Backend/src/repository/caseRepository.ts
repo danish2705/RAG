@@ -1,4 +1,5 @@
 import { pool } from "../db.js";
+import { parseMetadata } from "../utils/parseMetadata.js";
 
 // ---------------------------------------------------------------------------
 // Shared query params for list endpoints
@@ -214,10 +215,16 @@ export interface SaveDeviationCaseInput {
 export async function saveDeviationCase(
   data: SaveDeviationCaseInput,
 ): Promise<number> {
+  // Extract structured fields (site, source_system, event_type, etc.) out
+  // of the free-text `query` block so they can be queried/grouped on
+  // directly (e.g. the dashboard's "Events by Site" chart) instead of
+  // regex-scanning `query` on every read.
+  const metadata = parseMetadata(data.query);
+
   const result = await pool.query(
     `INSERT INTO deviation_cases
-      (query, classification, impact_assessment, rca, capa, status, halted_at, saved_by)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      (query, classification, impact_assessment, rca, capa, status, halted_at, saved_by, metadata)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING id`,
     [
       data.query,
@@ -228,6 +235,7 @@ export async function saveDeviationCase(
       data.status,
       data.halted_at,
       data.saved_by,
+      JSON.stringify(metadata),
     ],
   );
   return result.rows[0].id;
@@ -342,12 +350,16 @@ export interface SaveChangeControlCaseInput {
 export async function saveChangeControlCase(
   data: SaveChangeControlCaseInput,
 ): Promise<number> {
+  // Extract structured fields (site, source_system, event_type, etc.) out
+  // of the free-text `query` block, same as saveDeviationCase above.
+  const metadata = parseMetadata(data.query);
+
   const result = await pool.query(
     `INSERT INTO change_control_cases
       (query, classification, change_impact_assessment, risk_criticality,
        validation_testing, implementation_control, final_summary,
-       status, halted_at, saved_by)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       status, halted_at, saved_by, metadata)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
      RETURNING id`,
     [
       data.query,
@@ -360,6 +372,7 @@ export async function saveChangeControlCase(
       data.status,
       data.halted_at,
       data.saved_by,
+      JSON.stringify(metadata),
     ],
   );
   return result.rows[0].id;

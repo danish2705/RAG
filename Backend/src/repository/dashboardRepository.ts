@@ -2,7 +2,8 @@ import { pool } from "../db.js";
 
 // ---------------------------------------------------------------------------
 // Dashboard summary — aggregates real rows from deviation_cases and
-// change_control_cases for the Dashboard page (KPI cards + recent records).
+// change_control_cases for the Dashboard page (KPI cards, charts, and
+// recent records).
 // ---------------------------------------------------------------------------
 
 export interface DashboardCounts {
@@ -209,4 +210,196 @@ export async function getRecentRecords(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     )
     .slice(0, limit);
+}
+
+// ---------------------------------------------------------------------------
+// Chart data for the Dashboard page
+// ---------------------------------------------------------------------------
+
+// --- Chart: Events by Type (donut) ------------------------------------------
+export interface ChartDonutDatum {
+  label: string;
+  value: number;
+}
+
+export function buildEventsByTypeChart(
+  counts: DashboardCounts,
+): ChartDonutDatum[] {
+  return [
+    { label: "Deviation", value: counts.totalDeviations },
+    { label: "Change Control", value: counts.totalChangeControls },
+  ];
+}
+
+// --- Chart: Events Over Time (last 6 months, monthly) -----------------------
+export interface EventsOverTimeRow {
+  month: string; // "Jan", "Feb", ...
+  allEvents: number;
+  deviation: number;
+  changeControl: number;
+}
+
+export async function getEventsOverTime(): Promise<EventsOverTimeRow[]> {
+  const [devResult, ccResult] = await Promise.all([
+    pool.query(`
+      SELECT to_char(date_trunc('month', created_at), 'YYYY-MM') AS bucket,
+             COUNT(*) AS cnt
+      FROM deviation_cases
+      WHERE created_at >= date_trunc('month', NOW()) - INTERVAL '5 months'
+      GROUP BY 1
+    `),
+    pool.query(`
+      SELECT to_char(date_trunc('month', created_at), 'YYYY-MM') AS bucket,
+             COUNT(*) AS cnt
+      FROM change_control_cases
+      WHERE created_at >= date_trunc('month', NOW()) - INTERVAL '5 months'
+      GROUP BY 1
+    `),
+  ]);
+
+  const devMap = new Map<string, number>(
+    devResult.rows.map((r) => [r.bucket, Number(r.cnt)]),
+  );
+  const ccMap = new Map<string, number>(
+    ccResult.rows.map((r) => [r.bucket, Number(r.cnt)]),
+  );
+
+  // Build the last 6 calendar months (oldest -> newest) so gaps are shown
+  // as zero instead of being silently skipped.
+  const months: { bucket: string; label: string }[] = [];
+  const now = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const bucket = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const label = d.toLocaleString("en-US", { month: "short" });
+    months.push({ bucket, label });
+  }
+
+  return months.map(({ bucket, label }) => {
+    const deviation = devMap.get(bucket) ?? 0;
+    const changeControl = ccMap.get(bucket) ?? 0;
+    return {
+      month: label,
+      deviation,
+      changeControl,
+      allEvents: deviation + changeControl,
+    };
+  });
+}
+
+// --- Chart: Events by Site --------------------------------------------------
+// Site now comes from the structured `metadata` column (populated at
+// creation time by parseQueryMetadata, and backfilled for existing rows —
+// see scripts/backfillQueryMetadata.ts).
+export interface EventsBySiteRow {
+  site: string;
+  count: number;
+}
+
+export async function getEventsBySite(): Promise<EventsBySiteRow[]> {
+  const result = await pool.query(`
+    SELECT metadata->>'site' AS site, COUNT(*) AS cnt
+    FROM (
+      SELECT metadata FROM deviation_cases
+      UNION ALL
+      SELECT metadata FROM change_control_cases
+    ) t
+    WHERE metadata->>'site' IS NOT NULL AND metadata->>'site' <> ''
+    GROUP BY metadata->>'site'
+    ORDER BY cnt DESC
+  `);
+  return result.rows.map((r) => ({ site: r.site, count: Number(r.cnt) }));
+}
+
+// --- Chart: Severity Distribution (combined, both case types) --------------
+// Computed entirely in SQL (no per-row JS classification) so it stays cheap
+// at scale. Mirrors the same classification rules as deviationSeverity /
+// changeControlSeverity above. Only High/Medium/Low are surfaced — cases
+// that would previously have fallen into "Informational" are folded into
+// Low instead.
+export type SeverityTally = Record<"High" | "Medium" | "Low", number>;
+
+const SEVERITY_DISTRIBUTION_SQL = `
+  WITH dev_severity AS (
+    SELECT
+      CASE GREATEST(
+        CASE impact_assessment->'product_impact'->>'severity'
+          WHEN 'Critical' THEN 4 WHEN 'Major' THEN 3 WHEN 'Minor' THEN 2 ELSE 1 END,
+        CASE impact_assessment->'patient_impact'->>'severity'
+          WHEN 'Critical' THEN 4 WHEN 'Major' THEN 3 WHEN 'Minor' THEN 2 ELSE 1 END,
+        CASE impact_assessment->'data_integrity_impact'->>'severity'
+          WHEN 'Critical' THEN 4 WHEN 'Major' THEN 3 WHEN 'Minor' THEN 2 ELSE 1 END,
+        CASE impact_assessment->'compliance_impact'->>'severity'
+          WHEN 'Critical' THEN 4 WHEN 'Major' THEN 3 WHEN 'Minor' THEN 2 ELSE 1 END
+      )
+        WHEN 4 THEN 'High'
+        WHEN 3 THEN 'Medium'
+        ELSE 'Low'
+      END AS severity
+    FROM deviation_cases
+  ),
+  cc_severity AS (
+    SELECT
+      CASE COALESCE(
+        risk_criticality->'patient_safety_product_quality_impact'->>'level',
+        change_impact_assessment->>'risk_scoring'
+      )
+        WHEN 'High' THEN 'High'
+        WHEN 'Moderate' THEN 'Medium'
+        WHEN 'Low' THEN 'Low'
+        WHEN 'None' THEN 'Low'
+        -- Missing/unrecognized risk data defaults to Medium, matching the
+        -- original conservative fallback so under-assessed change
+        -- controls aren't hidden in the low-risk bucket.
+        ELSE 'Medium'
+      END AS severity
+    FROM change_control_cases
+  ),
+  combined AS (
+    SELECT severity FROM dev_severity
+    UNION ALL
+    SELECT severity FROM cc_severity
+  )
+  SELECT severity, COUNT(*) AS cnt
+  FROM combined
+  GROUP BY severity
+`;
+
+export async function getSeverityDistribution(): Promise<SeverityTally> {
+  const result = await pool.query(SEVERITY_DISTRIBUTION_SQL);
+
+  const tally: SeverityTally = {
+    High: 0,
+    Medium: 0,
+    Low: 0,
+  };
+  for (const row of result.rows) {
+    const key = row.severity as keyof SeverityTally;
+    if (key in tally) {
+      tally[key] = Number(row.cnt);
+    }
+  }
+  return tally;
+}
+
+// --- Chart: Events by Status (combined, both case types) -------------------
+export type StatusTally = Record<string, number>;
+
+export async function getEventsByStatusDistribution(): Promise<StatusTally> {
+  const result = await pool.query(`
+    SELECT status, COUNT(*) AS cnt
+    FROM (
+      SELECT status FROM deviation_cases
+      UNION ALL
+      SELECT status FROM change_control_cases
+    ) t
+    GROUP BY status
+  `);
+
+  const tally: StatusTally = {};
+  for (const row of result.rows) {
+    const label = statusLabel(row.status);
+    tally[label] = (tally[label] ?? 0) + Number(row.cnt);
+  }
+  return tally;
 }

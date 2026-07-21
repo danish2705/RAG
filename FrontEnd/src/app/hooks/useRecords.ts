@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { apiFetch } from "../utils/api";
 import { fetchRecords, fetchCaseDetail } from "../services/recordsApi";
+import { useAuth } from "../context/AuthContext";
 import type { AnyCase } from "../types/Records";
 
 interface RecordRow {
@@ -26,6 +27,8 @@ function toRecordRow(row: AnyCase): RecordRow {
 }
 
 export function useRecords() {
+  const { user } = useAuth();
+  const role = user?.role?.toLowerCase();
   const [cases, setCases] = useState<RecordRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -73,8 +76,16 @@ export function useRecords() {
   };
 
   // Filter and sort the cases array cleanly
+  // Users can only view and manage their own records; Admins see everything.
+  const ownRecordsOnly = useMemo(() => {
+    if (role !== "user" || !user?.username) return cases;
+    return cases.filter(
+      (item) => item.submittedBy?.toLowerCase() === user.username.toLowerCase(),
+    );
+  }, [cases, role, user?.username]);
+
   const filteredCases = useMemo(() => {
-    return cases
+    return ownRecordsOnly
       .filter((item) => {
         const matchesUser =
           !submittedByFilter ||
@@ -96,7 +107,7 @@ export function useRecords() {
         if (valA > valB) return sortAsc ? 1 : -1;
         return 0;
       });
-  }, [cases, submittedByFilter, classificationFilter, sortField, sortAsc]);
+  }, [ownRecordsOnly, submittedByFilter, classificationFilter, sortField, sortAsc]);
 
   // Handle Record Deletion
   const handleDeleteRecord = async (recordId: string, deletedBy: string) => {
@@ -144,7 +155,7 @@ export function useRecords() {
   }, []);
 
   return {
-    cases,
+    cases: ownRecordsOnly,
     loading,
     error,
     selectedCase,

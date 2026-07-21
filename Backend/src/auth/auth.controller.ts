@@ -1,37 +1,89 @@
 import type { Request, Response } from "express";
-
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin";
-
+ 
 export interface AuthUser {
   username: string;
-  role: string;
+  role: "Admin" | "User" | "Guest";
   department: string;
 }
-
-const DEMO_USER: AuthUser = {
-  username: "admin",
-  role: "Quality Manager & Lead",
-  department: "Quality Assurance & Compliance",
+ 
+// Demo users
+const USERS: Record<
+  string,
+  { password: string; user: AuthUser }
+> = {
+  admin: {
+    password: "admin",
+    user: {
+      username: "admin",
+      role: "Admin",
+      department: "Quality Assurance & Compliance",
+    },
+  },
+  user: {
+    password: "user",
+    user: {
+      username: "user",
+      role: "User",
+      department: "Manufacturing",
+    },
+  },
+  guest: {
+    password: "guest",
+    user: {
+      username: "guest",
+      role: "Guest",
+      department: "Visitor",
+    },
+  },
 };
-
+ 
 // POST /api/auth/login
 export async function login(req: Request, res: Response): Promise<void> {
   const { username, password } = req.body ?? {};
-
+ 
   if (typeof username !== "string" || typeof password !== "string") {
-    res.status(400).json({ error: "Username and password are required." });
+    res.status(400).json({
+      error: "Username and password are required.",
+    });
     return;
   }
-
-  if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
-    res.status(401).json({ error: "Incorrect username or password." });
+ 
+  const account = USERS[username];
+ 
+  if (!account || account.password !== password) {
+    res.status(401).json({
+      error: "Incorrect username or password.",
+    });
     return;
   }
-
-  res.json({ user: DEMO_USER });
+ 
+  res.json({
+    user: account.user,
+  });
 }
-
-export async function ssoLogin(_req: Request, res: Response): Promise<void> {
-  res.json({ user: DEMO_USER });
+ 
+// Demo SSO Login
+export async function ssoLogin(
+  req: Request,
+  res: Response
+): Promise<void> {
+  // Example:
+  // ?username=admin
+  // ?username=user
+  // ?username=guest
+ 
+  const username = (req.query.username as string) || "admin";
+ 
+  const account = USERS[username];
+ 
+  if (!account) {
+    res.status(404).json({
+      error: "User not found.",
+    });
+    return;
+  }
+ 
+  res.json({
+    user: account.user,
+  });
 }

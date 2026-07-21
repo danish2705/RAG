@@ -2,37 +2,67 @@ import { config } from "../config.js";
 
 const BATCH_SIZE = 32;
 
-// Calls Hugging Face's router API for embeddings (sentence-transformers models) in a single batch.
- async function embedBatch(texts: string[]): Promise<number[][]> {
+interface EmbeddingItem {
+  embedding: number[];
+}
+
+interface EmbeddingResponse {
+  data?: EmbeddingItem[];
+}
+
+// Calls Azure AI Foundry's v1 unified embeddings endpoint in a single batch.
+async function embedBatch(texts: string[]): Promise<number[][]> {
   if (!config.embeddings.apiKey) {
     throw new Error(
-      "API_KEY is not set - required for the embeddings API call (reuses the same HF token as the LLM).",
+      "AZURE_OPENAI_API_KEY is not set - required for the embeddings API call.",
     );
   }
 
-  const response = await fetch(config.embeddings.apiUrl, {
+  if (!config.embeddings.endpoint) {
+    throw new Error("AZURE_OPENAI_ENDPOINT is not set in your .env");
+  }
+
+  // Azure AI Foundry v1 unified API shape:
+  // https://<resource>.services.ai.azure.com/openai/v1/embeddings
+  // The deployment/model name goes in the request body ("model"), not the URL.
+  const base = config.embeddings.endpoint.replace(/\/$/, "");
+  const url = config.embeddings.apiVersion
+    ? `${base}/embeddings?api-version=${config.embeddings.apiVersion}`
+    : `${base}/embeddings`;
+
+  const body: Record<string, unknown> = {
+    model: config.embeddings.deployment,
+    input: texts,
+  };
+  // text-embedding-3-small defaults to 1536 dims; only send "dimensions"
+  // if explicitly configured to request a smaller size.
+  if (config.embeddings.dimensions) {
+    body.dimensions = config.embeddings.dimensions;
+  }
+
+  const response = await fetch(url, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${config.embeddings.apiKey}`,
+      "api-key": config.embeddings.apiKey,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ inputs: texts, options: { wait_for_model: true } }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(`Embeddings API error ${response.status}: ${body}`);
+    const responseBody = await response.text().catch(() => "");
+    throw new Error(`Embeddings API error ${response.status}: ${responseBody}`);
   }
 
-  const data = (await response.json()) as unknown;
+  const data = (await response.json()) as EmbeddingResponse;
 
-  if (!Array.isArray(data) || !Array.isArray(data[0])) {
+  if (!Array.isArray(data.data)) {
     throw new Error(
       `Unexpected embeddings API response shape: ${JSON.stringify(data).slice(0, 200)}`,
     );
   }
 
-  return data as number[][];
+  return data.data.map((item) => item.embedding);
 }
 
 export async function embedTexts(texts: string[]): Promise<number[][]> {

@@ -30,7 +30,7 @@ export const DeleteRecordModal: React.FC<DeleteRecordModalProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState("");
 
-  // Reset state whenever modal opens/closes
+  // Reset state whenever modal open/close
   useEffect(() => {
     if (open) {
       setStep("confirm");

@@ -1,7 +1,6 @@
 .env
 orchestration.ipynb
 node_modules/
-package-lock.json
 Backend/node_modules/
 FrontEnd/node_modules/
 Backend/.env

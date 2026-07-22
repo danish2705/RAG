@@ -1,11 +1,5 @@
-// One-time backfill: parses the `query` text of every existing row in
-// deviation_cases and change_control_cases and populates the new
-// `metadata` JSONB column. Safe to re-run — it only touches rows where
-// metadata is still the default empty object.
-
-
 import { pool } from "../db.js";
-import { parseMetadata } from "../utils/parseMetadata";
+import { parseMetadata } from "./parseMetadata.js";
 
 const BATCH_SIZE = 200;
 

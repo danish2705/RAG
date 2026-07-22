@@ -90,7 +90,7 @@ export const metricCardMeta = [
   {
     key: "capaEffectiveness" as const,
     label: "CAPA Effectiveness",
-    sub: "Required CAPAs completed without escalation",
+    sub: "CAPAs completed without escalation",
     icon: CheckCircle,
     format: (v: number) => `${v.toFixed(0)}%`,
   },

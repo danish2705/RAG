@@ -5,13 +5,17 @@ export interface AuthUser {
   username: string;
   role: string;
   department: string;
+  /** Friendly display name, collected once after a User-role login and
+   *  used to attribute records instead of the raw username. */
+  displayName?: string;
 }
 
 interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (username: string, password: string) => Promise<AuthUser | null>;
   loginWithSSO: () => Promise<void>;
+  setDisplayName: (name: string) => void;
   logout: () => void;
 }
 
@@ -20,8 +24,9 @@ const AUTH_STORAGE_KEY = "dc_auth_user";
 const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
-  login: async () => false,
+  login: async () => null,
   loginWithSSO: async () => {},
+  setDisplayName: () => {},
   logout: () => {},
 });
 
@@ -43,9 +48,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
       setUser(loggedInUser);
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(loggedInUser));
-      return true;
+      return loggedInUser;
     } catch {
-      return false;
+      return null;
     }
   };
 
@@ -62,6 +67,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(ssoUser));
   };
 
+  // Called once, right after a User-role login, to attach the name they
+  // typed in the post-login prompt. Persisted alongside the rest of the
+  // session so it survives refreshes.
+  const setDisplayName = (name: string) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, displayName: name };
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem(AUTH_STORAGE_KEY);
@@ -69,7 +86,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isAuthenticated: !!user, login, loginWithSSO, logout }}
+      value={{
+        user,
+        isAuthenticated: !!user,
+        login,
+        loginWithSSO,
+        setDisplayName,
+        logout,
+      }}
     >
       {children}
     </AuthContext.Provider>

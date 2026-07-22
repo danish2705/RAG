@@ -29,6 +29,10 @@ function toRecordRow(row: AnyCase): RecordRow {
 export function useRecords() {
   const { user } = useAuth();
   const role = user?.role?.toLowerCase();
+  // Must match exactly what the save hooks send as `saved_by` — a display
+  // name if one was set at login, otherwise the raw username.
+  const identity = (user?.displayName || user?.username || "").toLowerCase();
+
   const [cases, setCases] = useState<RecordRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,11 +82,9 @@ export function useRecords() {
   // Filter and sort the cases array cleanly
   // Users can only view and manage their own records; Admins see everything.
   const ownRecordsOnly = useMemo(() => {
-    if (role !== "user" || !user?.username) return cases;
-    return cases.filter(
-      (item) => item.submittedBy?.toLowerCase() === user.username.toLowerCase(),
-    );
-  }, [cases, role, user?.username]);
+    if (role !== "user" || !identity) return cases;
+    return cases.filter((item) => item.submittedBy?.toLowerCase() === identity);
+  }, [cases, role, identity]);
 
   const filteredCases = useMemo(() => {
     return ownRecordsOnly

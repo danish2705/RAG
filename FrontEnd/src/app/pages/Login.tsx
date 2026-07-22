@@ -5,17 +5,25 @@ import { Label } from "../components/ui/label";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "../components/ui/dialog";
+import {
   ShieldCheck,
   LogIn,
   Eye,
   EyeOff,
   AlertCircle,
   Building2,
+  User as UserIcon,
 } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth, type AuthUser } from "../context/AuthContext";
 
 export function Login() {
-  const { login, loginWithSSO } = useAuth();
+  const { login, loginWithSSO, setDisplayName } = useAuth();
   const navigate = useNavigate();
   const location = useLocation() as { state?: { from?: string } };
 
@@ -25,15 +33,39 @@ export function Login() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Post-login "what's your name" prompt — shown once, right after a
+  // successful User-role login, before we navigate away.
+  const [namePromptOpen, setNamePromptOpen] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+  const [nameError, setNameError] = useState("");
+
+  const goToDestination = () => {
+    navigate(location.state?.from || "/", { replace: true });
+  };
+
+  const handleLoggedInUser = (loggedInUser: AuthUser) => {
+    const needsName =
+      loggedInUser.role?.toLowerCase() === "user" && !loggedInUser.displayName;
+
+    if (needsName) {
+      setNameInput("");
+      setNameError("");
+      setNamePromptOpen(true);
+      return;
+    }
+
+    goToDestination();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsSubmitting(true);
 
     try {
-      const success = await login(username.trim(), password);
-      if (success) {
-        navigate(location.state?.from || "/", { replace: true });
+      const loggedInUser = await login(username.trim(), password);
+      if (loggedInUser) {
+        handleLoggedInUser(loggedInUser);
       } else {
         setError("Incorrect username or password. Please try again.");
       }
@@ -48,7 +80,27 @@ export function Login() {
     // Backend signs the demo user in directly — clicking this goes
     // straight to the dashboard, same as before.
     await loginWithSSO();
-    navigate(location.state?.from || "/", { replace: true });
+    goToDestination();
+  };
+
+  const handleConfirmName = () => {
+    const trimmed = nameInput.trim();
+
+    if (!trimmed) {
+      setNameError("Please enter your name to continue.");
+      return;
+    }
+
+    // First letter must be capitalized (e.g. "Swetha", not "swetha").
+    const firstChar = trimmed.charAt(0);
+    if (firstChar !== firstChar.toUpperCase() || !/[A-Za-z]/.test(firstChar)) {
+      setNameError("Name must start with a capital letter.");
+      return;
+    }
+
+    setDisplayName(trimmed);
+    setNamePromptOpen(false);
+    goToDestination();
   };
 
   return (
@@ -182,6 +234,46 @@ export function Login() {
           </div>
         </div>
       </div>
+
+      {/* One-time "what's your name" prompt for User-role logins */}
+      <Dialog open={namePromptOpen} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserIcon className="h-5 w-5 text-blue-600" /> What's your name?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-2 space-y-3">
+            <p className="text-sm text-muted-foreground">
+              This name will be used to identify records you submit or save.
+            </p>
+            <div className="space-y-1.5">
+              <Label>Your Name</Label>
+              <Input
+                placeholder="Enter your full name (e.g. Swetha)"
+                value={nameInput}
+                onChange={(e) => {
+                  setNameInput(e.target.value);
+                  if (nameError) setNameError("");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleConfirmName();
+                }}
+                autoFocus
+              />
+              {nameError && <p className="text-xs text-red-600">{nameError}</p>}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white w-full"
+              onClick={handleConfirmName}
+            >
+              Continue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

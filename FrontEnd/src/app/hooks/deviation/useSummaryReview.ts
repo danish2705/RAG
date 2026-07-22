@@ -2,10 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useWorkflowStore } from "../../store/workflowStore";
 import { saveDeviationRecord } from "../../services/deviation/summaryApi";
+import { useAuth } from "../../context/AuthContext";
 import { PARAMETER_LABELS } from "../../mocks/mockImpactAssessment";
 
 export function useSummaryReview() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [chatOpen, setChatOpen] = useState(false);
 
   const result = useWorkflowStore((s) => s.pipelineResult);
@@ -20,10 +22,6 @@ export function useSummaryReview() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  
-  const [showSavedByDialog, setShowSavedByDialog] = useState(false);
-  const [savedByName, setSavedByName] = useState("");
-  const [savedByError, setSavedByError] = useState("");
 
   const impactEntries = impactParsed
     ? Object.entries(impactParsed.impact_assessment).map(([key, val]) => ({
@@ -34,20 +32,15 @@ export function useSummaryReview() {
       }))
     : [];
 
-  const handleSaveClick = () => {
-    setSavedByName("");
-    setSavedByError("");
-    setShowSavedByDialog(true);
-  };
-
-  const handleConfirmSave = async () => {
-    if (!savedByName.trim()) {
-      setSavedByError("Please enter your name before saving.");
+  // Saving is tied directly to the logged-in identity — there is no
+  // free-text "saved by" field, so a record can never be attributed to
+  // anyone other than the account that actually saved it.
+  const handleSaveClick = async () => {
+    if (!user?.username) {
+      setSaveError("You must be logged in to save a record.");
       return;
     }
-    
-    setSavedByError("");
-    setShowSavedByDialog(false);
+
     setSaveError(null);
     setIsSaving(true);
 
@@ -60,7 +53,7 @@ export function useSummaryReview() {
         capa: capaParsed,
         status: result!.status,
         halted_at: result!.haltedAt,
-        saved_by: savedByName.trim(),
+        saved_by: user.displayName || user.username,
         provenance: provenance ?? null,
       });
 
@@ -84,9 +77,8 @@ export function useSummaryReview() {
     result, classificationParsed, impactParsed, rcaParsed, capaParsed, provenance,
     chatOpen, setChatOpen,
     isSaving, isSaved, saveError,
-    showSavedByDialog, setShowSavedByDialog,
-    savedByName, setSavedByName, savedByError, setSavedByError,
     impactEntries,
-    handleSaveClick, handleConfirmSave, navigate
+    handleSaveClick,
+    navigate
   };
 }

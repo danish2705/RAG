@@ -2,9 +2,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useWorkflowStore } from "../../store/workflowStore";
 import { saveChangeControlRecord } from "../../services/changeControl/summaryApi";
+import { useAuth } from "../../context/AuthContext";
 
 export function useSummary() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [chatOpen, setChatOpen] = useState(false);
 
   // Read from store
@@ -24,20 +26,13 @@ export function useSummary() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [showSavedByDialog, setShowSavedByDialog] = useState(false);
-  const [savedByName, setSavedByName] = useState("");
-  const [savedByError, setSavedByError] = useState("");
 
-  // Save handlers
-  const handleSaveClick = () => {
-    setSavedByName("");
-    setSavedByError("");
-    setShowSavedByDialog(true);
-  };
-
-  const handleConfirmSave = async () => {
-    if (!savedByName.trim()) {
-      setSavedByError("Please enter your name before saving.");
+  // Saving is tied directly to the logged-in identity — there is no
+  // free-text "saved by" field, so a record can never be attributed to
+  // anyone other than the account that actually saved it.
+  const handleSaveClick = async () => {
+    if (!user?.username) {
+      setSaveError("You must be logged in to save a record.");
       return;
     }
     if (
@@ -49,8 +44,7 @@ export function useSummary() {
     ) {
       return;
     }
-    setSavedByError("");
-    setShowSavedByDialog(false);
+
     setSaveError(null);
     setIsSaving(true);
 
@@ -65,7 +59,7 @@ export function useSummary() {
         final_summary: null,
         status: result.status,
         halted_at: result.haltedAt,
-        saved_by: savedByName.trim(),
+        saved_by: user.displayName || user.username,
         provenance: provenance ?? null,
       });
 
@@ -101,14 +95,7 @@ export function useSummary() {
     isSaving,
     isSaved,
     saveError,
-    showSavedByDialog,
-    setShowSavedByDialog,
-    savedByName,
-    setSavedByName,
-    savedByError,
-    setSavedByError,
 
     handleSaveClick,
-    handleConfirmSave,
   };
 }

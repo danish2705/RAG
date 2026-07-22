@@ -5,6 +5,14 @@ export interface RecentRecord {
   status: string;
 }
 
+// Inclusive "YYYY-MM-DD" date filter selected via the Dashboard's calendar
+// range picker. Both bounds are optional so a partial selection (or none)
+// is valid.
+export interface DashboardDateRange {
+  startDate?: string;
+  endDate?: string;
+}
+
 export type SeverityColors = Record<string, string>;
 export type StatusColors = Record<string, string>;
 
@@ -15,11 +23,13 @@ export interface DonutDatum {
 }
 
 export interface EventsOverTimeDatum {
-  month: string;
+  label: string;
   allEvents: number;
   deviation: number;
   changeControl: number;
 }
+
+export type EventsOverTimeGranularity = "month" | "day";
 
 export interface EventsBySiteDatum {
   site: string;
@@ -29,6 +39,7 @@ export interface EventsBySiteDatum {
 export interface DashboardCharts {
   eventsByType: DonutDatum[]; // Deviation, Change Control (no "Other")
   eventsOverTime: EventsOverTimeDatum[];
+  eventsOverTimeGranularity: EventsOverTimeGranularity;
   eventsBySite: EventsBySiteDatum[];
   severityDistribution: DonutDatum[];
   eventsByStatus: DonutDatum[];

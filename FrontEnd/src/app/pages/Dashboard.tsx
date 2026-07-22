@@ -1,14 +1,20 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
+import type { DateRange } from "react-day-picker";
 import { AIAssistantPanel } from "../components/chat/AiAssistant";
 import { KpiCardGrid } from "../components/dashboard/KpiCard";
 import { RecentRecordsList } from "../components/dashboard/RecentRecordsList";
 import { Loader } from "../components/dashboard/Loader";
 import {
+  DateRangePicker,
+  toDateKey,
+} from "../components/dashboard/DaterangePicker";
+import {
   ChartCard,
   DonutChart,
   EventsOverTimeChart,
   EventsBySiteChart,
+  CHART_ROW_HEIGHT,
 } from "../components/dashboard/Charts";
 import { useDashboard } from "../hooks/useDashboard";
 import {
@@ -20,8 +26,23 @@ import {
 
 export function Dashboard() {
   const [aiOpen, setAiOpen] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(
+    undefined,
+  );
   const navigate = useNavigate();
-  const { summary, loading, error } = useDashboard();
+
+  // Convert the calendar's Date-based selection into the "YYYY-MM-DD"
+  // strings the API expects. A range with only a "from" isn't sent until
+  // "to" is also picked, so the summary doesn't refetch mid-selection.
+  const apiDateRange = useMemo(() => {
+    if (!dateRange?.from || !dateRange?.to) return undefined;
+    return {
+      startDate: toDateKey(dateRange.from),
+      endDate: toDateKey(dateRange.to),
+    };
+  }, [dateRange]);
+
+  const { summary, loading, error } = useDashboard(apiDateRange);
 
   const eventTypeCards = eventTypeCardMeta.map((meta) => ({
     label: meta.label,
@@ -37,6 +58,18 @@ export function Dashboard() {
     value: summary ? meta.format(summary.metricCards[meta.key]) : "\u2013",
   }));
 
+  // The dashboard only ever surfaces the 3 most recent records; anything
+  // beyond that lives on the full Records page.
+  const recentRecords = summary?.recentRecords.slice(0, 3) ?? [];
+
+  // The chart's title reflects how the data is actually bucketed: monthly
+  // by default (or for a multi-month range), daily when the selected range
+  // falls entirely within one calendar month.
+  const eventsOverTimeTitle =
+    summary?.charts.eventsOverTimeGranularity === "day"
+      ? "Events Over Time (Daily)"
+      : "Events Over Time (Monthly)";
+
   // Only show the full-page loader on the very first load. If a background
   // refetch happens later while data's already on screen, don't yank the
   // existing content away — just let it update quietly in place.
@@ -49,12 +82,13 @@ export function Dashboard() {
           aiOpen ? "mr-80" : ""
         }`}
       >
-        <div className="flex justify-end">
+        <div className="flex justify-between items-center gap-3">
+          <DateRangePicker range={dateRange} onRangeChange={setDateRange} />
           <button
             onClick={() => navigate("/deviation")}
-            className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-sm font-semibold px-5 py-2.5 rounded-lg shadow-sm transition-colors"
+            className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2.5 rounded-lg shadow-sm transition-colors whitespace-nowrap"
           >
-            + New Quality Event
+            + New Case
           </button>
         </div>
 
@@ -68,8 +102,14 @@ export function Dashboard() {
           <Loader message="Loading dashboard..." minHeight="h-[60vh]" />
         ) : (
           <>
-            <KpiCardGrid title="Events by Type" cards={eventTypeCards} />
-            <KpiCardGrid title="Performance Metrics" cards={metricCards} />
+            <div className="flex flex-col lg:flex-row gap-6">
+              <div className="flex-1">
+                <KpiCardGrid title="Events by Type" cards={eventTypeCards} />
+              </div>
+              <div className="flex-1">
+                <KpiCardGrid title="Performance Metrics" cards={metricCards} />
+              </div>
+            </div>
 
             {summary && (
               <>
@@ -79,9 +119,10 @@ export function Dashboard() {
                     <DonutChart
                       data={summary.charts.eventsByType}
                       centerLabel="Total"
+                      minContentHeight={CHART_ROW_HEIGHT}
                     />
                   </ChartCard>
-                  <ChartCard title="Events Over Time (Monthly)">
+                  <ChartCard title={eventsOverTimeTitle}>
                     <EventsOverTimeChart data={summary.charts.eventsOverTime} />
                   </ChartCard>
                   <ChartCard title="Events by Site">
@@ -89,33 +130,37 @@ export function Dashboard() {
                   </ChartCard>
                 </div>
 
-                {/* Row: Severity Distribution / Events by Status */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <ChartCard title="Severity Distribution">
-                    <DonutChart
-                      data={summary.charts.severityDistribution}
-                      centerLabel="Total"
+                {/* Row: Severity Distribution + Events by Status (stacked) / Recent Records */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                  <div className="flex flex-col gap-6">
+                    <ChartCard title="Severity Distribution">
+                      <DonutChart
+                        data={summary.charts.severityDistribution}
+                        centerLabel="Total"
+                      />
+                    </ChartCard>
+                    <ChartCard title="Events by Status">
+                      <DonutChart
+                        data={summary.charts.eventsByStatus}
+                        centerLabel="Total"
+                      />
+                    </ChartCard>
+                  </div>
+
+                  <div className="lg:col-span-2">
+                    <RecentRecordsList
+                      records={recentRecords}
+                      severityColors={severityColors}
+                      statusColors={statusColors}
                     />
-                  </ChartCard>
-                  <ChartCard title="Events by Status">
-                    <DonutChart
-                      data={summary.charts.eventsByStatus}
-                      centerLabel="Total"
-                    />
-                  </ChartCard>
+                    {!loading && recentRecords.length === 0 && (
+                      <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">
+                        No records yet.
+                      </p>
+                    )}
+                  </div>
                 </div>
               </>
-            )}
-
-            <RecentRecordsList
-              records={summary?.recentRecords ?? []}
-              severityColors={severityColors}
-              statusColors={statusColors}
-            />
-            {!loading && summary && summary.recentRecords.length === 0 && (
-              <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">
-                No records yet.
-              </p>
             )}
           </>
         )}

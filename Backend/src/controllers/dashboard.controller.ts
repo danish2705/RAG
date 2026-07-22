@@ -9,6 +9,7 @@ import {
   getEventsBySite,
   getSeverityDistribution,
   getEventsByStatusDistribution,
+  type DashboardDateRange,
 } from "../repository/dashboardRepository.js";
 
 // Colors kept in sync with the client's dashboardConfig.ts palettes.
@@ -23,21 +24,35 @@ const SEVERITY_COLORS: Record<string, string> = {
   Low: "#22C55E",
 };
 
+// Only two statuses exist in the pipeline (halted_for_human_review /
+// completed_pending_human_review), surfaced to the client as
+// Pending / Completed.
 const STATUS_COLORS: Record<string, string> = {
-  "Pending Review": "#3B82F6",
-  "In Progress": "#22C55E",
+  Pending: "#3B82F6",
   Completed: "#F59E0B",
-  Closed: "#EF4444",
 };
 const DEFAULT_STATUS_COLOR = "#9CA3AF"; // gray, for unmapped/raw statuses
+
+// Reads the optional ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD calendar
+// filter selected on the Dashboard page. Both are inclusive; omitted
+// entirely falls back to each query's own default window.
+function parseDateRange(req: Request): DashboardDateRange {
+  const q = req.query;
+  return {
+    startDate: typeof q.startDate === "string" ? q.startDate : undefined,
+    endDate: typeof q.endDate === "string" ? q.endDate : undefined,
+  };
+}
 
 // GET DASHBOARD SUMMARY: KPI cards + charts + recent records for the
 // Dashboard page, computed from real deviation_cases / change_control_cases
 // rows.
 export async function getDashboardSummary(
-  _req: Request,
+  req: Request,
   res: Response,
 ): Promise<void> {
+  const range = parseDateRange(req);
+
   const [
     counts,
     recurrenceRate,
@@ -48,14 +63,14 @@ export async function getDashboardSummary(
     severityDistribution,
     eventsByStatusRaw,
   ] = await Promise.all([
-    getDashboardCounts(),
-    getRecurrenceRate(),
-    getCapaEffectiveness(),
-    getRecentRecords(5),
-    getEventsOverTime(),
-    getEventsBySite(),
-    getSeverityDistribution(),
-    getEventsByStatusDistribution(),
+    getDashboardCounts(range),
+    getRecurrenceRate(range),
+    getCapaEffectiveness(range),
+    getRecentRecords(3, range),
+    getEventsOverTime(range),
+    getEventsBySite(range),
+    getSeverityDistribution(range),
+    getEventsByStatusDistribution(range),
   ]);
 
   const totalEvents = counts.totalDeviations + counts.totalChangeControls;
@@ -96,7 +111,8 @@ export async function getDashboardSummary(
     recentRecords,
     charts: {
       eventsByType,
-      eventsOverTime,
+      eventsOverTime: eventsOverTime.rows,
+      eventsOverTimeGranularity: eventsOverTime.granularity,
       eventsBySite: eventsBySite.map((r) => ({ site: r.site, count: r.count })),
       severityDistribution: severityChart,
       eventsByStatus: statusChart,

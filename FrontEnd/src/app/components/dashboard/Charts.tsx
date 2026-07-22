@@ -21,6 +21,15 @@ import type {
 } from "../../types/dashboard";
 import { eventsOverTimeColors, eventsBySiteColor } from "../../utils/dashboardConfig";
 
+// Shared sizing so every chart in the top row (donut / line / bar) renders
+// at the same content height and the cards line up regardless of chart
+// type or how many legend rows a given dataset happens to produce.
+// EVENTS_OVER_TIME_CHART_HEIGHT is a little shorter than CHART_ROW_HEIGHT
+// to leave room for its legend row, so the two together still add up to
+// the same total as the plain donut/bar cards.
+export const CHART_ROW_HEIGHT = 190;
+const EVENTS_OVER_TIME_CHART_HEIGHT = 158;
+
 // ---------------------------------------------------------------------------
 // Dark mode detection
 // ---------------------------------------------------------------------------
@@ -90,10 +99,10 @@ export function ChartCard({
 }) {
   return (
     <div
-      className={`bg-white dark:bg-black rounded-xl border border-gray-100 dark:border-white/10 shadow-sm dark:shadow-none p-5 cursor-pointer transition-transform duration-200 ease-out hover:scale-105 ${className}`}
+      className={`bg-white dark:bg-black rounded-xl border border-gray-100 dark:border-white/10 shadow-sm dark:shadow-none p-4 cursor-pointer transition-transform duration-200 ease-out hover:scale-105 ${className}`}
     >
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
           {title}
         </h3>
         <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
@@ -116,17 +125,20 @@ export function ChartCardSkeleton({
   variant?: "donut" | "line" | "bar";
 }) {
   return (
-    <div className="bg-white dark:bg-black rounded-xl border border-gray-100 dark:border-white/10 shadow-sm dark:shadow-none p-5">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+    <div className="bg-white dark:bg-black rounded-xl border border-gray-100 dark:border-white/10 shadow-sm dark:shadow-none p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
           {title}
         </h3>
         <MoreHorizontal className="h-4 w-4 text-gray-300 dark:text-gray-700" />
       </div>
 
       {variant === "donut" && (
-        <div className="flex items-center gap-6 animate-pulse">
-          <div className="h-40 w-40 shrink-0 rounded-full bg-gray-100 dark:bg-gray-800" />
+        <div
+          className="flex items-center gap-5 animate-pulse"
+          style={{ minHeight: CHART_ROW_HEIGHT }}
+        >
+          <div className="h-24 w-24 shrink-0 rounded-full bg-gray-100 dark:bg-gray-800" />
           <div className="space-y-3 flex-1">
             {[0, 1, 2].map((i) => (
               <div key={i} className="flex items-center gap-2">
@@ -140,17 +152,23 @@ export function ChartCardSkeleton({
 
       {variant === "line" && (
         <div className="animate-pulse">
-          <div className="flex justify-center gap-4 mb-4">
+          <div className="flex justify-center gap-4 mb-2">
             {[0, 1, 2].map((i) => (
               <div key={i} className="h-3 w-16 rounded bg-gray-100 dark:bg-gray-800" />
             ))}
           </div>
-          <div className="h-[200px] rounded-lg bg-gray-100 dark:bg-gray-800" />
+          <div
+            className="rounded-lg bg-gray-100 dark:bg-gray-800"
+            style={{ height: EVENTS_OVER_TIME_CHART_HEIGHT }}
+          />
         </div>
       )}
 
       {variant === "bar" && (
-        <div className="h-[230px] flex items-end gap-4 px-2 animate-pulse">
+        <div
+          className="flex items-end gap-4 px-2 animate-pulse"
+          style={{ height: CHART_ROW_HEIGHT }}
+        >
           {[70, 45, 90, 55].map((h, i) => (
             <div
               key={i}
@@ -170,24 +188,34 @@ export function ChartCardSkeleton({
 export function DonutChart({
   data,
   centerLabel,
+  minContentHeight,
 }: {
   data: DonutDatum[];
   centerLabel: string;
+  // Only pass this when the donut sits alongside line/bar charts in the
+  // same row and needs to match their height (see "Events by Type" in the
+  // top row). Stacked donut-only usage (Severity Distribution / Events by
+  // Status) omits it so the card sizes to its own content instead of
+  // inheriting a height meant for a different row.
+  minContentHeight?: number;
 }) {
   const { tooltip } = useChartTheme();
   const total = data.reduce((sum, d) => sum + d.value, 0);
 
   return (
-    <div className="flex items-center gap-6">
-      <div className="relative h-40 w-40 shrink-0">
+    <div
+      className="flex items-center gap-5"
+      style={minContentHeight ? { minHeight: minContentHeight } : undefined}
+    >
+      <div className="relative h-24 w-24 shrink-0">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={data}
               dataKey="value"
               nameKey="label"
-              innerRadius={55}
-              outerRadius={78}
+              innerRadius={30}
+              outerRadius={44}
               paddingAngle={2}
               stroke="none"
             >
@@ -199,7 +227,7 @@ export function DonutChart({
           </PieChart>
         </ResponsiveContainer>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
             {total}
           </span>
           <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -207,15 +235,17 @@ export function DonutChart({
           </span>
         </div>
       </div>
-      <ul className="space-y-2 text-sm">
+      <ul className="space-y-1.5">
         {data.map((d) => (
           <li key={d.label} className="flex items-center gap-2">
             <span
               className="h-2.5 w-2.5 rounded-full shrink-0"
               style={{ backgroundColor: d.color }}
             />
-            <span className="text-gray-600 dark:text-gray-300">{d.label}</span>
-            <span className="text-gray-400 dark:text-gray-500">
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              {d.label}
+            </span>
+            <span className="text-xs text-gray-400 dark:text-gray-500 leading-snug">
               {d.value} ({total ? Math.round((d.value / total) * 1000) / 10 : 0}
               %)
             </span>
@@ -234,7 +264,7 @@ export function EventsOverTimeChart({ data }: { data: EventsOverTimeDatum[] }) {
 
   return (
     <div>
-      <div className="flex justify-center gap-4 mb-2 text-xs">
+      <div className="flex justify-center gap-4 mb-2">
         <LegendDot color={eventsOverTimeColors.allEvents} label="All Events" />
         <LegendDot color={eventsOverTimeColors.deviation} label="Deviation" />
         <LegendDot
@@ -242,12 +272,15 @@ export function EventsOverTimeChart({ data }: { data: EventsOverTimeDatum[] }) {
           label="Change Control"
         />
       </div>
-      <ResponsiveContainer width="100%" height={200}>
-        <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+      <ResponsiveContainer width="100%" height={EVENTS_OVER_TIME_CHART_HEIGHT}>
+        <LineChart
+          data={data}
+          margin={{ top: 18, right: 10, left: -20, bottom: 0 }}
+        >
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridStroke} />
           <XAxis
-            dataKey="month"
-            tick={{ fontSize: 12, fill: axisTick }}
+            dataKey="label"
+            tick={{ fontSize: 11, fill: axisTick }}
             axisLine={false}
             tickLine={false}
           />
@@ -264,7 +297,9 @@ export function EventsOverTimeChart({ data }: { data: EventsOverTimeDatum[] }) {
             name="All Events"
             stroke={eventsOverTimeColors.allEvents}
             strokeWidth={2}
-            dot={{ r: 3 }}
+            dot={{ r: 4, fill: eventsOverTimeColors.allEvents, strokeWidth: 0 }}
+            activeDot={{ r: 5 }}
+            label={renderPointValueLabel(eventsOverTimeColors.allEvents, -10)}
           />
           <Line
             type="monotone"
@@ -272,7 +307,9 @@ export function EventsOverTimeChart({ data }: { data: EventsOverTimeDatum[] }) {
             name="Deviation"
             stroke={eventsOverTimeColors.deviation}
             strokeWidth={2}
-            dot={{ r: 3 }}
+            dot={{ r: 4, fill: eventsOverTimeColors.deviation, strokeWidth: 0 }}
+            activeDot={{ r: 5 }}
+            label={renderPointValueLabel(eventsOverTimeColors.deviation, -22)}
           />
           <Line
             type="monotone"
@@ -280,12 +317,44 @@ export function EventsOverTimeChart({ data }: { data: EventsOverTimeDatum[] }) {
             name="Change Control"
             stroke={eventsOverTimeColors.changeControl}
             strokeWidth={2}
-            dot={{ r: 3 }}
+            dot={{
+              r: 4,
+              fill: eventsOverTimeColors.changeControl,
+              strokeWidth: 0,
+            }}
+            activeDot={{ r: 5 }}
+            label={renderPointValueLabel(eventsOverTimeColors.changeControl, 16)}
           />
         </LineChart>
       </ResponsiveContainer>
     </div>
   );
+}
+
+// Renders the numeric value above (negative dy) or below (positive dy) each
+// point, in that series' own color — matching the "filled dot + visible
+// count" style used elsewhere in the product.
+function renderPointValueLabel(color: string, dy: number) {
+  return (props: {
+    x?: number;
+    y?: number;
+    value?: number | string;
+  }) => {
+    const { x, y, value } = props;
+    if (x === undefined || y === undefined || value === undefined) return null;
+    return (
+      <text
+        x={x}
+        y={y + dy}
+        textAnchor="middle"
+        fontSize={10}
+        fontWeight={600}
+        fill={color}
+      >
+        {value}
+      </text>
+    );
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -295,8 +364,8 @@ export function EventsBySiteChart({ data }: { data: EventsBySiteDatum[] }) {
   const { gridStroke, axisTick, tooltip } = useChartTheme();
 
   return (
-    <ResponsiveContainer width="100%" height={230}>
-      <BarChart data={data} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
+    <ResponsiveContainer width="100%" height={CHART_ROW_HEIGHT}>
+      <BarChart data={data} margin={{ top: 18, right: 10, left: -20, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridStroke} />
         <XAxis
           dataKey="site"
@@ -325,9 +394,9 @@ export function EventsBySiteChart({ data }: { data: EventsBySiteDatum[] }) {
 
 function LegendDot({ color, label }: { color: string; label: string }) {
   return (
-    <span className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
+    <span className="flex items-center gap-1.5 text-sm font-medium text-gray-500 dark:text-gray-400">
       <span
-        className="h-2.5 w-2.5 rounded-full"
+        className="h-2.5 w-2.5 rounded-full shrink-0"
         style={{ backgroundColor: color }}
       />
       {label}

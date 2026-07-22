@@ -1,3 +1,5 @@
+import { ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router";
 import type {
   RecentRecord,
   SeverityColors,
@@ -13,8 +15,10 @@ export function RecentRecordsList({
   severityColors: SeverityColors;
   statusColors: StatusColors;
 }) {
+  const navigate = useNavigate();
+
   return (
-    <div className="bg-white dark:bg-black rounded-xl border border-gray-100 dark:border-white/10 shadow-sm dark:shadow-none">
+    <div className="bg-white dark:bg-black rounded-xl border border-gray-100 dark:border-white/10 shadow-sm dark:shadow-none flex flex-col">
       <div className="px-6 py-4 border-b border-gray-100 dark:border-white/10">
         <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
           Recent Records
@@ -48,6 +52,15 @@ export function RecentRecordsList({
             </span>
           </div>
         ))}
+      </div>
+      <div className="px-6 py-4 border-t border-gray-100 dark:border-white/10 flex justify-end">
+        <button
+          onClick={() => navigate("/records")}
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/15 hover:bg-blue-100 dark:hover:bg-blue-500/25 border border-blue-300 dark:border-blue-500/40 rounded-lg px-4 py-1.5 transition-colors"
+        >
+          View All Records
+          <ArrowRight className="h-3.5 w-3.5" />
+        </button>
       </div>
     </div>
   );

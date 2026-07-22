@@ -13,6 +13,43 @@ export interface DashboardCounts {
   openChangeControls: number;
 }
 
+// Optional inclusive date range (YYYY-MM-DD) used to scope the whole
+// dashboard to the dates selected in the calendar filter on the client.
+// When omitted, queries fall back to their previous "all time" / rolling
+// window behavior.
+export interface DashboardDateRange {
+  startDate?: string;
+  endDate?: string;
+}
+
+// Builds a reusable `AND created_at >= ... AND created_at < ...` fragment
+// plus the matching bind values. The same fragment/values can be spliced
+// into multiple subqueries within one pool.query() call since Postgres
+// allows a positional parameter ($1, $2, ...) to be referenced more than
+// once.
+function dateToYMD(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate(),
+  ).padStart(2, "0")}`;
+}
+
+function buildDateFilter(range?: DashboardDateRange): {
+  clause: string;
+  values: unknown[];
+} {
+  const values: unknown[] = [];
+  let clause = "";
+  if (range?.startDate) {
+    values.push(range.startDate);
+    clause += ` AND created_at >= $${values.length}::date`;
+  }
+  if (range?.endDate) {
+    values.push(range.endDate);
+    clause += ` AND created_at < ($${values.length}::date + interval '1 day')`;
+  }
+  return { clause, values };
+}
+
 export interface DashboardRecentRecord {
   id: string;
   severity: "High" | "Medium" | "Low";
@@ -23,16 +60,22 @@ export interface DashboardRecentRecord {
 }
 
 // --- Counts + open cases -----------------------------------------------
-export async function getDashboardCounts(): Promise<DashboardCounts> {
-  const result = await pool.query(`
+export async function getDashboardCounts(
+  range?: DashboardDateRange,
+): Promise<DashboardCounts> {
+  const { clause, values } = buildDateFilter(range);
+  const result = await pool.query(
+    `
     SELECT
-      (SELECT COUNT(*) FROM deviation_cases) AS total_deviations,
-      (SELECT COUNT(*) FROM change_control_cases) AS total_change_controls,
+      (SELECT COUNT(*) FROM deviation_cases WHERE true${clause}) AS total_deviations,
+      (SELECT COUNT(*) FROM change_control_cases WHERE true${clause}) AS total_change_controls,
       (SELECT COUNT(*) FROM deviation_cases
-        WHERE status = 'halted_for_human_review') AS open_deviations,
+        WHERE status = 'halted_for_human_review'${clause}) AS open_deviations,
       (SELECT COUNT(*) FROM change_control_cases
-        WHERE status = 'halted_for_human_review') AS open_change_controls
-  `);
+        WHERE status = 'halted_for_human_review'${clause}) AS open_change_controls
+  `,
+    values,
+  );
   const row = result.rows[0];
   return {
     totalDeviations: Number(row.total_deviations),
@@ -48,14 +91,23 @@ export async function getDashboardCounts(): Promise<DashboardCounts> {
 // one other deviation in that same window. There's no dedicated "recurring
 // issue" flag in the schema, so repeated root-cause text is the closest
 // real signal available.
-export async function getRecurrenceRate(): Promise<number> {
-  const result = await pool.query(`
+export async function getRecurrenceRate(
+  range?: DashboardDateRange,
+): Promise<number> {
+  const hasRange = Boolean(range?.startDate || range?.endDate);
+  const { clause, values } = buildDateFilter(range);
+  // Default window (no calendar filter selected): last 90 days. Once the
+  // user picks a date range, that range replaces the rolling window.
+  const windowClause = hasRange
+    ? clause
+    : ` AND created_at >= NOW() - INTERVAL '90 days'`;
+  const result = await pool.query(
+    `
     WITH recent AS (
       SELECT LOWER(TRIM(rca->>'primary_root_cause')) AS root_cause
       FROM deviation_cases
-      WHERE created_at >= NOW() - INTERVAL '90 days'
-        AND rca->>'primary_root_cause' IS NOT NULL
-        AND TRIM(rca->>'primary_root_cause') <> ''
+      WHERE rca->>'primary_root_cause' IS NOT NULL
+        AND TRIM(rca->>'primary_root_cause') <> ''${windowClause}
     ),
     grouped AS (
       SELECT root_cause, COUNT(*) AS cnt
@@ -66,7 +118,9 @@ export async function getRecurrenceRate(): Promise<number> {
       (SELECT COUNT(*) FROM recent) AS total,
       COALESCE(SUM(CASE WHEN cnt > 1 THEN cnt ELSE 0 END), 0) AS repeats
     FROM grouped
-  `);
+  `,
+    values,
+  );
   const { total, repeats } = result.rows[0];
   const totalNum = Number(total);
   if (totalNum === 0) return 0;
@@ -79,8 +133,12 @@ export async function getRecurrenceRate(): Promise<number> {
 // than halting for human review. There's no separate "verified effective"
 // flag on closed CAPAs in the schema, so pipeline completion is used as the
 // closest real signal.
-export async function getCapaEffectiveness(): Promise<number> {
-  const result = await pool.query(`
+export async function getCapaEffectiveness(
+  range?: DashboardDateRange,
+): Promise<number> {
+  const { clause, values } = buildDateFilter(range);
+  const result = await pool.query(
+    `
     SELECT
       COUNT(*) FILTER (WHERE capa->>'capa_required' = 'true') AS required,
       COUNT(*) FILTER (
@@ -88,7 +146,10 @@ export async function getCapaEffectiveness(): Promise<number> {
           AND status = 'completed_pending_human_review'
       ) AS effective
     FROM deviation_cases
-  `);
+    WHERE true${clause}
+  `,
+    values,
+  );
   const { required, effective } = result.rows[0];
   const requiredNum = Number(required);
   if (requiredNum === 0) return 0;
@@ -137,7 +198,7 @@ function changeControlSeverity(
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  halted_for_human_review: "Pending Review",
+  halted_for_human_review: "Pending",
   completed_pending_human_review: "Completed",
 };
 
@@ -164,21 +225,25 @@ function formatDisplayId(
 
 export async function getRecentRecords(
   limit = 5,
+  range?: DashboardDateRange,
 ): Promise<DashboardRecentRecord[]> {
+  const { clause, values } = buildDateFilter(range);
   const [devResult, ccResult] = await Promise.all([
     pool.query(
       `SELECT id, query, impact_assessment, status, created_at
        FROM deviation_cases
+       WHERE true${clause}
        ORDER BY created_at DESC
-       LIMIT $1`,
-      [limit],
+       LIMIT $${values.length + 1}`,
+      [...values, limit],
     ),
     pool.query(
       `SELECT id, query, risk_criticality, change_impact_assessment, status, created_at
        FROM change_control_cases
+       WHERE true${clause}
        ORDER BY created_at DESC
-       LIMIT $1`,
-      [limit],
+       LIMIT $${values.length + 1}`,
+      [...values, limit],
     ),
   ]);
 
@@ -231,30 +296,154 @@ export function buildEventsByTypeChart(
   ];
 }
 
-// --- Chart: Events Over Time (last 6 months, monthly) -----------------------
+// --- Chart: Events Over Time (last 2 months by default; adapts to the
+// selected calendar range) --------------------------------------------------
+// Granularity rules:
+//  - No range, or a range spanning more than one calendar month: bucket by
+//    month, labelled with the year (e.g. "Jan 2026") since a multi-month
+//    span can cross year boundaries.
+//  - A range where start and end both fall within the same calendar month:
+//    bucket by day, labelled as a date (e.g. "Jul 5") so the chart shows
+//    day-by-day movement within that month instead of one flat monthly bar.
 export interface EventsOverTimeRow {
-  month: string; // "Jan", "Feb", ...
+  label: string; // "Jan 2026" (monthly) or "Jul 5" (daily)
   allEvents: number;
   deviation: number;
   changeControl: number;
 }
 
-export async function getEventsOverTime(): Promise<EventsOverTimeRow[]> {
+export interface EventsOverTimeResult {
+  granularity: "month" | "day";
+  rows: EventsOverTimeRow[];
+}
+
+export async function getEventsOverTime(
+  range?: DashboardDateRange,
+): Promise<EventsOverTimeResult> {
+  const hasRange = Boolean(range?.startDate || range?.endDate);
+
+  const rangeStart = range?.startDate
+    ? new Date(`${range.startDate}T00:00:00`)
+    : null;
+  const rangeEnd = range?.endDate
+    ? new Date(`${range.endDate}T00:00:00`)
+    : null;
+
+  const now = new Date();
+
+  // Day-level granularity only kicks in when BOTH bounds are selected and
+  // they land in the same calendar month/year.
+  const sameMonth =
+    Boolean(rangeStart && rangeEnd) &&
+    rangeStart!.getFullYear() === rangeEnd!.getFullYear() &&
+    rangeStart!.getMonth() === rangeEnd!.getMonth();
+
+  const { clause, values } = hasRange
+    ? buildDateFilter(range)
+    : {
+        clause: ` AND created_at >= $1::date`,
+        values: [dateToYMD(new Date(now.getFullYear(), now.getMonth() - 1, 1))],
+      };
+
+  if (sameMonth) {
+    const [devResult, ccResult] = await Promise.all([
+      pool.query(
+        `
+        SELECT to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS bucket,
+               COUNT(*) AS cnt
+        FROM deviation_cases
+        WHERE true${clause}
+        GROUP BY 1
+      `,
+        values,
+      ),
+      pool.query(
+        `
+        SELECT to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS bucket,
+               COUNT(*) AS cnt
+        FROM change_control_cases
+        WHERE true${clause}
+        GROUP BY 1
+      `,
+        values,
+      ),
+    ]);
+
+    const devMap = new Map<string, number>(
+      devResult.rows.map((r) => [r.bucket, Number(r.cnt)]),
+    );
+    const ccMap = new Map<string, number>(
+      ccResult.rows.map((r) => [r.bucket, Number(r.cnt)]),
+    );
+
+    // Every day between rangeStart and rangeEnd inclusive, capped at 31 so
+    // an unexpectedly wide "same month" edge case can't blow up the
+    // response.
+    const days: { bucket: string; label: string }[] = [];
+    const cursor = new Date(
+      rangeStart!.getFullYear(),
+      rangeStart!.getMonth(),
+      rangeStart!.getDate(),
+    );
+    const end = new Date(
+      rangeEnd!.getFullYear(),
+      rangeEnd!.getMonth(),
+      rangeEnd!.getDate(),
+    );
+    let guard = 0;
+    while (cursor <= end && guard < 31) {
+      const bucket = dateToYMD(cursor);
+      // dd/mm/yy so the year is always visible on daily-granularity labels.
+      const dd = String(cursor.getDate()).padStart(2, "0");
+      const mm = String(cursor.getMonth() + 1).padStart(2, "0");
+      const yy = String(cursor.getFullYear()).slice(-2);
+      const label = `${dd}/${mm}/${yy}`;
+      days.push({ bucket, label });
+      cursor.setDate(cursor.getDate() + 1);
+      guard++;
+    }
+
+    return {
+      granularity: "day",
+      rows: days.map(({ bucket, label }) => {
+        const deviation = devMap.get(bucket) ?? 0;
+        const changeControl = ccMap.get(bucket) ?? 0;
+        return {
+          label,
+          deviation,
+          changeControl,
+          allEvents: deviation + changeControl,
+        };
+      }),
+    };
+  }
+
+  // Monthly granularity (default window, or a multi-month range).
+  const windowStart =
+    rangeStart ?? new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const windowEnd = rangeEnd ?? now;
+
   const [devResult, ccResult] = await Promise.all([
-    pool.query(`
+    pool.query(
+      `
       SELECT to_char(date_trunc('month', created_at), 'YYYY-MM') AS bucket,
              COUNT(*) AS cnt
       FROM deviation_cases
-      WHERE created_at >= date_trunc('month', NOW()) - INTERVAL '5 months'
+      WHERE true${clause}
       GROUP BY 1
-    `),
-    pool.query(`
+    `,
+      values,
+    ),
+    pool.query(
+      `
       SELECT to_char(date_trunc('month', created_at), 'YYYY-MM') AS bucket,
              COUNT(*) AS cnt
       FROM change_control_cases
-      WHERE created_at >= date_trunc('month', NOW()) - INTERVAL '5 months'
+      WHERE true${clause}
       GROUP BY 1
-    `),
+    `,
+      values,
+    ),
   ]);
 
   const devMap = new Map<string, number>(
@@ -264,27 +453,38 @@ export async function getEventsOverTime(): Promise<EventsOverTimeRow[]> {
     ccResult.rows.map((r) => [r.bucket, Number(r.cnt)]),
   );
 
-  // Build the last 6 calendar months (oldest -> newest) so gaps are shown
-  // as zero instead of being silently skipped.
+  // Build every calendar month between windowStart and windowEnd
+  // (oldest -> newest) so gaps are shown as zero instead of being
+  // silently skipped. Capped at 24 months so an accidentally huge range
+  // doesn't blow up the response.
   const months: { bucket: string; label: string }[] = [];
-  const now = new Date();
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const bucket = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const label = d.toLocaleString("en-US", { month: "short" });
+  const cursor = new Date(windowStart.getFullYear(), windowStart.getMonth(), 1);
+  const end = new Date(windowEnd.getFullYear(), windowEnd.getMonth(), 1);
+  let guard = 0;
+  while (cursor <= end && guard < 24) {
+    const bucket = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`;
+    const label = cursor.toLocaleString("en-US", {
+      month: "short",
+      year: "numeric",
+    });
     months.push({ bucket, label });
+    cursor.setMonth(cursor.getMonth() + 1);
+    guard++;
   }
 
-  return months.map(({ bucket, label }) => {
-    const deviation = devMap.get(bucket) ?? 0;
-    const changeControl = ccMap.get(bucket) ?? 0;
-    return {
-      month: label,
-      deviation,
-      changeControl,
-      allEvents: deviation + changeControl,
-    };
-  });
+  return {
+    granularity: "month",
+    rows: months.map(({ bucket, label }) => {
+      const deviation = devMap.get(bucket) ?? 0;
+      const changeControl = ccMap.get(bucket) ?? 0;
+      return {
+        label,
+        deviation,
+        changeControl,
+        allEvents: deviation + changeControl,
+      };
+    }),
+  };
 }
 
 // --- Chart: Events by Site --------------------------------------------------
@@ -296,18 +496,24 @@ export interface EventsBySiteRow {
   count: number;
 }
 
-export async function getEventsBySite(): Promise<EventsBySiteRow[]> {
-  const result = await pool.query(`
+export async function getEventsBySite(
+  range?: DashboardDateRange,
+): Promise<EventsBySiteRow[]> {
+  const { clause, values } = buildDateFilter(range);
+  const result = await pool.query(
+    `
     SELECT metadata->>'site' AS site, COUNT(*) AS cnt
     FROM (
-      SELECT metadata FROM deviation_cases
+      SELECT metadata, created_at FROM deviation_cases
       UNION ALL
-      SELECT metadata FROM change_control_cases
+      SELECT metadata, created_at FROM change_control_cases
     ) t
-    WHERE metadata->>'site' IS NOT NULL AND metadata->>'site' <> ''
+    WHERE metadata->>'site' IS NOT NULL AND metadata->>'site' <> ''${clause}
     GROUP BY metadata->>'site'
     ORDER BY cnt DESC
-  `);
+  `,
+    values,
+  );
   return result.rows.map((r) => ({ site: r.site, count: Number(r.cnt) }));
 }
 
@@ -319,7 +525,8 @@ export async function getEventsBySite(): Promise<EventsBySiteRow[]> {
 // Low instead.
 export type SeverityTally = Record<"High" | "Medium" | "Low", number>;
 
-const SEVERITY_DISTRIBUTION_SQL = `
+function severityDistributionSql(clause: string): string {
+  return `
   WITH dev_severity AS (
     SELECT
       CASE GREATEST(
@@ -337,6 +544,7 @@ const SEVERITY_DISTRIBUTION_SQL = `
         ELSE 'Low'
       END AS severity
     FROM deviation_cases
+    WHERE true${clause}
   ),
   cc_severity AS (
     SELECT
@@ -354,6 +562,7 @@ const SEVERITY_DISTRIBUTION_SQL = `
         ELSE 'Medium'
       END AS severity
     FROM change_control_cases
+    WHERE true${clause}
   ),
   combined AS (
     SELECT severity FROM dev_severity
@@ -364,9 +573,13 @@ const SEVERITY_DISTRIBUTION_SQL = `
   FROM combined
   GROUP BY severity
 `;
+}
 
-export async function getSeverityDistribution(): Promise<SeverityTally> {
-  const result = await pool.query(SEVERITY_DISTRIBUTION_SQL);
+export async function getSeverityDistribution(
+  range?: DashboardDateRange,
+): Promise<SeverityTally> {
+  const { clause, values } = buildDateFilter(range);
+  const result = await pool.query(severityDistributionSql(clause), values);
 
   const tally: SeverityTally = {
     High: 0,
@@ -385,16 +598,23 @@ export async function getSeverityDistribution(): Promise<SeverityTally> {
 // --- Chart: Events by Status (combined, both case types) -------------------
 export type StatusTally = Record<string, number>;
 
-export async function getEventsByStatusDistribution(): Promise<StatusTally> {
-  const result = await pool.query(`
+export async function getEventsByStatusDistribution(
+  range?: DashboardDateRange,
+): Promise<StatusTally> {
+  const { clause, values } = buildDateFilter(range);
+  const result = await pool.query(
+    `
     SELECT status, COUNT(*) AS cnt
     FROM (
-      SELECT status FROM deviation_cases
+      SELECT status, created_at FROM deviation_cases
       UNION ALL
-      SELECT status FROM change_control_cases
+      SELECT status, created_at FROM change_control_cases
     ) t
+    WHERE true${clause}
     GROUP BY status
-  `);
+  `,
+    values,
+  );
 
   const tally: StatusTally = {};
   for (const row of result.rows) {

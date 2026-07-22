@@ -16,8 +16,7 @@ export const severityColors: SeverityColors = {
 };
 
 export const statusColors: StatusColors = {
-  "Pending Review":
-    "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400",
+  Pending: "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400",
   Completed:
     "bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-400",
 };
@@ -38,10 +37,8 @@ export const severityChartColors: Record<string, string> = {
 };
 
 export const statusChartColors: Record<string, string> = {
-  "Pending Review": "#3B82F6", // blue
-  "In Progress": "#22C55E", // green
+  Pending: "#3B82F6", // blue
   Completed: "#F59E0B", // gold
-  Closed: "#EF4444", // red
 };
 
 export const eventsOverTimeColors = {

@@ -15,7 +15,7 @@ on:
 env:
   ACR_LOGIN_SERVER: omnicorepilotdev.azurecr.io
   ACR_NAME: omnicorepilotdev
-  RESOURCE_GROUP: <AZURE_RESOURCE_GROUP>
+  RESOURCE_GROUP: asc-delta-rg
   APP_NAME: gxp-backend
   IMAGE_NAME: gxp-backend
 

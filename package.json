@@ -9,9 +9,9 @@
     "lint-staged": "^17.0.8"
   },
   "lint-staged": {
-  "frontend/**/*.{ts,tsx}": "eslint --fix",
-  "backend/**/*.ts": "eslint --fix"
-},
+    "frontend/**/*.{ts,tsx}": "eslint --fix",
+    "backend/**/*.ts": "eslint --fix"
+  },
   "scripts": {
     "prepare": "husky"
   }

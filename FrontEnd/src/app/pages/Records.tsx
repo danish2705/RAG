@@ -103,9 +103,8 @@ export function Records() {
             </p>
           </div>
           <Button
-            variant="outline"
             size="sm"
-            className="ml-auto bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm"
+            className="ml-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium shadow-sm border-0"
             onClick={() => navigate("/deviation")}
           >
             + New Case

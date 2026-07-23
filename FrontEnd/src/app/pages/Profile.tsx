@@ -1,6 +1,4 @@
-import { useNavigate } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import {
   User,
@@ -8,7 +6,6 @@ import {
   Building,
   Key,
   Award,
-  LogOut,
   Mail,
   Fingerprint,
   CalendarDays,
@@ -19,58 +16,164 @@ import {
   CheckCircle2,
   FileEdit,
   ShieldCheck,
+  Eye,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
-const PROFILE_DETAILS = {
-  email: "admin@company.com",
-  employeeId: "EMP-QA-1042",
-  memberSince: "Jan 14, 2023",
-  lastLogin: "Today, 9:12 AM",
-  location: "Building A — Site 1",
+type ProfileRole = "Admin" | "User" | "Guest";
+
+interface ActivityItem {
+  icon: typeof CheckCircle2;
+  iconColor: string;
+  text: string;
+  time: string;
+}
+
+interface RoleProfile {
+  badgeLabel: string;
+  badgeClassName: string;
+  roleTitle: string;
+  email: string;
+  employeeId: string;
+  memberSince: string;
+  lastLogin: string;
+  location: string;
+  privileges: string;
+  privilegesColor: string;
+  gateways: string[];
+  stats: { label: string; value: string; sub: string; icon: typeof ClipboardCheck }[];
+  activity: ActivityItem[];
+}
+
+const ROLE_PROFILES: Record<ProfileRole, RoleProfile> = {
+  Admin: {
+    badgeLabel: "Global Admin",
+    badgeClassName:
+      "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800",
+    roleTitle: "Quality Manager & Lead",
+    email: "admin@company.com",
+    employeeId: "EMP-QA-1042",
+    memberSince: "Jan 14, 2023",
+    lastLogin: "Today, 9:12 AM",
+    location: "Building A — Site 1",
+    privileges: "Read / Write / Override Authority",
+    privilegesColor: "text-green-600 dark:text-green-400",
+    gateways: ["21 CFR Part 11", "EU Annex 11", "AI Severity Override", "CAPA Sign-off"],
+    stats: [
+      { label: "Cases Reviewed", value: "128", sub: "All time", icon: ClipboardCheck },
+      { label: "Approvals Given", value: "94", sub: "Last 12 months", icon: CheckCircle2 },
+      { label: "Avg. Response Time", value: "6.4 hrs", sub: "Across all cases", icon: TrendingUp },
+    ],
+    activity: [
+      {
+        icon: CheckCircle2,
+        iconColor: "text-green-600",
+        text: "Approved CAPA-2026-042 effectiveness check",
+        time: "2 hours ago",
+      },
+      {
+        icon: FileEdit,
+        iconColor: "text-blue-600",
+        text: "Updated root cause analysis on DEV-2026-089",
+        time: "Yesterday",
+      },
+      {
+        icon: ShieldCheck,
+        iconColor: "text-purple-600",
+        text: "Overrode AI severity classification on CC-2026-015",
+        time: "3 days ago",
+      },
+      {
+        icon: ClipboardCheck,
+        iconColor: "text-blue-600",
+        text: "Submitted new deviation for Cold Storage Unit 3",
+        time: "5 days ago",
+      },
+    ],
+  },
+  User: {
+    badgeLabel: "Standard User",
+    badgeClassName:
+      "bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-900/40 dark:text-teal-300 dark:border-teal-800",
+    roleTitle: "Manufacturing Associate",
+    email: "user@company.com",
+    employeeId: "EMP-MFG-2087",
+    memberSince: "Mar 3, 2024",
+    lastLogin: "Today, 8:47 AM",
+    location: "Building B — Site 2",
+    privileges: "Read / Write",
+    privilegesColor: "text-blue-600 dark:text-blue-400",
+    gateways: ["21 CFR Part 11", "CAPA Submission"],
+    stats: [
+      { label: "Cases Submitted", value: "16", sub: "All time", icon: ClipboardCheck },
+      { label: "Cases In Review", value: "3", sub: "Currently open", icon: CheckCircle2 },
+      { label: "Avg. Response Time", value: "9.1 hrs", sub: "Across all cases", icon: TrendingUp },
+    ],
+    activity: [
+      {
+        icon: ClipboardCheck,
+        iconColor: "text-blue-600",
+        text: "Submitted new deviation for Line 4 Filler",
+        time: "1 hour ago",
+      },
+      {
+        icon: FileEdit,
+        iconColor: "text-blue-600",
+        text: "Updated change control CC-2026-021",
+        time: "Yesterday",
+      },
+      {
+        icon: ClipboardCheck,
+        iconColor: "text-blue-600",
+        text: "Submitted new deviation for Cold Storage Unit 1",
+        time: "4 days ago",
+      },
+    ],
+  },
+  Guest: {
+    badgeLabel: "Guest",
+    badgeClassName:
+      "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800/60 dark:text-gray-300 dark:border-gray-700",
+    roleTitle: "Visitor",
+    email: "guest@company.com",
+    employeeId: "GUEST-0001",
+    memberSince: "—",
+    lastLogin: "Today, 10:03 AM",
+    location: "Building A — Lobby Kiosk",
+    privileges: "Read Only",
+    privilegesColor: "text-muted-foreground",
+    gateways: ["View Only Access"],
+    stats: [
+      { label: "Cases Viewed", value: "5", sub: "This session", icon: Eye },
+      { label: "Reports Viewed", value: "2", sub: "This session", icon: ClipboardCheck },
+      { label: "Session Length", value: "18 min", sub: "So far", icon: TrendingUp },
+    ],
+    activity: [
+      {
+        icon: Eye,
+        iconColor: "text-gray-500",
+        text: "Viewed dashboard summary",
+        time: "10 minutes ago",
+      },
+      {
+        icon: Eye,
+        iconColor: "text-gray-500",
+        text: "Viewed record DEV-2026-089",
+        time: "15 minutes ago",
+      },
+    ],
+  },
 };
 
-const STATS = [
-  { label: "Cases Reviewed", value: "128", sub: "All time", icon: ClipboardCheck },
-  { label: "Approvals Given", value: "94", sub: "Last 12 months", icon: CheckCircle2 },
-  { label: "Avg. Response Time", value: "6.4 hrs", sub: "Across all cases", icon: TrendingUp },
-];
-
-const RECENT_ACTIVITY = [
-  {
-    icon: CheckCircle2,
-    iconColor: "text-green-600",
-    text: "Approved CAPA-2026-042 effectiveness check",
-    time: "2 hours ago",
-  },
-  {
-    icon: FileEdit,
-    iconColor: "text-blue-600",
-    text: "Updated root cause analysis on DEV-2026-089",
-    time: "Yesterday",
-  },
-  {
-    icon: ShieldCheck,
-    iconColor: "text-purple-600",
-    text: "Overrode AI severity classification on CC-2026-015",
-    time: "3 days ago",
-  },
-  {
-    icon: ClipboardCheck,
-    iconColor: "text-blue-600",
-    text: "Submitted new deviation for Cold Storage Unit 3",
-    time: "5 days ago",
-  },
-];
+function resolveRole(role?: string): ProfileRole {
+  if (role === "Admin" || role === "User" || role === "Guest") return role;
+  return "Guest";
+}
 
 export function Profile() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login", { replace: true });
-  };
+  const { user } = useAuth();
+  const role = resolveRole(user?.role);
+  const profile = ROLE_PROFILES[role];
 
   return (
     <div className="p-4 sm:p-5 w-full space-y-3.5 max-h-[calc(100vh-4rem)] overflow-hidden flex flex-col justify-between">
@@ -85,35 +188,24 @@ export function Profile() {
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <h1 className="font-bold text-lg text-foreground font-mono capitalize leading-none">
-                    {user?.username ?? "admin"}
+                    {user?.username ?? "guest"}
                   </h1>
-                  <Badge className="bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800 text-[11px] px-2 py-0">
-                    Global Admin
+                  <Badge className={`${profile.badgeClassName} text-[11px] px-2 py-0`}>
+                    {profile.badgeLabel}
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {user?.role ?? "Quality Manager & Lead"} ·{" "}
-                  {user?.department ?? "Quality Assurance & Compliance"}
+                  {profile.roleTitle} · {user?.department ?? profile.roleTitle}
                 </p>
               </div>
             </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900 dark:hover:bg-red-950/30 shrink-0 h-8 text-xs font-medium"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-3.5 w-3.5 mr-1.5" />
-              Log out
-            </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* 2. Ultra-Compact KPI Boxes (Reduced Height) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 shrink-0">
-        {STATS.map((stat) => {
+        {profile.stats.map((stat) => {
           const Icon = stat.icon;
           return (
             <Card key={stat.label} className="p-3 shadow-sm border-border/80">
@@ -156,7 +248,7 @@ export function Profile() {
                   <Mail className="h-3.5 w-3.5 text-blue-500" /> Email
                 </span>
                 <span className="font-medium text-foreground text-xs">
-                  {PROFILE_DETAILS.email}
+                  {profile.email}
                 </span>
               </div>
               <div className="flex items-center justify-between py-1.5 px-2.5 rounded-md bg-muted/40 border border-border/40">
@@ -164,7 +256,7 @@ export function Profile() {
                   <Fingerprint className="h-3.5 w-3.5 text-blue-500" /> Employee ID
                 </span>
                 <span className="font-medium text-foreground text-xs">
-                  {PROFILE_DETAILS.employeeId}
+                  {profile.employeeId}
                 </span>
               </div>
               <div className="flex items-center justify-between py-1.5 px-2.5 rounded-md bg-muted/40 border border-border/40">
@@ -172,15 +264,15 @@ export function Profile() {
                   <Building className="h-3.5 w-3.5 text-blue-500" /> Department
                 </span>
                 <span className="font-medium text-foreground text-xs truncate max-w-[200px] sm:max-w-none">
-                  {user?.department ?? "Quality Assurance & Compliance"}
+                  {user?.department ?? profile.roleTitle}
                 </span>
               </div>
               <div className="flex items-center justify-between py-1.5 px-2.5 rounded-md bg-muted/40 border border-border/40">
                 <span className="flex items-center gap-2 text-muted-foreground text-xs">
                   <Key className="h-3.5 w-3.5 text-blue-500" /> Privileges
                 </span>
-                <span className="font-medium text-green-600 dark:text-green-400 font-semibold text-xs">
-                  Read / Write / Override Authority
+                <span className={`font-semibold text-xs ${profile.privilegesColor}`}>
+                  {profile.privileges}
                 </span>
               </div>
               <div className="flex items-center justify-between py-1.5 px-2.5 rounded-md bg-muted/40 border border-border/40">
@@ -188,7 +280,7 @@ export function Profile() {
                   <CalendarDays className="h-3.5 w-3.5 text-blue-500" /> Member Since
                 </span>
                 <span className="font-medium text-foreground text-xs">
-                  {PROFILE_DETAILS.memberSince}
+                  {profile.memberSince}
                 </span>
               </div>
               <div className="flex items-center justify-between py-1.5 px-2.5 rounded-md bg-muted/40 border border-border/40">
@@ -196,7 +288,7 @@ export function Profile() {
                   <CalendarClock className="h-3.5 w-3.5 text-blue-500" /> Last Login
                 </span>
                 <span className="font-medium text-foreground text-xs">
-                  {PROFILE_DETAILS.lastLogin}
+                  {profile.lastLogin}
                 </span>
               </div>
             </CardContent>
@@ -213,7 +305,7 @@ export function Profile() {
             </CardHeader>
             <CardContent className="p-0 flex-1 flex flex-col justify-around">
               <div className="divide-y divide-border/60">
-                {RECENT_ACTIVITY.map((item, i) => {
+                {profile.activity.map((item, i) => {
                   const Icon = item.icon;
                   return (
                     <div key={i} className="flex items-start gap-2.5 py-2.5 px-3.5">
@@ -245,18 +337,15 @@ export function Profile() {
                 Regulatory Gateways
               </span>
               <div className="flex flex-wrap gap-1">
-                <Badge variant="outline" className="text-[11px] px-2 py-0 font-normal">
-                  21 CFR Part 11
-                </Badge>
-                <Badge variant="outline" className="text-[11px] px-2 py-0 font-normal">
-                  EU Annex 11
-                </Badge>
-                <Badge variant="outline" className="text-[11px] px-2 py-0 font-normal">
-                  AI Severity Override
-                </Badge>
-                <Badge variant="outline" className="text-[11px] px-2 py-0 font-normal">
-                  CAPA Sign-off
-                </Badge>
+                {profile.gateways.map((gateway) => (
+                  <Badge
+                    key={gateway}
+                    variant="outline"
+                    className="text-[11px] px-2 py-0 font-normal"
+                  >
+                    {gateway}
+                  </Badge>
+                ))}
               </div>
             </div>
           </Card>
@@ -267,7 +356,7 @@ export function Profile() {
             <div className="flex items-center gap-2">
               <Shield className="h-4 w-4 text-blue-600 shrink-0" />
               <p className="text-xs text-muted-foreground leading-tight truncate">
-                Active session: <span className="font-medium text-foreground">{PROFILE_DETAILS.location}</span>
+                Active session: <span className="font-medium text-foreground">{profile.location}</span>
               </p>
             </div>
           </Card>

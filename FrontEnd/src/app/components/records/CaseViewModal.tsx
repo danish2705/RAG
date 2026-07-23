@@ -67,40 +67,40 @@ export const CaseViewModal: React.FC<CaseViewModalProps> = ({
 
   return (
     <Dialog open={!!record} onOpenChange={(open) => !open && onClose()}>
-      {/* 1.8x Wider Modal: sm:max-w-5xl (~1024px) */}
+      {/* Modal Container */}
       <DialogContent className="!max-w-none sm:!max-w-none w-[70vw] max-h-[90vh] p-0 overflow-hidden flex flex-col bg-card shadow-2xl rounded-xl">
-        {" "}
-        {/* Sticky Fixed Header */}
-        <div className="sticky top-0 z-20 flex items-center justify-between px-6 py-4 bg-muted/80 backdrop-blur-md border-b border-border shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-600/10 border border-blue-200 dark:border-blue-800">
+        
+        {/* Sticky Fixed Header with z-50 to ensure it always stays on top during scroll */}
+        <div className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 bg-card/95 backdrop-blur-md border-b border-border shrink-0 shadow-sm">
+          <div className="flex items-center gap-3 min-w-0 pr-4">
+            <div className="p-2 rounded-lg bg-blue-600/10 border border-blue-200 dark:border-blue-800 shrink-0">
               <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>
-            <div>
-              <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2">
-                {record.uiId || record.id || "Case Record Details"}
+            <div className="min-w-0">
+              <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2 truncate">
+                <span className="truncate">{record.uiId || record.id || "Case Record Details"}</span>
                 <Badge
-                  className={`text-xs font-semibold px-2 py-0.5 ${getBadgeColor(record.classification)}`}
+                  className={`text-xs font-semibold px-2 py-0.5 shrink-0 ${getBadgeColor(record.classification)}`}
                 >
                   {record.classification || "Quality Event"}
                 </Badge>
               </DialogTitle>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">
                 Complete audit snapshot and AI analysis evaluation
               </p>
             </div>
           </div>
 
-          {/* Right-Aligned Fixed Action Buttons */}
-          <div className="flex items-center gap-2">
+          {/* Right-Aligned Sticky Action Buttons with increased gap-4 and margins */}
+          <div className="flex items-center gap-4 shrink-0">
             <Button
               variant="outline"
               size="sm"
               onClick={handleDownloadSummary}
-              className="bg-background hover:bg-muted font-medium text-xs h-8 px-3 border-border shadow-sm flex items-center gap-1.5"
+              className="bg-background hover:bg-muted font-medium text-xs h-9 px-3.5 border-border shadow-sm flex items-center gap-1.5 mr-1"
             >
               <Download className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-              Download Summary
+              <span>Download Summary</span>
             </Button>
 
             {/* Extreme Right Close Button */}
@@ -108,14 +108,15 @@ export const CaseViewModal: React.FC<CaseViewModalProps> = ({
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors ml-1"
+              className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors shrink-0 flex items-center justify-center"
               aria-label="Close modal"
             >
               <X className="h-5 w-5" />
             </Button>
           </div>
         </div>
-        {/* Scrollable Modal Content utilizing multi-column width */}
+
+        {/* Scrollable Modal Content */}
         <div className="p-6 overflow-y-auto space-y-6 flex-1">
           {/* Metadata Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-xl bg-muted/30 border border-border/60">
@@ -195,6 +196,7 @@ export const CaseViewModal: React.FC<CaseViewModalProps> = ({
             </div>
           </div>
         </div>
+
         {/* Modal Footer */}
         <div className="px-6 py-3 bg-muted/40 border-t border-border flex justify-end shrink-0">
           <Button

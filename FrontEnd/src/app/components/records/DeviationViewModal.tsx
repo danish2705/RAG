@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
-import { Sparkles, Database, Download } from "lucide-react";
+import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
+import { Sparkles, Database, Download, X } from "lucide-react";
 import type { DeviationCase } from "../../types/Records";
 import { PARAMETER_LABELS } from "../../mocks/mockImpactAssessment";
 import {
@@ -47,15 +47,18 @@ export function DeviationViewModal({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="!max-w-none sm:!max-w-none w-[70vw] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <DialogTitle className="flex items-center gap-2 text-lg">
-                <Database className="h-5 w-5 text-blue-600" />
-                Case #{record.id} — Full Summary
+      <DialogContent className="!max-w-none sm:!max-w-none w-[70vw] max-h-[90vh] p-0 overflow-hidden flex flex-col bg-card shadow-2xl rounded-xl">
+        {/* Sticky Fixed Header with z-50 to ensure it always stays on top during scroll */}
+        <div className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 bg-card/95 backdrop-blur-md border-b border-border shrink-0 shadow-sm">
+          <div className="flex items-center gap-3 min-w-0 pr-4">
+            <div className="p-2 rounded-lg bg-blue-600/10 border border-blue-200 dark:border-blue-800 shrink-0">
+              <Database className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div className="min-w-0">
+              <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2 truncate">
+                <span className="truncate">Case #{record.id} — Full Summary</span>
               </DialogTitle>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">
                 Saved by{" "}
                 <span className="font-medium text-foreground">
                   {record.saved_by}
@@ -64,19 +67,35 @@ export function DeviationViewModal({
                 {formatTimestamp(record.created_at)}
               </p>
             </div>
+          </div>
+
+          {/* Right-Aligned Sticky Action Buttons with increased gap-4 and margins */}
+          <div className="flex items-center gap-4 shrink-0">
             <Button
               variant="outline"
               size="sm"
               onClick={handleDownloadSummary}
-              className="shrink-0 gap-1.5 text-xs h-8"
+              className="bg-background hover:bg-muted font-medium text-xs h-9 px-3.5 border-border shadow-sm flex items-center gap-1.5 mr-1"
             >
-              <Download className="h-3.5 w-3.5 text-blue-600" />
-              Download Summary
+              <Download className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+              <span>Download Summary</span>
+            </Button>
+
+            {/* Extreme Right Close Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors shrink-0 flex items-center justify-center"
+              aria-label="Close modal"
+            >
+              <X className="h-5 w-5" />
             </Button>
           </div>
-        </DialogHeader>
+        </div>
 
-        <div className="space-y-6 pt-2">
+        {/* Scrollable Modal Content */}
+        <div className="p-6 overflow-y-auto space-y-6 flex-1">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Original Query</CardTitle>
@@ -302,6 +321,16 @@ export function DeviationViewModal({
               </Card>
             </>
           )}
+        </div>
+
+        {/* Modal Footer */}
+        <div className="px-6 py-3 bg-muted/40 border-t border-border flex justify-end shrink-0">
+          <Button
+            onClick={onClose}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-6"
+          >
+            Done
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

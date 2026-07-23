@@ -34,7 +34,7 @@ export function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Post-login "what's your name" prompt — shown once, right after a
-  // successful User-role login, before we navigate away.
+  // successful login (Admin, User, or Guest), before we navigate away.
   const [namePromptOpen, setNamePromptOpen] = useState(false);
   const [nameInput, setNameInput] = useState("");
   const [nameError, setNameError] = useState("");
@@ -44,8 +44,10 @@ export function Login() {
   };
 
   const handleLoggedInUser = (loggedInUser: AuthUser) => {
+    const role = loggedInUser.role?.toLowerCase();
     const needsName =
-      loggedInUser.role?.toLowerCase() === "user" && !loggedInUser.displayName;
+      ["admin", "user", "guest"].includes(role || "") &&
+      !loggedInUser.displayName;
 
     if (needsName) {
       setNameInput("");
@@ -77,10 +79,13 @@ export function Login() {
   };
 
   const handleSSOLogin = async () => {
-    // Backend signs the demo user in directly — clicking this goes
-    // straight to the dashboard, same as before.
-    await loginWithSSO();
-    goToDestination();
+    // Backend signs the demo user in directly.
+    const ssoUser = await loginWithSSO();
+    if (ssoUser) {
+      handleLoggedInUser(ssoUser);
+    } else {
+      goToDestination();
+    }
   };
 
   const handleConfirmName = () => {
@@ -91,7 +96,7 @@ export function Login() {
       return;
     }
 
-    // First letter must be capitalized (e.g. "Swetha", not "swetha").
+    // First letter must be capitalized (e.g. "John", not "john").
     const firstChar = trimmed.charAt(0);
     if (firstChar !== firstChar.toUpperCase() || !/[A-Za-z]/.test(firstChar)) {
       setNameError("Name must start with a capital letter.");
@@ -235,7 +240,7 @@ export function Login() {
         </div>
       </div>
 
-      {/* One-time "what's your name" prompt for User-role logins */}
+      {/* One-time "what's your name" prompt for Admin, User, and Guest logins */}
       <Dialog open={namePromptOpen} onOpenChange={() => {}}>
         <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader>
@@ -250,7 +255,7 @@ export function Login() {
             <div className="space-y-1.5">
               <Label>Your Name</Label>
               <Input
-                placeholder="Enter your full name (e.g. Swetha)"
+                placeholder="Enter your full name (e.g. John Doe)"
                 value={nameInput}
                 onChange={(e) => {
                   setNameInput(e.target.value);

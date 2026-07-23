@@ -79,7 +79,7 @@ export const config: Config = {
     container: process.env.AZURE_KB_CONTAINER || "lifescience-kb",
   },
   gate: {
-    // Feature 2: confidence threshold used by the gate between pipeline stages.
+    // Feature 2: confidences threshold used by the gate between pipeline stages.
     confidenceThreshold: Number(process.env.CONFIDENCE_THRESHOLD ?? 70),
   },
   port: Number(process.env.PORT ?? 3000),

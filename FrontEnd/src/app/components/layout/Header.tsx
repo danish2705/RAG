@@ -95,7 +95,7 @@ const PAGE_META: Record<string, PageMetaEntry> = {
     subtitle: "All saved deviation and change control cases",
   },
   "/audit-trail": {
-    title: "Audit Trail",
+    title: "Audit Logs",
     subtitle: "Track changes and activity across the system",
   },
   "/pending-ai-reviews": {

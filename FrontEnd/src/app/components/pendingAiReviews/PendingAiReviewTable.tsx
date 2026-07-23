@@ -72,7 +72,7 @@ export function PendingAiReviewsTable({
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="bg-white dark:bg-background">
             {entries.map((entry) => (
               <TableRow key={entry.id}>
                 <TableCell className="font-bold text-foreground">{entry.full_name}</TableCell>

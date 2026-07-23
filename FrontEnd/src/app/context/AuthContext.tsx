@@ -5,7 +5,7 @@ export interface AuthUser {
   username: string;
   role: string;
   department: string;
-  /** Friendly display name, collected once after a User-role login and
+  /** Friendly display name, collected once after login (any role) and
    *  used to attribute records instead of the raw username. */
   displayName?: string;
 }
@@ -14,7 +14,7 @@ interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<AuthUser | null>;
-  loginWithSSO: () => Promise<void>;
+  loginWithSSO: () => Promise<AuthUser | null>;
   setDisplayName: (name: string) => void;
   logout: () => void;
 }
@@ -25,7 +25,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
   login: async () => null,
-  loginWithSSO: async () => {},
+  loginWithSSO: async () => null,
   setDisplayName: () => {},
   logout: () => {},
 });
@@ -56,20 +56,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Simulated SSO — in a real app this would redirect to an identity
   // provider and come back with a token. Here it calls the backend, which
-  // signs the demo user in directly, so the click still goes straight to
-  // the dashboard just like before.
+  // signs the demo user in directly.
   const loginWithSSO = async () => {
-    const { user: ssoUser } = await apiFetch<{ user: AuthUser }>(
-      "/api/auth/sso",
-      { method: "POST" },
-    );
-    setUser(ssoUser);
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(ssoUser));
+    try {
+      const { user: ssoUser } = await apiFetch<{ user: AuthUser }>(
+        "/api/auth/sso",
+        { method: "POST" },
+      );
+      setUser(ssoUser);
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(ssoUser));
+      return ssoUser;
+    } catch {
+      return null;
+    }
   };
 
-  // Called once, right after a User-role login, to attach the name they
-  // typed in the post-login prompt. Persisted alongside the rest of the
-  // session so it survives refreshes.
+  // Called once, right after login (Admin, User, or Guest), to attach the
+  // name they typed in the post-login prompt. Persisted alongside the rest
+  // of the session so it survives refreshes.
   const setDisplayName = (name: string) => {
     setUser((prev) => {
       if (!prev) return prev;

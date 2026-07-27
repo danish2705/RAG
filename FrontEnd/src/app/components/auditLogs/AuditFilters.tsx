@@ -66,7 +66,6 @@ export function AuditFilters({
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
                 <SelectItem value="human">Human Only</SelectItem>
-                <SelectItem value="ai">AI Only</SelectItem>
                 <SelectItem value="system">System Only</SelectItem>
               </SelectContent>
             </Select>

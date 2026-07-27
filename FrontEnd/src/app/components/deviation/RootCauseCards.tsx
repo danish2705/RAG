@@ -47,15 +47,13 @@ interface PrimaryCauseCardProps {
   originalPrimaryCause: string;
   immediateCause: string;
   originalImmediateCause: string;
-  isOverrideEditing: boolean;
-  overrideConfirmed: boolean;
   onPrimaryChange: (val: string) => void;
   onImmediateChange: (val: string) => void;
 }
 
 export const PrimaryRootCauseCard: React.FC<PrimaryCauseCardProps> = ({
-  primaryCause, originalPrimaryCause, immediateCause, originalImmediateCause, 
-  isOverrideEditing, overrideConfirmed, onPrimaryChange, onImmediateChange
+  primaryCause, originalPrimaryCause, immediateCause, originalImmediateCause,
+  onPrimaryChange, onImmediateChange
 }) => (
   <Card>
     <CardHeader>
@@ -67,31 +65,23 @@ export const PrimaryRootCauseCard: React.FC<PrimaryCauseCardProps> = ({
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <Label>Underlying Root Cause</Label>
-          {!isOverrideEditing && (
-            <ModifiedStatus enabled={overrideConfirmed} original={originalPrimaryCause} current={primaryCause} />
-          )}
+          <ModifiedStatus original={originalPrimaryCause} current={primaryCause} />
         </div>
         <Textarea
           rows={3}
           value={primaryCause}
           onChange={(e) => onPrimaryChange(e.target.value)}
-          readOnly={!isOverrideEditing}
-          className={!isOverrideEditing ? "bg-muted cursor-default" : ""}
         />
       </div>
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <Label>Immediate Cause (direct trigger)</Label>
-          {!isOverrideEditing && (
-            <ModifiedStatus enabled={overrideConfirmed} original={originalImmediateCause} current={immediateCause} />
-          )}
+          <ModifiedStatus original={originalImmediateCause} current={immediateCause} />
         </div>
         <Textarea
           rows={2}
           value={immediateCause}
           onChange={(e) => onImmediateChange(e.target.value)}
-          readOnly={!isOverrideEditing}
-          className={!isOverrideEditing ? "bg-muted cursor-default" : ""}
         />
       </div>
     </CardContent>
@@ -103,13 +93,11 @@ interface ListTextareaCardProps {
   label: string;
   value: string;
   originalValue: string;
-  isOverrideEditing: boolean;
-  overrideConfirmed: boolean;
   onChange: (val: string) => void;
 }
 
 export const ListTextareaCard: React.FC<ListTextareaCardProps> = ({
-  title, label, value, originalValue, isOverrideEditing, overrideConfirmed, onChange
+  title, label, value, originalValue, onChange
 }) => (
   <Card>
     <CardHeader>
@@ -121,16 +109,12 @@ export const ListTextareaCard: React.FC<ListTextareaCardProps> = ({
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           {label && <Label>{label}</Label>}
-          {!isOverrideEditing && (
-            <ModifiedStatus enabled={overrideConfirmed} original={originalValue} current={value} />
-          )}
+          <ModifiedStatus original={originalValue} current={value} />
         </div>
         <Textarea
           rows={4}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          readOnly={!isOverrideEditing}
-          className={!isOverrideEditing ? "bg-muted cursor-default" : ""}
         />
       </div>
     </CardContent>

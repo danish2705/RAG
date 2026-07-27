@@ -6,9 +6,8 @@ import { assessChangeControlImpact } from "../../services/changeControl/impactAs
 import { parseRationaleLines } from "../../utils/deviation/classification";
 import {
   aiField,
-  markModified,
+  autoField,
   type ClassificationProvenance,
-  type DataField,
 } from "../../types/dataProvenance";
 import type {
   ClassificationParsed,
@@ -34,19 +33,18 @@ export function useClassificationReview() {
       | undefined
   )?.insufficientInput;
 
-  const [isOverrideEditing, setIsOverrideEditing] = useState(false);
+  // Fields are directly editable at all times — these hold the live form
+  // values, seeded from the AI output but freely changeable without first
+  // entering any separate "override" mode.
   const [editedClassification, setEditedClassification] =
     useState<ClassificationType>(parsed?.classification ?? "Deviation");
   const [editedRationale, setEditedRationale] = useState(
     (parsed?.rationale ?? []).join("\n"),
   );
-  const [showOverrideDialog, setShowOverrideDialog] = useState(false);
-  const [overrideJustification, setOverrideJustification] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectJustification, setRejectJustification] = useState("");
   const [isAssessing, setIsAssessing] = useState(false);
   const [assessError, setAssessError] = useState<string | null>(null);
-  const [overrideConfirmed, setOverrideConfirmed] = useState(false);
   const llmFailure = useLlmFailureRecovery();
 
   const rationaleLines = useMemo(
@@ -54,26 +52,21 @@ export function useClassificationReview() {
     [editedRationale],
   );
 
-  const buildClassificationProvenance = useCallback(
-    (isOverride: boolean): ClassificationProvenance => {
-      if (isOverride && parsed) {
+  const buildClassificationProvenance =
+    useCallback((): ClassificationProvenance => {
+      if (!parsed) {
         return {
-          classification: markModified(
-            aiField(parsed.classification),
-            editedClassification,
-          ) as DataField<ClassificationType>,
-          rationale: markModified(aiField(parsed.rationale), rationaleLines),
-          confidence_score: parsed.confidence_score,
+          classification: aiField(editedClassification),
+          rationale: aiField(rationaleLines),
+          confidence_score: 0,
         };
       }
       return {
-        classification: aiField(parsed!.classification),
-        rationale: aiField(parsed!.rationale),
-        confidence_score: parsed!.confidence_score,
+        classification: autoField(parsed.classification, editedClassification),
+        rationale: autoField(parsed.rationale, rationaleLines),
+        confidence_score: parsed.confidence_score,
       };
-    },
-    [parsed, editedClassification, rationaleLines],
-  );
+    }, [parsed, editedClassification, rationaleLines]);
 
   const runImpactAssessment = useCallback(
     async (
@@ -186,22 +179,24 @@ export function useClassificationReview() {
   const handleAccept = useCallback(() => {
     if (!parsed) return;
 
-    const isOverride = overrideConfirmed;
-    const approvedClassification: ClassificationParsed = isOverride
-      ? {
-          ...parsed,
-          classification: editedClassification,
-          rationale: rationaleLines,
-        }
-      : parsed;
-    const classificationProvenance = buildClassificationProvenance(isOverride);
+    // Whatever is currently in the form — edited or left as the AI
+    // suggested it — is what gets approved. No separate override flag.
+    const approvedClassification: ClassificationParsed = {
+      ...parsed,
+      classification: editedClassification,
+      rationale: rationaleLines,
+    };
+    const classificationProvenance = buildClassificationProvenance();
+    const isEdited =
+      classificationProvenance.classification.source === "modified" ||
+      classificationProvenance.rationale.source === "modified";
     const isChangeControl =
       approvedClassification.classification === "Change Control";
 
     if (isChangeControl) {
       const existingChangeImpactAssessment =
         result!.stages?.changeImpactAssessment;
-      if (!isOverride && existingChangeImpactAssessment?.parsed) {
+      if (!isEdited && existingChangeImpactAssessment?.parsed) {
         mergePipelineResult({
           stages: {
             ...result!.stages,
@@ -221,7 +216,7 @@ export function useClassificationReview() {
       }
     } else {
       const existingImpactAssessment = result!.stages?.impactAssessment;
-      if (!isOverride && existingImpactAssessment?.parsed) {
+      if (!isEdited && existingImpactAssessment?.parsed) {
         mergePipelineResult({
           stages: {
             ...result!.stages,
@@ -243,7 +238,6 @@ export function useClassificationReview() {
 
     void runImpactAssessment(approvedClassification, classificationProvenance);
   }, [
-    overrideConfirmed,
     parsed,
     editedClassification,
     rationaleLines,
@@ -254,25 +248,6 @@ export function useClassificationReview() {
     runImpactAssessment,
   ]);
 
-  const handleOverrideClick = useCallback(() => setIsOverrideEditing(true), []);
-  const handleSaveChanges = useCallback(() => setShowOverrideDialog(true), []);
-
-  const handleCancelOverride = useCallback(() => {
-    setIsOverrideEditing(false);
-    if (parsed) {
-      setEditedClassification(parsed.classification);
-      setEditedRationale((parsed.rationale ?? []).join("\n"));
-    }
-  }, [parsed]);
-
-  const handleOverrideConfirm = useCallback(() => {
-    if (!overrideJustification.trim()) return;
-    setShowOverrideDialog(false);
-    setIsOverrideEditing(false);
-    setOverrideConfirmed(true);
-    setOverrideJustification("");
-  }, [overrideJustification]);
-
   const handleReject = useCallback(() => {
     if (rejectJustification.trim()) {
       setShowRejectDialog(false);
@@ -280,40 +255,25 @@ export function useClassificationReview() {
     }
   }, [rejectJustification, navigate]);
 
-  const currentClassification = overrideConfirmed
-    ? editedClassification
-    : (parsed?.classification ?? "Deviation");
-
   return {
     result,
     parsed,
     insufficientInput,
     chatOpen,
     setChatOpen,
-    isOverrideEditing,
-    setIsOverrideEditing,
     editedClassification,
     setEditedClassification,
     editedRationale,
     setEditedRationale,
     rationaleLines,
-    showOverrideDialog,
-    setShowOverrideDialog,
-    overrideJustification,
-    setOverrideJustification,
     showRejectDialog,
     setShowRejectDialog,
     rejectJustification,
     setRejectJustification,
     isAssessing,
     assessError,
-    overrideConfirmed,
-    currentClassification,
+    currentClassification: editedClassification,
     handleAccept,
-    handleOverrideClick,
-    handleSaveChanges,
-    handleCancelOverride,
-    handleOverrideConfirm,
     handleReject,
     llmFailure,
   };

@@ -2,11 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useWorkflowStore } from "../../store/workflowStore";
 import { generateCapaRecommendations } from "../../services/deviation/capaApi";
-import {
-  aiField,
-  markModified,
-  type RCAProvenance,
-} from "../../types/dataProvenance";
+import { autoField, type RCAProvenance } from "../../types/dataProvenance";
 import type { RCAResult, CAPAApiResponse } from "../../types/pipeline";
 import { useLlmFailureRecovery } from "../shared/useLlmFailureRecovery";
 
@@ -27,9 +23,9 @@ export function useRootCauseReview() {
     savedRcaProvenance?.contributing_factors?.source === "modified" ||
     savedRcaProvenance?.evidence?.source === "modified";
 
-  const [isOverrideEditing, setIsOverrideEditing] = useState(false);
-  const [overrideConfirmed, setOverrideConfirmed] = useState(wasModified);
-
+  // Fields are directly editable at all times — seeded from a previously
+  // saved edit (if resuming) or the raw AI output, but freely changeable
+  // without first entering any separate "override" mode.
   const [primaryRootCause, setPrimaryRootCause] = useState(
     wasModified
       ? (savedRcaProvenance!.primary_root_cause.value as string)
@@ -51,15 +47,13 @@ export function useRootCauseReview() {
       : (rcaParsed?.evidence ?? []).join("\n"),
   );
 
-  const [showOverrideDialog, setShowOverrideDialog] = useState(false);
-  const [overrideJustification, setOverrideJustification] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectJustification, setRejectJustification] = useState("");
 
   const [isGeneratingCAPA, setIsGeneratingCAPA] = useState(false);
   const [capaError, setCapaError] = useState<string | null>(null);
 
-  const buildRCAProvenance = (confirmed: boolean): RCAProvenance => {
+  const buildRCAProvenance = (): RCAProvenance => {
     if (!rcaParsed) return {} as RCAProvenance;
 
     const curFactors = contributingFactors
@@ -72,28 +66,16 @@ export function useRootCauseReview() {
       .filter(Boolean);
 
     return {
-      primary_root_cause:
-        confirmed && primaryRootCause !== rcaParsed.primary_root_cause
-          ? markModified(
-              aiField(rcaParsed.primary_root_cause),
-              primaryRootCause,
-            )
-          : aiField(rcaParsed.primary_root_cause),
-      immediate_cause:
-        confirmed && immediateCause !== rcaParsed.immediate_cause
-          ? markModified(aiField(rcaParsed.immediate_cause), immediateCause)
-          : aiField(rcaParsed.immediate_cause),
-      contributing_factors:
-        confirmed &&
-        JSON.stringify(curFactors) !==
-          JSON.stringify(rcaParsed.contributing_factors)
-          ? markModified(aiField(rcaParsed.contributing_factors), curFactors)
-          : aiField(rcaParsed.contributing_factors),
-      evidence:
-        confirmed &&
-        JSON.stringify(curEvidence) !== JSON.stringify(rcaParsed.evidence)
-          ? markModified(aiField(rcaParsed.evidence), curEvidence)
-          : aiField(rcaParsed.evidence),
+      primary_root_cause: autoField(
+        rcaParsed.primary_root_cause,
+        primaryRootCause,
+      ),
+      immediate_cause: autoField(rcaParsed.immediate_cause, immediateCause),
+      contributing_factors: autoField(
+        rcaParsed.contributing_factors,
+        curFactors,
+      ),
+      evidence: autoField(rcaParsed.evidence, curEvidence),
       sequence_of_events: rcaParsed.sequence_of_events,
       impact_summary: rcaParsed.impact_summary,
       confidence_score: rcaParsed.confidence_score,
@@ -183,43 +165,20 @@ export function useRootCauseReview() {
   };
 
   const handleAccept = () => {
-    const rcaProvenance = buildRCAProvenance(overrideConfirmed);
+    const rcaProvenance = buildRCAProvenance();
+    const isEdited =
+      rcaProvenance.primary_root_cause?.source === "modified" ||
+      rcaProvenance.immediate_cause?.source === "modified" ||
+      rcaProvenance.contributing_factors?.source === "modified" ||
+      rcaProvenance.evidence?.source === "modified";
     const existingCAPA = result!.stages?.capa;
     const approvedRCA = buildApprovedRCA();
 
-    if (!overrideConfirmed && existingCAPA?.parsed) {
+    if (!isEdited && existingCAPA?.parsed) {
       navigateToCAPA(existingCAPA, rcaProvenance, approvedRCA);
       return;
     }
     void runCAPA(rcaProvenance);
-  };
-
-  const handleCancelOverride = () => {
-    if (!rcaParsed) return;
-    if (wasModified && savedRcaProvenance) {
-      setPrimaryRootCause(
-        savedRcaProvenance.primary_root_cause.value as string,
-      );
-      setImmediateCause(savedRcaProvenance.immediate_cause.value as string);
-      setContributingFactors(
-        (savedRcaProvenance.contributing_factors.value as string[]).join("\n"),
-      );
-      setEvidence((savedRcaProvenance.evidence.value as string[]).join("\n"));
-    } else {
-      setPrimaryRootCause(rcaParsed.primary_root_cause ?? "");
-      setImmediateCause(rcaParsed.immediate_cause ?? "");
-      setContributingFactors((rcaParsed.contributing_factors ?? []).join("\n"));
-      setEvidence((rcaParsed.evidence ?? []).join("\n"));
-    }
-    setIsOverrideEditing(false);
-  };
-
-  const handleOverrideConfirm = () => {
-    if (!overrideJustification.trim()) return;
-    setShowOverrideDialog(false);
-    setIsOverrideEditing(false);
-    setOverrideConfirmed(true);
-    setOverrideJustification("");
   };
 
   const handleReject = () => {
@@ -234,9 +193,6 @@ export function useRootCauseReview() {
     rcaParsed,
     chatOpen,
     setChatOpen,
-    isOverrideEditing,
-    setIsOverrideEditing,
-    overrideConfirmed,
     primaryRootCause,
     setPrimaryRootCause,
     immediateCause,
@@ -245,10 +201,6 @@ export function useRootCauseReview() {
     setContributingFactors,
     evidence,
     setEvidence,
-    showOverrideDialog,
-    setShowOverrideDialog,
-    overrideJustification,
-    setOverrideJustification,
     showRejectDialog,
     setShowRejectDialog,
     rejectJustification,
@@ -256,10 +208,6 @@ export function useRootCauseReview() {
     isGeneratingCAPA,
     capaError,
     handleAccept,
-    handleOverrideClick: () => setIsOverrideEditing(true),
-    handleSaveChanges: () => setShowOverrideDialog(true),
-    handleCancelOverride,
-    handleOverrideConfirm,
     handleReject,
     llmFailure,
   };

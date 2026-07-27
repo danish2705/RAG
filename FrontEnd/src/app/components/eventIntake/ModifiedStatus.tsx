@@ -14,18 +14,21 @@ export function ModifiedBadge() {
 }
 
 /**
- * Renders a ModifiedBadge only when `enabled` is true and `current` differs
- * from `original`. Arrays are compared by value (via JSON.stringify) so this
- * works for both single-value and multi-line/list fields.
+ * Renders a ModifiedBadge whenever `current` differs from `original`
+ * (arrays are compared by value via JSON.stringify, so this works for both
+ * single-value and multi-line/list fields). `enabled` is an optional escape
+ * hatch to force-hide it; fields are always live-editable now, so there's no
+ * separate override-confirmed step gating this anymore — it just always
+ * reflects whether the value has actually changed.
  */
 export function ModifiedStatus({
   original,
   current,
-  enabled,
+  enabled = true,
 }: {
   original: unknown;
   current: unknown;
-  enabled: boolean;
+  enabled?: boolean;
 }) {
   if (!enabled) return null;
 

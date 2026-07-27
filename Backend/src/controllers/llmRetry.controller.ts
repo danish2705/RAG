@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { randomUUID } from "node:crypto";
 import {
   createLlmRetryEntry,
   listLlmRetryEntries,
@@ -82,13 +83,20 @@ export async function createEntry(req: Request, res: Response): Promise<void> {
 
   // Mirror this into the audit trail too, so the AI-unavailable event shows
   // up on the Audit Logs page alongside everything else.
+  //
+  // Use a UUID for entity_id (like the case IDs from gen_random_uuid) so the
+  // Audit Logs table renders a hash-style "#xxxxxxxx" here instead of a bare
+  // "#3"/"#4" — these events happen before a case exists, so there's no case
+  // id to borrow. The originating retry-queue row is kept in record_snapshot
+  // so the link back to "Pending AI Reviews" isn't lost.
   await recordAuditEntry({
     entity_type: entityType,
-    entity_id: String(entry.id),
+    entity_id: randomUUID(),
     action: "llm_unavailable",
     source: "system",
     performed_by: fullName,
     field_name: pipelineStage,
+    record_snapshot: { llm_retry_queue_id: entry.id },
     reason: `AI service was unavailable during "${pipelineStage}" — saved for retry.${
       errorMessage ? ` (${errorMessage})` : ""
     }`,

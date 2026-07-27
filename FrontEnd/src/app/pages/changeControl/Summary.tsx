@@ -1,4 +1,5 @@
 import { AIAssistant } from "../../components/chat/AiAssistant";
+import { StepProgressBar } from "../../components/eventIntake/StepProgressBar";
 import { useSummary } from "../../hooks/changeControl/useSummary";
 import {
   NoSummaryDataGuard,
@@ -26,14 +27,8 @@ export function ChangecontrolSummary() {
     isSaving,
     isSaved,
     saveError,
-    showSavedByDialog,
-    setShowSavedByDialog,
-    savedByName,
-    setSavedByName,
-    savedByError,
-    setSavedByError,
+
     handleSaveClick,
-    handleConfirmSave,
   } = useSummary();
 
   // Guard: no submission yet
@@ -56,6 +51,11 @@ export function ChangecontrolSummary() {
       <div
         className={`min-h-screen p-6 transition-[padding] duration-200 ${chatOpen ? "pr-80" : "pr-6"}`}
       >
+        <StepProgressBar
+          classification={classificationParsed.classification}
+          implementationAccepted={true}
+        />
+
         {/* Full step-by-step pipeline data, mirroring the Deviation Summary page */}
         <div className="space-y-6 mb-6">
           <ClassificationSummaryCard
@@ -93,16 +93,6 @@ export function ChangecontrolSummary() {
           isSaving={isSaving}
           isSaved={isSaved}
           onSave={handleSaveClick}
-        />
-
-        <SavedByDialog
-          open={showSavedByDialog}
-          onOpenChange={setShowSavedByDialog}
-          savedByName={savedByName}
-          setSavedByName={setSavedByName}
-          savedByError={savedByError}
-          setSavedByError={setSavedByError}
-          onConfirm={handleConfirmSave}
         />
       </div>
 

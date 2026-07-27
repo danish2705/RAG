@@ -1,8 +1,6 @@
 import { useNavigate } from "react-router";
 import {
   DecisionAction,
-  OverrideDialog,
-  OverrideBar,
   RejectDialog,
   StepProgressBar,
 } from "../../components/eventIntake";
@@ -23,9 +21,6 @@ export function Capa() {
     capaParsed,
     chatOpen,
     setChatOpen,
-    isOverrideEditing,
-    setIsOverrideEditing,
-    overrideConfirmed,
     capaAccepted,
     correction,
     setCorrection,
@@ -39,17 +34,11 @@ export function Capa() {
     setDueDate,
     showWeakCapaWarning,
     decisionMade,
-    showOverrideDialog,
-    setShowOverrideDialog,
-    overrideJustification,
-    setOverrideJustification,
     showRejectDialog,
     setShowRejectDialog,
     rejectJustification,
     setRejectJustification,
     handleAccept,
-    handleCancelOverride,
-    handleOverrideConfirm,
     handleReject,
   } = useCapaReview();
 
@@ -69,13 +58,6 @@ export function Capa() {
           capaAccepted={capaAccepted}
         />
 
-        <OverrideBar
-          isOverrideEditing={isOverrideEditing}
-          overrideConfirmed={overrideConfirmed}
-          onCancelOverride={handleCancelOverride}
-          cancelDisabled={capaAccepted}
-        />
-
         <div className="space-y-6">
           <CapaConfidenceCard score={capaParsed.confidence_score} />
 
@@ -87,8 +69,6 @@ export function Capa() {
             placeholder="Define specific actions to eliminate the root cause and prevent recurrence..."
             value={correctiveAction}
             originalValue={capaParsed.corrective_actions.join("\n")}
-            isOverrideEditing={isOverrideEditing}
-            overrideConfirmed={overrideConfirmed}
             onChange={handleCorrectiveActionChange}
             showWarning={showWeakCapaWarning}
           />
@@ -99,8 +79,6 @@ export function Capa() {
             placeholder="Define actions to prevent similar issues in other areas or systems..."
             value={preventiveAction}
             originalValue={capaParsed.preventive_actions.join("\n")}
-            isOverrideEditing={isOverrideEditing}
-            overrideConfirmed={overrideConfirmed}
             onChange={setPreventiveAction}
           />
 
@@ -111,39 +89,17 @@ export function Capa() {
             dateValue={dueDate}
             originalDate={capaParsed.due_date}
             onDateChange={setDueDate}
-            isOverrideEditing={isOverrideEditing}
-            overrideConfirmed={overrideConfirmed}
           />
 
           <DecisionAction
-            acceptLabel="Accept CAPA"
             onAccept={handleAccept}
             acceptDisabled={decisionMade}
             acceptSelected={capaAccepted}
-            isOverrideEditing={isOverrideEditing}
-            overrideLabel="Override CAPA"
-            onOverrideClick={() => setIsOverrideEditing(true)}
-            onSaveChanges={() => setShowOverrideDialog(true)}
-            overrideDisabled={decisionMade}
-            overrideSelected={overrideConfirmed}
-            saveChangesDisabled={capaAccepted}
-            rejectLabel="Reject CAPA"
             onReject={() => setShowRejectDialog(true)}
             rejectDisabled={decisionMade}
             footerText="Your decision will be logged in the audit trail"
           />
         </div>
-
-        <OverrideDialog
-          open={showOverrideDialog}
-          onOpenChange={setShowOverrideDialog}
-          title="Override CAPA"
-          subjectLabel="the CAPA"
-          value={overrideJustification}
-          onChange={setOverrideJustification}
-          onCancel={() => setShowOverrideDialog(false)}
-          onConfirm={handleOverrideConfirm}
-        />
 
         <RejectDialog
           open={showRejectDialog}

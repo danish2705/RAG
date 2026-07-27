@@ -2,8 +2,7 @@ import { useCallback, useReducer, useState } from "react";
 import { useNavigate } from "react-router";
 import { generateRiskCriticality } from "../../services/changeControl/riskCriticalityApi";
 import {
-  aiField,
-  markModified,
+  autoField,
   type ChangeImpactAssessmentProvenance,
 } from "../../types/dataProvenance";
 import type {
@@ -21,7 +20,9 @@ import { useLlmFailureRecovery } from "../shared/useLlmFailureRecovery";
 // ---------------------------------------------------------------------------
 // Form reducer: the editable change-impact fields, previously 13 separate
 // useState calls. See useRiskCriticality.ts for the same pattern applied
-// to its sibling page.
+// to its sibling page. Every field here is directly editable at all times —
+// seeded from the AI output but freely changeable without first entering
+// any separate "override" mode.
 // ---------------------------------------------------------------------------
 interface ImpactFormState {
   impactedSystems: string[];
@@ -266,90 +267,41 @@ export function useChangeImpactAssessmentReview() {
       risk_scoring: { level: form.riskLevel, rationale: form.riskRationale },
     });
 
-  const buildChangeImpactProvenance = (
-    confirmed: boolean,
-  ): ChangeImpactAssessmentProvenance => {
+  const buildChangeImpactProvenance = (): ChangeImpactAssessmentProvenance => {
     const original = changeImpactParsed!;
 
-    const impactedSystemsField =
-      confirmed &&
-      JSON.stringify(form.impactedSystems) !==
-        JSON.stringify(original.impacted_systems)
-        ? markModified(aiField(original.impacted_systems), form.impactedSystems)
-        : aiField(original.impacted_systems);
-
-    const downstreamDependenciesField =
-      confirmed &&
-      JSON.stringify(form.downstreamDependencies) !==
-        JSON.stringify(original.downstream_dependencies)
-        ? markModified(
-            aiField(original.downstream_dependencies),
-            form.downstreamDependencies,
-          )
-        : aiField(original.downstream_dependencies);
-
-    const gxpValueField =
-      confirmed && form.gxpValue !== original.gxp_classification.value
-        ? markModified(
-            aiField(original.gxp_classification.value),
-            form.gxpValue,
-          )
-        : aiField(original.gxp_classification.value);
-
-    const gxpRationaleField =
-      confirmed && form.gxpRationale !== original.gxp_classification.rationale
-        ? markModified(
-            aiField(original.gxp_classification.rationale),
-            form.gxpRationale,
-          )
-        : aiField(original.gxp_classification.rationale);
-
-    const validatedStateField =
-      confirmed &&
-      form.validatedStateAffected !==
-        original.data_validation_impact.validated_state_affected
-        ? markModified(
-            aiField(original.data_validation_impact.validated_state_affected),
-            form.validatedStateAffected,
-          )
-        : aiField(original.data_validation_impact.validated_state_affected);
-
-    const dataValidationRationaleField =
-      confirmed &&
-      form.dataValidationRationale !== original.data_validation_impact.rationale
-        ? markModified(
-            aiField(original.data_validation_impact.rationale),
-            form.dataValidationRationale,
-          )
-        : aiField(original.data_validation_impact.rationale);
-
-    const riskLevelField =
-      confirmed && form.riskLevel !== original.risk_scoring.level
-        ? markModified(aiField(original.risk_scoring.level), form.riskLevel)
-        : aiField(original.risk_scoring.level);
-
-    const riskRationaleField =
-      confirmed && form.riskRationale !== original.risk_scoring.rationale
-        ? markModified(
-            aiField(original.risk_scoring.rationale),
-            form.riskRationale,
-          )
-        : aiField(original.risk_scoring.rationale);
-
     return {
-      impacted_systems: impactedSystemsField,
+      impacted_systems: autoField(
+        original.impacted_systems,
+        form.impactedSystems,
+      ),
+      downstream_dependencies: autoField(
+        original.downstream_dependencies,
+        form.downstreamDependencies,
+      ),
       gxp_classification: {
-        value: gxpValueField,
-        rationale: gxpRationaleField,
+        value: autoField(original.gxp_classification.value, form.gxpValue),
+        rationale: autoField(
+          original.gxp_classification.rationale,
+          form.gxpRationale,
+        ),
       },
       data_validation_impact: {
-        validated_state_affected: validatedStateField,
-        rationale: dataValidationRationaleField,
+        validated_state_affected: autoField(
+          original.data_validation_impact.validated_state_affected,
+          form.validatedStateAffected,
+        ),
+        rationale: autoField(
+          original.data_validation_impact.rationale,
+          form.dataValidationRationale,
+        ),
       },
-      downstream_dependencies: downstreamDependenciesField,
       risk_scoring: {
-        level: riskLevelField,
-        rationale: riskRationaleField,
+        level: autoField(original.risk_scoring.level, form.riskLevel),
+        rationale: autoField(
+          original.risk_scoring.rationale,
+          form.riskRationale,
+        ),
       },
       confidence_score: original.confidence_score,
     };
@@ -434,24 +386,10 @@ export function useChangeImpactAssessmentReview() {
   };
 
   const handleAccept = () => {
-    const changeImpactProvenance = buildChangeImpactProvenance(
-      override.overrideConfirmed,
-    );
-    const existingRiskCriticality = result!.stages?.riskCriticality;
-    if (!override.overrideConfirmed && existingRiskCriticality?.parsed) {
-      navigateToRiskCriticality(
-        existingRiskCriticality,
-        changeImpactProvenance,
-        buildApprovedChangeImpactAssessment(),
-      );
-      return;
-    }
-    void submitChangeImpactAssessment(changeImpactProvenance);
-  };
-
-  const handleOverrideClick = () => override.setIsOverrideEditing(true);
-
-  const handleSaveChanges = () => {
+    // If a value was changed but its rationale wasn't updated to explain
+    // why, block Accept and ask for that first — same guardrail that used
+    // to live in the old "Save Changes" step, just triggered by Accept
+    // directly now that there's no separate override mode.
     const needsRationale: string[] = [];
     if (form.gxpChangedWithoutRationale)
       needsRationale.push(CHANGE_IMPACT_FIELD_LABELS.gxp_classification);
@@ -465,18 +403,29 @@ export function useChangeImpactAssessmentReview() {
       override.setShowRationaleWarning(true);
       return;
     }
-    override.setShowOverrideDialog(true);
-  };
 
-  const handleCancelOverride = () => {
-    if (!changeImpactParsed) return;
-    override.setIsOverrideEditing(false);
-    dispatchForm({ type: "HYDRATE", parsed: changeImpactParsed });
-  };
+    const changeImpactProvenance = buildChangeImpactProvenance();
+    const isEdited = [
+      changeImpactProvenance.impacted_systems,
+      changeImpactProvenance.downstream_dependencies,
+      changeImpactProvenance.gxp_classification.value,
+      changeImpactProvenance.gxp_classification.rationale,
+      changeImpactProvenance.data_validation_impact.validated_state_affected,
+      changeImpactProvenance.data_validation_impact.rationale,
+      changeImpactProvenance.risk_scoring.level,
+      changeImpactProvenance.risk_scoring.rationale,
+    ].some((field) => field.source === "modified");
 
-  const handleOverrideConfirm = () => {
-    if (!override.overrideJustification.trim()) return;
-    override.confirmOverride();
+    const existingRiskCriticality = result!.stages?.riskCriticality;
+    if (!isEdited && existingRiskCriticality?.parsed) {
+      navigateToRiskCriticality(
+        existingRiskCriticality,
+        changeImpactProvenance,
+        buildApprovedChangeImpactAssessment(),
+      );
+      return;
+    }
+    void submitChangeImpactAssessment(changeImpactProvenance);
   };
 
   const handleReject = () => {
@@ -488,29 +437,24 @@ export function useChangeImpactAssessmentReview() {
 
   const isGxpModified =
     !!changeImpactParsed &&
-    override.overrideConfirmed &&
     (form.gxpValue !== changeImpactParsed.gxp_classification.value ||
       form.gxpRationale !== changeImpactParsed.gxp_classification.rationale);
   const isValidationModified =
     !!changeImpactParsed &&
-    override.overrideConfirmed &&
     (form.validatedStateAffected !==
       changeImpactParsed.data_validation_impact.validated_state_affected ||
       form.dataValidationRationale !==
         changeImpactParsed.data_validation_impact.rationale);
   const isRiskModified =
     !!changeImpactParsed &&
-    override.overrideConfirmed &&
     (form.riskLevel !== changeImpactParsed.risk_scoring.level ||
       form.riskRationale !== changeImpactParsed.risk_scoring.rationale);
   const isSystemsModified =
     !!changeImpactParsed &&
-    override.overrideConfirmed &&
     JSON.stringify(form.impactedSystems) !==
       JSON.stringify(changeImpactParsed.impacted_systems);
   const isDependenciesModified =
     !!changeImpactParsed &&
-    override.overrideConfirmed &&
     JSON.stringify(form.downstreamDependencies) !==
       JSON.stringify(changeImpactParsed.downstream_dependencies);
 
@@ -519,10 +463,8 @@ export function useChangeImpactAssessmentReview() {
     result,
     classificationParsed,
     changeImpactParsed,
-
     chatOpen,
     setChatOpen,
-
     impactedSystems: form.impactedSystems,
     setImpactedSystems,
     downstreamDependencies: form.downstreamDependencies,
@@ -539,24 +481,14 @@ export function useChangeImpactAssessmentReview() {
     updateDataValidationRationale,
     updateRiskLevel,
     updateRiskRationale,
-
     gxpChangedWithoutRationale: form.gxpChangedWithoutRationale,
     validationChangedWithoutRationale: form.validationChangedWithoutRationale,
     riskChangedWithoutRationale: form.riskChangedWithoutRationale,
-
     isGxpModified,
     isValidationModified,
     isRiskModified,
     isSystemsModified,
     isDependenciesModified,
-
-    isOverrideEditing: override.isOverrideEditing,
-    overrideConfirmed: override.overrideConfirmed,
-
-    showOverrideDialog: override.showOverrideDialog,
-    setShowOverrideDialog: override.setShowOverrideDialog,
-    overrideJustification: override.overrideJustification,
-    setOverrideJustification: override.setOverrideJustification,
     showRejectDialog: override.showRejectDialog,
     setShowRejectDialog: override.setShowRejectDialog,
     rejectJustification: override.rejectJustification,
@@ -564,15 +496,9 @@ export function useChangeImpactAssessmentReview() {
     showRationaleWarning: override.showRationaleWarning,
     setShowRationaleWarning: override.setShowRationaleWarning,
     warningFields: override.warningFields,
-
     isSubmitting: override.isSubmitting,
     submitError: override.submitError,
-
     handleAccept,
-    handleOverrideClick,
-    handleSaveChanges,
-    handleCancelOverride,
-    handleOverrideConfirm,
     handleReject,
     llmFailure,
   };

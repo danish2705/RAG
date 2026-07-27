@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useState } from "react";
 import { useNavigate } from "react-router";
 import { generateImplementationControl } from "../../services/changeControl/implementationControlApi";
 import {
-  aiField,
-  markModified,
+  autoField,
   type ImplementationControlProvenance,
 } from "../../types/dataProvenance";
 import type { ImplementationControlParsed } from "../../types/pipeline";
@@ -39,14 +38,6 @@ interface ImplementationFormState {
 
 type ImplementationFormAction =
   | { type: "HYDRATE"; parsed: ImplementationControlParsed }
-  | {
-      type: "HYDRATE_FROM_PROVENANCE";
-      requiredActions: string[];
-      sopWiUpdates: string[];
-      approvalRouting: string[];
-      implementationPlan: string;
-      rollbackPlan: string;
-    }
   | { type: "SET_REQUIRED_ACTIONS"; value: string }
   | { type: "SET_SOP_WI_UPDATES"; value: string }
   | { type: "SET_APPROVAL_ROUTING"; value: string }
@@ -72,14 +63,6 @@ function implementationFormReducer(
   switch (action.type) {
     case "HYDRATE":
       return hydrateImplementationForm(action.parsed);
-    case "HYDRATE_FROM_PROVENANCE":
-      return {
-        requiredActions: linesToText(action.requiredActions),
-        sopWiUpdates: linesToText(action.sopWiUpdates),
-        approvalRouting: linesToText(action.approvalRouting),
-        implementationPlan: action.implementationPlan,
-        rollbackPlan: action.rollbackPlan,
-      };
     case "SET_REQUIRED_ACTIONS":
       return { ...state, requiredActions: action.value };
     case "SET_SOP_WI_UPDATES":
@@ -189,6 +172,9 @@ export function useImplementationControl() {
   const override = useOverrideDialogState();
   const [implementationAccepted, setImplementationAccepted] = useState(false);
 
+  // Fields are directly editable at all times — seeded from a previously
+  // saved edit (if resuming) or the raw AI output, but freely changeable
+  // without first entering any separate "override" mode.
   const [form, dispatchForm] = useReducer(
     implementationFormReducer,
     wasModified
@@ -213,18 +199,6 @@ export function useImplementationControl() {
           rollbackPlan: implementationParsed?.rollback_contingency_plan ?? "",
         },
   );
-
-  // Mirrors the old `useState(wasModified)` initializer for overrideConfirmed
-  // — sync it once, the first time we know whether this stage was
-  // previously modified, without re-running on every render.
-  const didInitOverrideConfirmed = useRef(false);
-  useEffect(() => {
-    if (!didInitOverrideConfirmed.current && wasModified) {
-      override.setOverrideConfirmed(true);
-      didInitOverrideConfirmed.current = true;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wasModified]);
 
   const setRequiredActions = useCallback(
     (value: string) => dispatchForm({ type: "SET_REQUIRED_ACTIONS", value }),
@@ -255,64 +229,38 @@ export function useImplementationControl() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [implementationParsed]);
 
-  const decisionMade =
-    implementationAccepted ||
-    override.isOverrideEditing ||
-    override.overrideConfirmed;
+  // Disables the Accept/Reject buttons once a decision has been made, to
+  // avoid double-navigating while the page transitions to the summary.
+  const decisionMade = implementationAccepted;
 
   // Provenance + approved result builders
-  const buildProvenance = (
-    confirmed: boolean,
-  ): ImplementationControlProvenance | null => {
+  const buildProvenance = (): ImplementationControlProvenance | null => {
     if (!implementationParsed) return null;
     const curRequiredActions = parseLines(form.requiredActions);
     const curSopWiUpdates = parseLines(form.sopWiUpdates);
     const curApprovalRouting = parseLines(form.approvalRouting);
 
     return {
-      required_actions:
-        confirmed &&
-        JSON.stringify(curRequiredActions) !==
-          JSON.stringify(implementationParsed.required_actions)
-          ? markModified(
-              aiField(implementationParsed.required_actions),
-              curRequiredActions,
-            )
-          : aiField(implementationParsed.required_actions),
-      sop_wi_updates:
-        confirmed &&
-        JSON.stringify(curSopWiUpdates) !==
-          JSON.stringify(implementationParsed.sop_wi_updates)
-          ? markModified(
-              aiField(implementationParsed.sop_wi_updates),
-              curSopWiUpdates,
-            )
-          : aiField(implementationParsed.sop_wi_updates),
-      approval_routing:
-        confirmed &&
-        JSON.stringify(curApprovalRouting) !==
-          JSON.stringify(implementationParsed.approval_routing)
-          ? markModified(
-              aiField(implementationParsed.approval_routing),
-              curApprovalRouting,
-            )
-          : aiField(implementationParsed.approval_routing),
-      implementation_plan:
-        confirmed &&
-        form.implementationPlan !== implementationParsed.implementation_plan
-          ? markModified(
-              aiField(implementationParsed.implementation_plan),
-              form.implementationPlan,
-            )
-          : aiField(implementationParsed.implementation_plan),
-      rollback_contingency_plan:
-        confirmed &&
-        form.rollbackPlan !== implementationParsed.rollback_contingency_plan
-          ? markModified(
-              aiField(implementationParsed.rollback_contingency_plan),
-              form.rollbackPlan,
-            )
-          : aiField(implementationParsed.rollback_contingency_plan),
+      required_actions: autoField(
+        implementationParsed.required_actions,
+        curRequiredActions,
+      ),
+      sop_wi_updates: autoField(
+        implementationParsed.sop_wi_updates,
+        curSopWiUpdates,
+      ),
+      approval_routing: autoField(
+        implementationParsed.approval_routing,
+        curApprovalRouting,
+      ),
+      implementation_plan: autoField(
+        implementationParsed.implementation_plan,
+        form.implementationPlan,
+      ),
+      rollback_contingency_plan: autoField(
+        implementationParsed.rollback_contingency_plan,
+        form.rollbackPlan,
+      ),
       confidence_score: implementationParsed.confidence_score,
     };
   };
@@ -329,9 +277,9 @@ export function useImplementationControl() {
         }
       : null;
 
-  const proceed = (confirmedOverride: boolean = override.overrideConfirmed) => {
+  const proceed = () => {
     if (!result || !implementationParsed) return;
-    const provenance = buildProvenance(confirmedOverride);
+    const provenance = buildProvenance();
     mergePipelineResult({
       stages: {
         ...result.stages,
@@ -348,38 +296,11 @@ export function useImplementationControl() {
   // Handlers
   // Accepting the implementation plan is the final decision for the change
   // control flow, so it advances straight to the summary (no extra button).
+  // Whatever is currently in the form — edited or left as the AI suggested
+  // it — is what gets approved.
   const handleAccept = () => {
     setImplementationAccepted(true);
-    proceed(false);
-  };
-  const handleOverrideClick = () => override.setIsOverrideEditing(true);
-  const handleSaveChanges = () => override.setShowOverrideDialog(true);
-
-  const handleCancelOverride = () => {
-    if (!implementationParsed) return;
-    if (wasModified) {
-      dispatchForm({
-        type: "HYDRATE_FROM_PROVENANCE",
-        requiredActions: savedProvenance!.required_actions.value,
-        sopWiUpdates: savedProvenance!.sop_wi_updates.value,
-        approvalRouting: savedProvenance!.approval_routing.value,
-        implementationPlan: savedProvenance!.implementation_plan
-          .value as string,
-        rollbackPlan: savedProvenance!.rollback_contingency_plan
-          .value as string,
-      });
-    } else {
-      dispatchForm({ type: "HYDRATE", parsed: implementationParsed });
-    }
-    override.setIsOverrideEditing(false);
-  };
-
-  const handleOverrideConfirm = () => {
-    if (!override.overrideJustification.trim()) return;
-    override.confirmOverride();
-    // Confirming an override is also a final decision — go to the summary.
-    // Pass `true` explicitly since the confirmed state hasn't committed yet.
-    proceed(true);
+    proceed();
   };
 
   const handleReject = () => {
@@ -398,18 +319,12 @@ export function useImplementationControl() {
     navigate,
     chatOpen,
     setChatOpen,
-
     result,
     classificationParsed,
     implementationParsed,
-
     isGenerating,
     generateError,
-
-    isOverrideEditing: override.isOverrideEditing,
-    overrideConfirmed: override.overrideConfirmed,
     implementationAccepted,
-
     requiredActions: form.requiredActions,
     setRequiredActions,
     sopWiUpdates: form.sopWiUpdates,
@@ -420,27 +335,16 @@ export function useImplementationControl() {
     setImplementationPlan,
     rollbackPlan: form.rollbackPlan,
     setRollbackPlan,
-
-    showOverrideDialog: override.showOverrideDialog,
-    setShowOverrideDialog: override.setShowOverrideDialog,
-    overrideJustification: override.overrideJustification,
-    setOverrideJustification: override.setOverrideJustification,
     showRejectDialog: override.showRejectDialog,
     setShowRejectDialog: override.setShowRejectDialog,
     rejectJustification: override.rejectJustification,
     setRejectJustification: override.setRejectJustification,
-
     decisionMade,
     confidenceScore,
     riskLevel,
     llmFailure,
-
     proceed,
     handleAccept,
-    handleOverrideClick,
-    handleSaveChanges,
-    handleCancelOverride,
-    handleOverrideConfirm,
     handleReject,
   };
 }

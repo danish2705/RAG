@@ -1,8 +1,6 @@
 import { useNavigate } from "react-router";
 import {
   DecisionAction,
-  OverrideDialog,
-  OverrideBar,
   RejectDialog,
   StepProgressBar,
 } from "../../components/eventIntake";
@@ -58,12 +56,6 @@ export function ValidationTesting() {
     updateLevelRationale,
     levelChangedWithoutRationale,
     isLevelModified,
-    isOverrideEditing,
-    overrideConfirmed,
-    showOverrideDialog,
-    setShowOverrideDialog,
-    overrideJustification,
-    setOverrideJustification,
     showRejectDialog,
     setShowRejectDialog,
     rejectJustification,
@@ -73,10 +65,6 @@ export function ValidationTesting() {
     isSubmitting,
     submitError,
     handleAccept,
-    handleOverrideClick,
-    handleSaveChanges,
-    handleCancelOverride,
-    handleOverrideConfirm,
     handleReject,
     llmFailure,
   } = useValidationTestingReview();
@@ -107,13 +95,6 @@ export function ValidationTesting() {
           }
         />
 
-        <OverrideBar
-          isOverrideEditing={isOverrideEditing}
-          overrideConfirmed={overrideConfirmed}
-          onCancelOverride={handleCancelOverride}
-          overriddenLabel="Overridden"
-        />
-
         <div className="space-y-6 mt-6">
           <ValidationConfidenceCard score={validationParsed.confidence_score} />
 
@@ -122,7 +103,6 @@ export function ValidationTesting() {
             title={VALIDATION_TESTING_FIELD_LABELS.required_validation_level}
             level={level}
             levelRationale={levelRationale}
-            isOverrideEditing={isOverrideEditing}
             isLevelModified={isLevelModified}
             levelChangedWithoutRationale={levelChangedWithoutRationale}
             onLevelChange={updateLevel}
@@ -136,8 +116,6 @@ export function ValidationTesting() {
             label="One test scenario"
             value={scenarioTesting}
             originalValue={validationParsed.scenario_based_testing.join("\n")}
-            isOverrideEditing={isOverrideEditing}
-            overrideConfirmed={overrideConfirmed}
             onChange={setScenarioTesting}
             placeholder="Describe recommended test scenarios..."
           />
@@ -149,8 +127,6 @@ export function ValidationTesting() {
             label="Existing functionality to retest"
             value={regressionScope}
             originalValue={validationParsed.regression_scope.join("\n")}
-            isOverrideEditing={isOverrideEditing}
-            overrideConfirmed={overrideConfirmed}
             onChange={setRegressionScope}
             placeholder="Describe the regression testing scope..."
           />
@@ -162,8 +138,6 @@ export function ValidationTesting() {
             label="One UAT requirement"
             value={uatRequirements}
             originalValue={validationParsed.uat_requirements.join("\n")}
-            isOverrideEditing={isOverrideEditing}
-            overrideConfirmed={overrideConfirmed}
             onChange={setUatRequirements}
             placeholder="Describe UAT requirements..."
           />
@@ -175,27 +149,19 @@ export function ValidationTesting() {
             label="One requirement / procedure link"
             value={traceability}
             originalValue={validationParsed.traceability.join("\n")}
-            isOverrideEditing={isOverrideEditing}
-            overrideConfirmed={overrideConfirmed}
             onChange={setTraceability}
             placeholder="Link to relevant requirements or procedures..."
           />
 
           {/* Bottom Decision Area */}
           <DecisionAction
-            acceptLabel="Accept & Continue to Implementation & Control Actions"
             acceptLoadingLabel="Submitting Strategy..."
             onAccept={handleAccept}
-            isOverrideEditing={isOverrideEditing}
-            overrideLabel="Override Strategy"
-            onOverrideClick={handleOverrideClick}
-            onSaveChanges={handleSaveChanges}
-            rejectLabel="Reject Strategy"
             onReject={() => setShowRejectDialog(true)}
             isLoading={isSubmitting}
             error={submitError}
             errorTitle="Strategy submission failed"
-            footerText="Your decision will be logged in the audit trail. Accepting or overriding submits this strategy and starts Implementation & Control Actions — it only starts now, not before you decide."
+            footerText="Your decision will be logged in the audit trail. Accepting submits this strategy and starts Implementation & Control Actions using whatever is currently in the form above."
           />
         </div>
 
@@ -217,7 +183,7 @@ export function ValidationTesting() {
             </DialogHeader>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Please update the rationale with the reason for the new value
-              before saving.
+              before accepting.
             </p>
             <DialogFooter>
               <Button
@@ -229,19 +195,6 @@ export function ValidationTesting() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
-        {/* Override Justification Dialog */}
-        <OverrideDialog
-          open={showOverrideDialog}
-          onOpenChange={setShowOverrideDialog}
-          title="Override Validation & Testing Strategy"
-          subjectLabel="the strategy"
-          value={overrideJustification}
-          onChange={setOverrideJustification}
-          onCancel={() => setShowOverrideDialog(false)}
-          onConfirm={handleOverrideConfirm}
-          isLoading={isSubmitting}
-        />
 
         {/* Reject Dialog */}
         <RejectDialog

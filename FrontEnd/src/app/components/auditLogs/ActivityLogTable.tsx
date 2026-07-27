@@ -83,7 +83,7 @@ function actionMeta(entry: AuditLogEntry): {
     default:
       return {
         icon: <Bot className="h-4 w-4 text-blue-600" />,
-        label: "AI Suggestion",
+        label: "AI Unavailable",
         badgeClass:
           "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
         rowClass: "",

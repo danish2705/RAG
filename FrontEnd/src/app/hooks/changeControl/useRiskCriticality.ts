@@ -2,8 +2,7 @@ import { useCallback, useEffect, useReducer, useState } from "react";
 import { useNavigate } from "react-router";
 import { generateValidationTesting } from "../../services/changeControl/validationTestingApi";
 import {
-  aiField,
-  markModified,
+  autoField,
   type RiskCriticalityProvenance,
 } from "../../types/dataProvenance";
 import type {
@@ -31,7 +30,9 @@ export const RISK_FIELD_LABELS = {
 // separate useState calls. Grouping them here means every related pair
 // (e.g. "level changed" + "changed-without-rationale flag") always updates
 // together in one dispatch, instead of two setter calls that could drift
-// out of sync.
+// out of sync. Every field is directly editable at all times — seeded from
+// the AI output but freely changeable without first entering any separate
+// "override" mode.
 // ---------------------------------------------------------------------------
 interface RiskFormState {
   psLevel: RiskLevel;
@@ -339,109 +340,53 @@ export function useRiskCriticality() {
         }
       : null;
 
-  const buildRiskProvenance = (
-    confirmed: boolean,
-  ): RiskCriticalityProvenance | null => {
+  const buildRiskProvenance = (): RiskCriticalityProvenance | null => {
     if (!riskParsed) return null;
     const original = riskParsed;
 
-    const psLevelField =
-      confirmed &&
-      form.psLevel !== original.patient_safety_product_quality_impact.level
-        ? markModified(
-            aiField(original.patient_safety_product_quality_impact.level),
-            form.psLevel,
-          )
-        : aiField(original.patient_safety_product_quality_impact.level);
-    const psRationaleField =
-      confirmed &&
-      form.psRationale !==
-        original.patient_safety_product_quality_impact.rationale
-        ? markModified(
-            aiField(original.patient_safety_product_quality_impact.rationale),
-            form.psRationale,
-          )
-        : aiField(original.patient_safety_product_quality_impact.rationale);
-
-    const regLevelField =
-      confirmed && form.regLevel !== original.regulatory_impact.level
-        ? markModified(aiField(original.regulatory_impact.level), form.regLevel)
-        : aiField(original.regulatory_impact.level);
-    const regFilingsField =
-      confirmed &&
-      JSON.stringify(form.regFilings) !==
-        JSON.stringify(
-          original.regulatory_impact.filings_or_submissions_affected,
-        )
-        ? markModified(
-            aiField(original.regulatory_impact.filings_or_submissions_affected),
-            form.regFilings,
-          )
-        : aiField(original.regulatory_impact.filings_or_submissions_affected);
-    const regRationaleField =
-      confirmed && form.regRationale !== original.regulatory_impact.rationale
-        ? markModified(
-            aiField(original.regulatory_impact.rationale),
-            form.regRationale,
-          )
-        : aiField(original.regulatory_impact.rationale);
-
-    const diLevelField =
-      confirmed && form.diLevel !== original.data_integrity_risk.level
-        ? markModified(
-            aiField(original.data_integrity_risk.level),
-            form.diLevel,
-          )
-        : aiField(original.data_integrity_risk.level);
-    const diRationaleField =
-      confirmed && form.diRationale !== original.data_integrity_risk.rationale
-        ? markModified(
-            aiField(original.data_integrity_risk.rationale),
-            form.diRationale,
-          )
-        : aiField(original.data_integrity_risk.rationale);
-
-    const odLevelField =
-      confirmed && form.odLevel !== original.operational_disruption_risk.level
-        ? markModified(
-            aiField(original.operational_disruption_risk.level),
-            form.odLevel,
-          )
-        : aiField(original.operational_disruption_risk.level);
-    const odRationaleField =
-      confirmed &&
-      form.odRationale !== original.operational_disruption_risk.rationale
-        ? markModified(
-            aiField(original.operational_disruption_risk.rationale),
-            form.odRationale,
-          )
-        : aiField(original.operational_disruption_risk.rationale);
-
-    const rankingField =
-      confirmed &&
-      form.rankingJustification !== original.risk_ranking_justification
-        ? markModified(
-            aiField(original.risk_ranking_justification),
-            form.rankingJustification,
-          )
-        : aiField(original.risk_ranking_justification);
-
     return {
       patient_safety_product_quality_impact: {
-        level: psLevelField,
-        rationale: psRationaleField,
+        level: autoField(
+          original.patient_safety_product_quality_impact.level,
+          form.psLevel,
+        ),
+        rationale: autoField(
+          original.patient_safety_product_quality_impact.rationale,
+          form.psRationale,
+        ),
       },
       regulatory_impact: {
-        level: regLevelField,
-        filings_or_submissions_affected: regFilingsField,
-        rationale: regRationaleField,
+        level: autoField(original.regulatory_impact.level, form.regLevel),
+        filings_or_submissions_affected: autoField(
+          original.regulatory_impact.filings_or_submissions_affected,
+          form.regFilings,
+        ),
+        rationale: autoField(
+          original.regulatory_impact.rationale,
+          form.regRationale,
+        ),
       },
-      data_integrity_risk: { level: diLevelField, rationale: diRationaleField },
+      data_integrity_risk: {
+        level: autoField(original.data_integrity_risk.level, form.diLevel),
+        rationale: autoField(
+          original.data_integrity_risk.rationale,
+          form.diRationale,
+        ),
+      },
       operational_disruption_risk: {
-        level: odLevelField,
-        rationale: odRationaleField,
+        level: autoField(
+          original.operational_disruption_risk.level,
+          form.odLevel,
+        ),
+        rationale: autoField(
+          original.operational_disruption_risk.rationale,
+          form.odRationale,
+        ),
       },
-      risk_ranking_justification: rankingField,
+      risk_ranking_justification: autoField(
+        original.risk_ranking_justification,
+        form.rankingJustification,
+      ),
       confidence_score: original.confidence_score,
     };
   };
@@ -536,23 +481,10 @@ export function useRiskCriticality() {
   };
 
   const handleAccept = () => {
-    const riskProvenance = buildRiskProvenance(override.overrideConfirmed);
-    if (!riskProvenance) return;
-    const existingValidationTesting = result!.stages?.validationTesting;
-    if (!override.overrideConfirmed && existingValidationTesting?.parsed) {
-      navigateToValidationTesting(
-        existingValidationTesting,
-        riskProvenance,
-        buildApprovedRiskCriticality()!,
-      );
-      return;
-    }
-    void submitRiskCriticality(riskProvenance);
-  };
-
-  const handleOverrideClick = () => override.setIsOverrideEditing(true);
-
-  const handleSaveChanges = () => {
+    // If a value was changed but its rationale wasn't updated to explain
+    // why, block Accept and ask for that first — same guardrail that used
+    // to live in the old "Save Changes" step, just triggered by Accept
+    // directly now that there's no separate override mode.
     const needsRationale: string[] = [];
     if (form.psChangedWithoutRationale)
       needsRationale.push(
@@ -570,18 +502,32 @@ export function useRiskCriticality() {
       override.setShowRationaleWarning(true);
       return;
     }
-    override.setShowOverrideDialog(true);
-  };
 
-  const handleCancelOverride = () => {
-    if (!riskParsed) return;
-    override.setIsOverrideEditing(false);
-    dispatchForm({ type: "HYDRATE", parsed: riskParsed });
-  };
+    const riskProvenance = buildRiskProvenance();
+    if (!riskProvenance) return;
+    const isEdited = [
+      riskProvenance.patient_safety_product_quality_impact.level,
+      riskProvenance.patient_safety_product_quality_impact.rationale,
+      riskProvenance.regulatory_impact.level,
+      riskProvenance.regulatory_impact.filings_or_submissions_affected,
+      riskProvenance.regulatory_impact.rationale,
+      riskProvenance.data_integrity_risk.level,
+      riskProvenance.data_integrity_risk.rationale,
+      riskProvenance.operational_disruption_risk.level,
+      riskProvenance.operational_disruption_risk.rationale,
+      riskProvenance.risk_ranking_justification,
+    ].some((field) => field.source === "modified");
 
-  const handleOverrideConfirm = () => {
-    if (!override.overrideJustification.trim()) return;
-    override.confirmOverride();
+    const existingValidationTesting = result!.stages?.validationTesting;
+    if (!isEdited && existingValidationTesting?.parsed) {
+      navigateToValidationTesting(
+        existingValidationTesting,
+        riskProvenance,
+        buildApprovedRiskCriticality()!,
+      );
+      return;
+    }
+    void submitRiskCriticality(riskProvenance);
   };
 
   const handleReject = () => {
@@ -595,13 +541,11 @@ export function useRiskCriticality() {
 
   const isPsModified =
     !!riskParsed &&
-    override.overrideConfirmed &&
     (form.psLevel !== riskParsed.patient_safety_product_quality_impact.level ||
       form.psRationale !==
         riskParsed.patient_safety_product_quality_impact.rationale);
   const isRegModified =
     !!riskParsed &&
-    override.overrideConfirmed &&
     (form.regLevel !== riskParsed.regulatory_impact.level ||
       form.regRationale !== riskParsed.regulatory_impact.rationale ||
       JSON.stringify(form.regFilings) !==
@@ -610,29 +554,24 @@ export function useRiskCriticality() {
         ));
   const isDiModified =
     !!riskParsed &&
-    override.overrideConfirmed &&
     (form.diLevel !== riskParsed.data_integrity_risk.level ||
       form.diRationale !== riskParsed.data_integrity_risk.rationale);
   const isOdModified =
     !!riskParsed &&
-    override.overrideConfirmed &&
     (form.odLevel !== riskParsed.operational_disruption_risk.level ||
       form.odRationale !== riskParsed.operational_disruption_risk.rationale);
   const isRankingModified =
     !!riskParsed &&
-    override.overrideConfirmed &&
     form.rankingJustification !== riskParsed.risk_ranking_justification;
 
   return {
     navigate,
     chatOpen,
     setChatOpen,
-
     result,
     classificationParsed,
     impactParsed,
     riskParsed,
-
     psLevel: form.psLevel,
     psRationale: form.psRationale,
     regLevel: form.regLevel,
@@ -645,7 +584,6 @@ export function useRiskCriticality() {
     odRationale: form.odRationale,
     rankingJustification: form.rankingJustification,
     setRankingJustification,
-
     updatePsLevel,
     updatePsRationale,
     updateRegLevel,
@@ -654,25 +592,15 @@ export function useRiskCriticality() {
     updateDiRationale,
     updateOdLevel,
     updateOdRationale,
-
     psChangedWithoutRationale: form.psChangedWithoutRationale,
     regChangedWithoutRationale: form.regChangedWithoutRationale,
     diChangedWithoutRationale: form.diChangedWithoutRationale,
     odChangedWithoutRationale: form.odChangedWithoutRationale,
-
     isPsModified,
     isRegModified,
     isDiModified,
     isOdModified,
     isRankingModified,
-
-    isOverrideEditing: override.isOverrideEditing,
-    overrideConfirmed: override.overrideConfirmed,
-
-    showOverrideDialog: override.showOverrideDialog,
-    setShowOverrideDialog: override.setShowOverrideDialog,
-    overrideJustification: override.overrideJustification,
-    setOverrideJustification: override.setOverrideJustification,
     showRejectDialog: override.showRejectDialog,
     setShowRejectDialog: override.setShowRejectDialog,
     rejectJustification: override.rejectJustification,
@@ -680,17 +608,11 @@ export function useRiskCriticality() {
     showRationaleWarning: override.showRationaleWarning,
     setShowRationaleWarning: override.setShowRationaleWarning,
     warningFields: override.warningFields,
-
     isSubmitting: override.isSubmitting,
     submitError: override.submitError,
     confidenceScore,
     llmFailure,
-
     handleAccept,
-    handleOverrideClick,
-    handleSaveChanges,
-    handleCancelOverride,
-    handleOverrideConfirm,
     handleReject,
   };
 }

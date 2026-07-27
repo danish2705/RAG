@@ -1,11 +1,7 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { useCallback, useReducer, useState } from "react";
 import { useNavigate } from "react-router";
 import { useWorkflowStore } from "../../store/workflowStore";
-import {
-  aiField,
-  markModified,
-  type CAPAProvenance,
-} from "../../types/dataProvenance";
+import { autoField, type CAPAProvenance } from "../../types/dataProvenance";
 import type { CAPAResult } from "../../types/pipeline";
 import { useOverrideDialogState } from "../shared/useOverRideDialogState";
 
@@ -24,14 +20,7 @@ type CapaFormAction =
   | { type: "SET_CORRECTIVE_ACTION"; value: string }
   | { type: "SET_PREVENTIVE_ACTION"; value: string }
   | { type: "SET_EFFECTIVENESS_CHECK"; value: string }
-  | { type: "SET_DUE_DATE"; value: string }
-  | {
-      type: "RESTORE";
-      correctiveAction: string;
-      preventiveAction: string;
-      effectivenessCheck: string;
-      dueDate: string;
-    };
+  | { type: "SET_DUE_DATE"; value: string };
 
 function capaFormReducer(
   state: CapaFormState,
@@ -46,13 +35,6 @@ function capaFormReducer(
       return { ...state, effectivenessCheck: action.value };
     case "SET_DUE_DATE":
       return { ...state, dueDate: action.value };
-    case "RESTORE":
-      return {
-        correctiveAction: action.correctiveAction,
-        preventiveAction: action.preventiveAction,
-        effectivenessCheck: action.effectivenessCheck,
-        dueDate: action.dueDate,
-      };
     default:
       return state;
   }
@@ -79,6 +61,9 @@ export function useCapaReview() {
   const [correction, setCorrection] = useState("");
   const [showWeakCapaWarning, setShowWeakCapaWarning] = useState(false);
 
+  // Fields are directly editable at all times — seeded from a previously
+  // saved edit (if resuming) or the raw AI output, but freely changeable
+  // without first entering any separate "override" mode.
   const [form, dispatchForm] = useReducer(capaFormReducer, {
     correctiveAction: wasModified
       ? (savedCapaProvenance!.corrective_actions.value as string[]).join("\n")
@@ -94,18 +79,9 @@ export function useCapaReview() {
       : (capaParsed?.due_date ?? ""),
   });
 
-  // Mirrors the old `useState(wasModified)` initializer for overrideConfirmed.
-  const didInitOverrideConfirmed = useRef(false);
-  useEffect(() => {
-    if (!didInitOverrideConfirmed.current && wasModified) {
-      override.setOverrideConfirmed(true);
-      didInitOverrideConfirmed.current = true;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wasModified]);
-
-  const decisionMade =
-    capaAccepted || override.isOverrideEditing || override.overrideConfirmed;
+  // Disables the Accept/Reject buttons once a decision has been made, to
+  // avoid double-navigating while the page transitions to the summary.
+  const decisionMade = capaAccepted;
 
   const setCorrectiveAction = useCallback(
     (value: string) => dispatchForm({ type: "SET_CORRECTIVE_ACTION", value }),
@@ -127,14 +103,12 @@ export function useCapaReview() {
   const handleCorrectiveActionChange = useCallback(
     (value: string) => {
       setCorrectiveAction(value);
-      if (override.isOverrideEditing) {
-        setShowWeakCapaWarning(value.length > 0 && value.length < 50);
-      }
+      setShowWeakCapaWarning(value.length > 0 && value.length < 50);
     },
-    [override.isOverrideEditing, setCorrectiveAction],
+    [setCorrectiveAction],
   );
 
-  const buildCAPAProvenance = (confirmed: boolean): CAPAProvenance => {
+  const buildCAPAProvenance = (): CAPAProvenance => {
     if (!capaParsed) return {} as CAPAProvenance;
 
     const curCorrectiveActions = form.correctiveAction
@@ -149,35 +123,19 @@ export function useCapaReview() {
     return {
       capa_required: capaParsed.capa_required,
       confidence_score: capaParsed.confidence_score,
-      corrective_actions:
-        confirmed &&
-        JSON.stringify(curCorrectiveActions) !==
-          JSON.stringify(capaParsed.corrective_actions)
-          ? markModified(
-              aiField(capaParsed.corrective_actions),
-              curCorrectiveActions,
-            )
-          : aiField(capaParsed.corrective_actions),
-      preventive_actions:
-        confirmed &&
-        JSON.stringify(curPreventiveActions) !==
-          JSON.stringify(capaParsed.preventive_actions)
-          ? markModified(
-              aiField(capaParsed.preventive_actions),
-              curPreventiveActions,
-            )
-          : aiField(capaParsed.preventive_actions),
-      effectiveness_check:
-        confirmed && form.effectivenessCheck !== capaParsed.effectiveness_check
-          ? markModified(
-              aiField(capaParsed.effectiveness_check),
-              form.effectivenessCheck,
-            )
-          : aiField(capaParsed.effectiveness_check),
-      due_date:
-        confirmed && form.dueDate !== capaParsed.due_date
-          ? markModified(aiField(capaParsed.due_date), form.dueDate)
-          : aiField(capaParsed.due_date),
+      corrective_actions: autoField(
+        capaParsed.corrective_actions,
+        curCorrectiveActions,
+      ),
+      preventive_actions: autoField(
+        capaParsed.preventive_actions,
+        curPreventiveActions,
+      ),
+      effectiveness_check: autoField(
+        capaParsed.effectiveness_check,
+        form.effectivenessCheck,
+      ),
+      due_date: autoField(capaParsed.due_date, form.dueDate),
     };
   };
 
@@ -195,9 +153,9 @@ export function useCapaReview() {
     due_date: form.dueDate,
   });
 
-  const proceed = (confirmedOverride: boolean = override.overrideConfirmed) => {
+  const proceed = () => {
     if (!result) return;
-    const capaProvenance = buildCAPAProvenance(confirmedOverride);
+    const capaProvenance = buildCAPAProvenance();
     mergePipelineResult({
       stages: {
         ...result.stages,
@@ -209,47 +167,13 @@ export function useCapaReview() {
     navigate("/deviation/summary");
   };
 
-  const handleCancelOverride = () => {
-    if (!capaParsed) return;
-    if (wasModified && savedCapaProvenance) {
-      dispatchForm({
-        type: "RESTORE",
-        correctiveAction: (
-          savedCapaProvenance.corrective_actions.value as string[]
-        ).join("\n"),
-        preventiveAction: (
-          savedCapaProvenance.preventive_actions.value as string[]
-        ).join("\n"),
-        effectivenessCheck: savedCapaProvenance.effectiveness_check
-          .value as string,
-        dueDate: savedCapaProvenance.due_date.value as string,
-      });
-    } else {
-      dispatchForm({
-        type: "RESTORE",
-        correctiveAction: (capaParsed.corrective_actions ?? []).join("\n"),
-        preventiveAction: (capaParsed.preventive_actions ?? []).join("\n"),
-        effectivenessCheck: capaParsed.effectiveness_check ?? "",
-        dueDate: capaParsed.due_date ?? "",
-      });
-    }
-    setShowWeakCapaWarning(false);
-    override.setIsOverrideEditing(false);
-  };
-
   // Accepting the CAPA is the final decision for the deviation flow, so it
   // advances straight to the summary (no extra "Get Summary" button).
+  // Whatever is currently in the form — edited or left as the AI suggested
+  // it — is what gets approved.
   const handleAccept = () => {
     setCapaAccepted(true);
-    proceed(false);
-  };
-
-  const handleOverrideConfirm = () => {
-    if (!override.overrideJustification.trim()) return;
-    override.confirmOverride();
-    // Confirming an override is also a final decision — go to the summary.
-    // Pass `true` explicitly since the confirmed state hasn't committed yet.
-    proceed(true);
+    proceed();
   };
 
   const handleReject = () => {
@@ -264,9 +188,6 @@ export function useCapaReview() {
     capaParsed,
     chatOpen,
     setChatOpen,
-    isOverrideEditing: override.isOverrideEditing,
-    setIsOverrideEditing: override.setIsOverrideEditing,
-    overrideConfirmed: override.overrideConfirmed,
     capaAccepted,
     setCapaAccepted,
     correction,
@@ -281,18 +202,12 @@ export function useCapaReview() {
     setDueDate,
     showWeakCapaWarning,
     decisionMade,
-    showOverrideDialog: override.showOverrideDialog,
-    setShowOverrideDialog: override.setShowOverrideDialog,
-    overrideJustification: override.overrideJustification,
-    setOverrideJustification: override.setOverrideJustification,
     showRejectDialog: override.showRejectDialog,
     setShowRejectDialog: override.setShowRejectDialog,
     rejectJustification: override.rejectJustification,
     setRejectJustification: override.setRejectJustification,
     proceed,
-    handleCancelOverride,
     handleAccept,
-    handleOverrideConfirm,
     handleReject,
   };
 }

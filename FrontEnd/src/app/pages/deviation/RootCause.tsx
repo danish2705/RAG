@@ -1,8 +1,6 @@
 import { useNavigate } from "react-router";
 import {
   DecisionAction,
-  OverrideDialog,
-  OverrideBar,
   RejectDialog,
   StepProgressBar,
 } from "../../components/eventIntake";
@@ -23,8 +21,6 @@ export function RootCause() {
     rcaParsed,
     chatOpen,
     setChatOpen,
-    isOverrideEditing,
-    overrideConfirmed,
     primaryRootCause,
     setPrimaryRootCause,
     immediateCause,
@@ -33,10 +29,6 @@ export function RootCause() {
     setContributingFactors,
     evidence,
     setEvidence,
-    showOverrideDialog,
-    setShowOverrideDialog,
-    overrideJustification,
-    setOverrideJustification,
     showRejectDialog,
     setShowRejectDialog,
     rejectJustification,
@@ -44,10 +36,6 @@ export function RootCause() {
     isGeneratingCAPA,
     capaError,
     handleAccept,
-    handleOverrideClick,
-    handleSaveChanges,
-    handleCancelOverride,
-    handleOverrideConfirm,
     handleReject,
     llmFailure,
   } = useRootCauseReview();
@@ -66,13 +54,6 @@ export function RootCause() {
           classification={result.stages?.classification?.parsed?.classification}
         />
 
-        <OverrideBar
-          isOverrideEditing={isOverrideEditing}
-          overrideConfirmed={overrideConfirmed}
-          onCancelOverride={handleCancelOverride}
-          cancelDisabled={isGeneratingCAPA}
-        />
-
         <div className="space-y-6">
           <RcaConfidenceCard score={rcaParsed.confidence_score} />
 
@@ -81,8 +62,6 @@ export function RootCause() {
             originalPrimaryCause={rcaParsed.primary_root_cause}
             immediateCause={immediateCause}
             originalImmediateCause={rcaParsed.immediate_cause}
-            isOverrideEditing={isOverrideEditing}
-            overrideConfirmed={overrideConfirmed}
             onPrimaryChange={setPrimaryRootCause}
             onImmediateChange={setImmediateCause}
           />
@@ -92,8 +71,6 @@ export function RootCause() {
             label=""
             value={contributingFactors}
             originalValue={(rcaParsed.contributing_factors ?? []).join("\n")}
-            isOverrideEditing={isOverrideEditing}
-            overrideConfirmed={overrideConfirmed}
             onChange={setContributingFactors}
           />
 
@@ -102,39 +79,19 @@ export function RootCause() {
             label=""
             value={evidence}
             originalValue={(rcaParsed.evidence ?? []).join("\n")}
-            isOverrideEditing={isOverrideEditing}
-            overrideConfirmed={overrideConfirmed}
             onChange={setEvidence}
           />
 
           <DecisionAction
-            acceptLabel="Accept & Continue to CAPA"
             acceptLoadingLabel="Generating CAPA..."
             onAccept={handleAccept}
-            isOverrideEditing={isOverrideEditing}
-            overrideLabel="Override Root Cause"
-            onOverrideClick={handleOverrideClick}
-            onSaveChanges={handleSaveChanges}
-            rejectLabel="Reject Root Cause"
             onReject={() => setShowRejectDialog(true)}
             isLoading={isGeneratingCAPA}
             error={capaError}
             errorTitle="CAPA generation failed"
-            footerText="Your decision will be logged in the audit trail. Accepting or overriding generates CAPA recommendations — it only starts now, not before you decide."
+            footerText="Your decision will be logged in the audit trail. Accepting generates CAPA recommendations using whatever is currently in the form above."
           />
         </div>
-
-        <OverrideDialog
-          open={showOverrideDialog}
-          onOpenChange={setShowOverrideDialog}
-          title="Override Root Cause"
-          subjectLabel="the root cause analysis"
-          value={overrideJustification}
-          onChange={setOverrideJustification}
-          onCancel={() => setShowOverrideDialog(false)}
-          onConfirm={handleOverrideConfirm}
-          isLoading={isGeneratingCAPA}
-        />
 
         <RejectDialog
           open={showRejectDialog}

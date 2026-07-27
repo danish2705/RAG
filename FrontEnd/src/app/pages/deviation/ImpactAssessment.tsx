@@ -1,8 +1,6 @@
 import { useNavigate } from "react-router";
 import {
   DecisionAction,
-  OverrideDialog,
-  OverrideBar,
   RejectDialog,
   StepProgressBar,
 } from "../../components/eventIntake";
@@ -24,12 +22,6 @@ export function ImpactAssessment() {
     chatOpen,
     setChatOpen,
     assessments,
-    isOverrideEditing,
-    overrideConfirmed,
-    showOverrideDialog,
-    setShowOverrideDialog,
-    overrideJustification,
-    setOverrideJustification,
     showRejectDialog,
     setShowRejectDialog,
     rejectJustification,
@@ -42,10 +34,6 @@ export function ImpactAssessment() {
     updateSeverity,
     updateDescription,
     handleAccept,
-    handleOverrideClick,
-    handleSaveChanges,
-    handleCancelOverride,
-    handleOverrideConfirm,
     handleReject,
   } = useImpactAssessmentReview();
 
@@ -60,13 +48,6 @@ export function ImpactAssessment() {
       >
         <StepProgressBar classification={classificationParsed.classification} />
 
-        <OverrideBar
-          isOverrideEditing={isOverrideEditing}
-          overrideConfirmed={overrideConfirmed}
-          onCancelOverride={handleCancelOverride}
-          overriddenLabel="Overriden"
-        />
-
         <div className="space-y-6">
           <ImpactConfidenceCard
             score={impactParsed.confidence_score}
@@ -79,8 +60,6 @@ export function ImpactAssessment() {
                 key={assessment.key}
                 assessment={assessment}
                 index={index}
-                isOverrideEditing={isOverrideEditing}
-                overrideConfirmed={overrideConfirmed}
                 onSeverityChange={updateSeverity}
                 onDescriptionChange={updateDescription}
               />
@@ -88,19 +67,13 @@ export function ImpactAssessment() {
           </div>
 
           <DecisionAction
-            acceptLabel="Accept & Continue to Root Cause Analysis"
             acceptLoadingLabel="Generating Root Cause Analysis..."
             onAccept={handleAccept}
-            isOverrideEditing={isOverrideEditing}
-            overrideLabel="Override Assessment"
-            onOverrideClick={handleOverrideClick}
-            onSaveChanges={handleSaveChanges}
-            rejectLabel="Reject Assessment"
             onReject={() => setShowRejectDialog(true)}
             isLoading={isGeneratingRCA}
             error={rcaError}
             errorTitle="Root cause analysis failed"
-            footerText="Your decision will be logged in the audit trail. Accepting or overriding runs root cause analysis — it only starts now, not before you decide."
+            footerText="Your decision will be logged in the audit trail. Accepting runs root cause analysis using whatever is currently in the form above."
           />
         </div>
 
@@ -108,18 +81,6 @@ export function ImpactAssessment() {
           open={showDescriptionWarning}
           onOpenChange={setShowDescriptionWarning}
           warningCards={warningCards}
-        />
-
-        <OverrideDialog
-          open={showOverrideDialog}
-          onOpenChange={setShowOverrideDialog}
-          title="Override Impact Assessment"
-          subjectLabel="the assessment"
-          value={overrideJustification}
-          onChange={setOverrideJustification}
-          onCancel={() => setShowOverrideDialog(false)}
-          onConfirm={handleOverrideConfirm}
-          isLoading={isGeneratingRCA}
         />
 
         <RejectDialog

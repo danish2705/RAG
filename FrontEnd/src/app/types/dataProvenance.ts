@@ -168,3 +168,19 @@ export function markModified<T>(
 export function unwrapField<T>(field: DataField<T>): T {
   return field.value;
 }
+
+function valuesEqual(a: unknown, b: unknown): boolean {
+  // Arrays (and the string[] rationale/list fields used throughout) are
+  // compared by value rather than reference.
+  if (Array.isArray(a) || Array.isArray(b)) {
+    return JSON.stringify(a) === JSON.stringify(b);
+  }
+  return a === b;
+}
+
+// Build a DataField by comparing the live edited value against the AI-generated original.
+export function autoField<T>(original: T, edited: T): DataField<T> {
+  return valuesEqual(original, edited)
+    ? aiField(original)
+    : modifiedField(edited, original);
+}

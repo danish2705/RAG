@@ -36,6 +36,19 @@ interface RecordsTableProps {
   onDeleteCase?: (record: any) => void;
 }
 
+function toTitleCase(value: string): string {
+  if (!value) return "—";
+
+  return value
+    .replace(/[_-]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .map(
+      (word) =>
+        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    )
+    .join(" ");
+}
 export const RecordsTable: React.FC<RecordsTableProps> = ({
   loading,
   error,
@@ -80,11 +93,13 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow>
-              <TableHead className="w-32 font-semibold">Records ID</TableHead>
-              <TableHead className="w-44 font-semibold">
+              <TableHead className="w-32 text-sm font-semibold text-gray-900 dark:text-white">
+                Records ID
+              </TableHead>
+              <TableHead className="w-44 text-sm font-semibold text-gray-900 dark:text-white">
                 <button
                   onClick={() => onSort?.("submittedBy")}
-                  className="flex items-center gap-1 hover:text-foreground transition-colors"
+                  className="flex items-center gap-1 hover:opacity-80 transition-colors text-sm"
                 >
                   Submitted By{" "}
                   <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
@@ -94,17 +109,17 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
               <TableHead className="w-44 font-semibold">
                 <button
                   onClick={() => onSort?.("classification")}
-                  className="flex items-center gap-1 hover:text-foreground transition-colors"
+                  className="flex items-center gap-1 hover:opacity-80 transition-colors text-sm"
                 >
                   Classification{" "}
                   <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
               </TableHead>
               {/* 1. Renamed Column: Saved Date & Time */}
-              <TableHead className="w-52 font-semibold">
+              <TableHead className="w-52 text-sm font-semibold text-gray-900 dark:text-white text-center">
                 <button
                   onClick={() => onSort?.("savedOn")}
-                  className="flex items-center gap-1 hover:text-foreground transition-colors"
+                  className="flex items-center justify-center gap-1 hover:opacity-80 transition-colors w-full text-sm"
                 >
                   Saved Date & Time{" "}
                   <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
@@ -115,7 +130,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                 Status
               </TableHead>
               {/* 2. Renamed Column: Actions */}
-              <TableHead className="w-28 text-center font-semibold">
+              <TableHead className="w-28 text-center text-sm font-semibold text-gray-900 dark:text-white">
                 Actions
               </TableHead>
             </TableRow>
@@ -138,13 +153,13 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                   key={record.uiId || record.id || idx}
                   className="hover:bg-muted/40 transition-colors"
                 >
-                  <TableCell className="font-mono text-xs font-semibold text-gray-900 dark:text-white">
+                  <TableCell className="text-xs font-medium truncate">
                     {record.uiId || `#${record.id?.slice(0, 8)}`}
                   </TableCell>
                   <TableCell className="font-medium text-sm text-foreground">
-                    {record.submittedBy || record.user || "N/A"}
+                    {toTitleCase(record.submittedBy || record.user || "") || "N/A"}
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground w-[220px] truncate">
+                  <TableCell className="text-xs text-gray-900 dark:text-white overflow-hidden">
                     {record.query || record.description ? (
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -176,7 +191,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                     </Badge>
                   </TableCell>
                   {/* Formatted timestamp, auto-detected to the viewer's own timezone, dd-mm-yyyy */}
-                  <TableCell className="text-xs font-mono text-muted-foreground whitespace-nowrap">
+                  <TableCell className="text-xs font-mono text-gray-900 dark:text-white whitespace-nowrap text-center">
                     {formatTimestamp(record.savedOn || record.timestamp, {
                       dateStyle: "numeric",
                     })}

@@ -28,7 +28,19 @@ const STAGE_LABELS: Record<LlmRetryStage, string> = {
   implementation_control: "Implementation & Control",
   final_summary: "Final Summary",
 };
+export function toTitleCase(value: string): string {
+  if (!value) return "";
 
+  return value
+    .replace(/[_-]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .map(
+      (word) =>
+        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    )
+    .join(" ");
+}
 export function PendingAiReviewsTable({
   entries,
   updatingId,
@@ -74,7 +86,7 @@ export function PendingAiReviewsTable({
                 <TableCell className="font-bold text-foreground">
                   {entry.full_name}
                 </TableCell>
-                <TableCell className="max-w-[220px] text-sm text-muted-foreground truncate">
+                <TableCell className="max-w-[220px] text-xs text-gray-900 dark:text-white truncate">
                   {entry.query_text ? (
                     <Tooltip>
                       <TooltipTrigger asChild>

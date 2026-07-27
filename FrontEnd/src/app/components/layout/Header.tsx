@@ -242,9 +242,20 @@ export function Header() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors" />
-                {unreadCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-600 font-bold animate-pulse">
+                <Bell className="h-6 w-6 text-muted-foreground hover:text-foreground transition-colors" />                {unreadCount > 0 && (
+                  <Badge
+                                  className="
+                  absolute -top-0.5 -right-0.5
+                  h-4 w-4
+                  p-0
+                  rounded-full
+                  flex items-center justify-center
+                  bg-red-600 text-white
+                  text-[9px] font-bold
+                  leading-none
+                  border-0
+                "
+                  >
                     {unreadCount}
                   </Badge>
                 )}

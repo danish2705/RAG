@@ -13,10 +13,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../ui/tooltip";
-import { Bot, Trash2, Pencil, PlusCircle, Settings2 } from "lucide-react";
+import { Bot, Trash2, Pencil, PlusCircle, Settings2, User } from "lucide-react";
 import type { AuditLogEntry } from "../../types/audit";
 import { formatTimestamp } from "../../utils/timezone";
 import { truncateWords } from "../../utils/queryPreview";
+import { Card, CardContent } from "../ui/card";
 
 function renderValue(val: unknown): string {
   if (val === null || val === undefined) return "—";

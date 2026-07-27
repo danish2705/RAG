@@ -18,7 +18,7 @@ import {
   SummaryRcaSection,
   SummaryCapaSection,
   SummarySaveSection,
-}  from "../../components/deviation/SummaryCards";
+} from "../../components/deviation/SummaryCards";
 
 export function Summary() {
   const {
@@ -33,15 +33,8 @@ export function Summary() {
     isSaving,
     isSaved,
     saveError,
-    showSavedByDialog,
-    setShowSavedByDialog,
-    savedByName,
-    setSavedByName,
-    savedByError,
-    setSavedByError,
     impactEntries,
     handleSaveClick,
-    handleConfirmSave,
     navigate,
   } = useSummaryReview();
 
@@ -63,16 +56,6 @@ export function Summary() {
         <StepProgressBar
           classification={classificationParsed.classification}
           capaAccepted={true}
-        />
-
-        <SavedByDialog
-          open={showSavedByDialog}
-          onOpenChange={setShowSavedByDialog}
-          savedByName={savedByName}
-          setSavedByName={setSavedByName}
-          savedByError={savedByError}
-          setSavedByError={setSavedByError}
-          onConfirm={handleConfirmSave}
         />
 
         <div className="mb-6 flex items-center gap-3">

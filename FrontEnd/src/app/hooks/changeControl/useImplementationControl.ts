@@ -329,9 +329,9 @@ export function useImplementationControl() {
         }
       : null;
 
-  const proceed = () => {
+  const proceed = (confirmedOverride: boolean = override.overrideConfirmed) => {
     if (!result || !implementationParsed) return;
-    const provenance = buildProvenance(override.overrideConfirmed);
+    const provenance = buildProvenance(confirmedOverride);
     mergePipelineResult({
       stages: {
         ...result.stages,
@@ -346,7 +346,12 @@ export function useImplementationControl() {
   };
 
   // Handlers
-  const handleAccept = () => setImplementationAccepted(true);
+  // Accepting the implementation plan is the final decision for the change
+  // control flow, so it advances straight to the summary (no extra button).
+  const handleAccept = () => {
+    setImplementationAccepted(true);
+    proceed(false);
+  };
   const handleOverrideClick = () => override.setIsOverrideEditing(true);
   const handleSaveChanges = () => override.setShowOverrideDialog(true);
 
@@ -372,6 +377,9 @@ export function useImplementationControl() {
   const handleOverrideConfirm = () => {
     if (!override.overrideJustification.trim()) return;
     override.confirmOverride();
+    // Confirming an override is also a final decision — go to the summary.
+    // Pass `true` explicitly since the confirmed state hasn't committed yet.
+    proceed(true);
   };
 
   const handleReject = () => {

@@ -18,7 +18,7 @@ const DEVIATION_STEP_ROUTES: Record<string, number> = {
   "/deviation/impact-assessment": 2,
   "/deviation/root-cause": 3,
   "/deviation/capa": 4,
-  "/deviation/summary": 4,
+  "/deviation/summary": 5,
 };
 
 // NOTE: keys must match routes.tsx exactly.
@@ -32,7 +32,7 @@ const CHANGE_CONTROL_STEP_ROUTES: Record<string, number> = {
   "/change-control/risk-criticality": 3,
   "/change-control/validation-testing": 4,
   "/change-control/implementation": 5,
-  "/change-control/summary": 5,
+  "/change-control/summary": 6,
 };
 
 const CAPA_STEP_INDEX = 4;
@@ -46,6 +46,7 @@ function getDeviationSteps(classification?: Classification) {
     { label: "Severity" },
     { label: "RCA" },
     { label: "CAPA" },
+    { label: "Summary" },
   ];
 }
 
@@ -58,6 +59,7 @@ function getChangeControlSteps(classification?: Classification) {
     { label: "Risk" },
     { label: "Validation" },
     { label: "Implementation" },
+    { label: "Summary" },
   ];
 }
 
@@ -141,7 +143,6 @@ function DeviationBar({
   implementationAccepted?: boolean;
 }) {
   const currentStep = DEVIATION_STEP_ROUTES[pathname] ?? 0;
-  const isOnSummary = pathname === "/deviation/summary";
   const steps = getDeviationSteps(classification);
 
   return (
@@ -149,9 +150,11 @@ function DeviationBar({
       steps={steps}
       currentStep={currentStep}
       isStepCompleted={(index) =>
+        // Everything before the current step is done. Once we reach the
+        // Summary step, every prior step (including CAPA) is already
+        // green via `index < currentStep`.
         index < currentStep ||
-        (index === CAPA_STEP_INDEX &&
-          (capaAccepted || implementationAccepted || isOnSummary))
+        (index === CAPA_STEP_INDEX && (capaAccepted || implementationAccepted))
       }
     />
   );
@@ -169,7 +172,6 @@ function ChangeControlBar({
   changeControlStepAccepted?: boolean;
 }) {
   const currentStep = CHANGE_CONTROL_STEP_ROUTES[pathname] ?? 0;
-  const isOnSummary = pathname === "/change-control/summary";
   const steps = getChangeControlSteps(classification);
 
   return (
@@ -177,11 +179,11 @@ function ChangeControlBar({
       steps={steps}
       currentStep={currentStep}
       isStepCompleted={(index) =>
+        // On the Summary step every prior step (including Implementation)
+        // is already green via `index < currentStep`.
         index < currentStep ||
-        (index === CC_IMPLEMENTATION_STEP_INDEX &&
-          (implementationAccepted || isOnSummary)) ||
-        (index === currentStep &&
-          (changeControlStepAccepted || isOnSummary))
+        (index === CC_IMPLEMENTATION_STEP_INDEX && implementationAccepted) ||
+        (index === currentStep && changeControlStepAccepted)
       }
     />
   );

@@ -1,116 +1,261 @@
-import { AIAssistant } from "../../components/chat/AiAssistant";
-import { useSummary } from "../../hooks/changeControl/useSummary";
-import {
-  NoSummaryDataGuard,
-  ClassificationSummaryCard,
-  ChangeImpactSummarySection,
-  RiskCriticalitySummarySection,
-  ValidationTestingSummarySection,
-  ImplementationSummarySection,
-  SummarySaveSection,
-  SavedByDialog,
-} from "../../components/changeControl/SummaryCards";
+import { Check } from "lucide-react";
+import { useLocation } from "react-router";
 
-export function ChangecontrolSummary() {
-  const {
-    navigate,
-    chatOpen,
-    setChatOpen,
-    result,
-    classificationParsed,
-    changeImpactParsed,
-    riskParsed,
-    validationTestingParsed,
-    implementationParsed,
-    provenance,
-    isSaving,
-    isSaved,
-    saveError,
-    showSavedByDialog,
-    setShowSavedByDialog,
-    savedByName,
-    setSavedByName,
-    savedByError,
-    setSavedByError,
-    handleSaveClick,
-    handleConfirmSave,
-  } = useSummary();
+export type Classification = "Deviation" | "Change Control" | "Hybrid";
 
-  // Guard: no submission yet
-  if (
-    !result ||
-    !classificationParsed ||
-    !changeImpactParsed ||
-    !riskParsed ||
-    !implementationParsed
-  ) {
-    return (
-      <NoSummaryDataGuard
-        onGoBack={() => navigate("/change-control/implementation")}
-      />
-    );
+interface StepProgressBarProps {
+  classification?: Classification;
+  capaAccepted?: boolean;
+  implementationAccepted?: boolean;
+  changeControlStepAccepted?: boolean;
+}
+
+// Intake ("/deviation") and Classification ("/deviation/ai-recommendation")
+// are shared by both flows — only the routes after classification diverge.
+const DEVIATION_STEP_ROUTES: Record<string, number> = {
+  "/deviation": 0,
+  "/deviation/ai-recommendation": 1,
+  "/deviation/impact-assessment": 2,
+  "/deviation/root-cause": 3,
+  "/deviation/capa": 4,
+  "/deviation/summary": 5,
+};
+
+// NOTE: keys must match routes.tsx exactly.
+// routes.tsx defines "change-control/change-impact-assessment", not
+// "change-control/impact-assessment" — that mismatch was making this
+// map miss on that page and silently fall back to step 0.
+const CHANGE_CONTROL_STEP_ROUTES: Record<string, number> = {
+  "/deviation": 0,
+  "/deviation/ai-recommendation": 1,
+  "/change-control/change-impact-assessment": 2,
+  "/change-control/risk-criticality": 3,
+  "/change-control/validation-testing": 4,
+  "/change-control/implementation": 5,
+  "/change-control/summary": 6,
+};
+
+const CAPA_STEP_INDEX = 4;
+const CC_IMPLEMENTATION_STEP_INDEX = 5;
+
+function getDeviationSteps(classification?: Classification) {
+  const step2 = classification ?? "Classification";
+  return [
+    { label: "Intake" },
+    { label: step2 },
+    { label: "Severity" },
+    { label: "RCA" },
+    { label: "CAPA" },
+    { label: "Summary" },
+  ];
+}
+
+function getChangeControlSteps(classification?: Classification) {
+  const step1 = classification ?? "Classification";
+  return [
+    { label: "Intake" },
+    { label: step1 },
+    { label: "Impact" },
+    { label: "Risk" },
+    { label: "Validation" },
+    { label: "Implementation" },
+    { label: "Summary" },
+  ];
+}
+
+export function StepProgressBar({
+  classification,
+  capaAccepted,
+  implementationAccepted,
+  changeControlStepAccepted,
+}: StepProgressBarProps) {
+  const { pathname } = useLocation();
+
+  const deviationBar = (
+    <DeviationBar
+      pathname={pathname}
+      classification={classification}
+      capaAccepted={capaAccepted}
+      implementationAccepted={implementationAccepted}
+    />
+  );
+
+  const changeControlBar = (
+    <ChangeControlBar
+      pathname={pathname}
+      classification={classification}
+      implementationAccepted={implementationAccepted}
+      changeControlStepAccepted={changeControlStepAccepted}
+    />
+  );
+
+  // Explicit classification takes priority
+  if (classification === "Deviation") {
+    return <div className="mb-6">{deviationBar}</div>;
   }
 
+  if (classification === "Change Control") {
+    return <div className="mb-6">{changeControlBar}</div>;
+  }
+
+  // If classification isn't available, infer from route
+  if (pathname.startsWith("/change-control")) {
+    return <div className="mb-6">{changeControlBar}</div>;
+  }
+
+  if (
+    pathname.startsWith("/deviation") &&
+    pathname !== "/deviation" &&
+    pathname !== "/deviation/ai-recommendation"
+  ) {
+    return <div className="mb-6">{deviationBar}</div>;
+  }
+
+  // Only show both bars on shared pages
   return (
-    <div className="relative h-full w-full">
-      <div
-        className={`min-h-screen p-6 transition-[padding] duration-200 ${chatOpen ? "pr-80" : "pr-6"}`}
-      >
-        {/* Full step-by-step pipeline data, mirroring the Deviation Summary page */}
-        <div className="space-y-6 mb-6">
-          <ClassificationSummaryCard
-            parsed={classificationParsed}
-            provenance={provenance}
-          />
-
-          <ChangeImpactSummarySection
-            parsed={changeImpactParsed}
-            provenance={provenance}
-          />
-
-          {riskParsed && (
-            <RiskCriticalitySummarySection
-              parsed={riskParsed}
-              provenance={provenance}
-            />
-          )}
-
-          {validationTestingParsed && (
-            <ValidationTestingSummarySection
-              parsed={validationTestingParsed}
-              provenance={provenance}
-            />
-          )}
-
-          <ImplementationSummarySection
-            parsed={implementationParsed}
-            provenance={provenance}
-          />
-        </div>
-
-        <SummarySaveSection
-          saveError={saveError}
-          isSaving={isSaving}
-          isSaved={isSaved}
-          onSave={handleSaveClick}
-        />
-
-        <SavedByDialog
-          open={showSavedByDialog}
-          onOpenChange={setShowSavedByDialog}
-          savedByName={savedByName}
-          setSavedByName={setSavedByName}
-          savedByError={savedByError}
-          setSavedByError={setSavedByError}
-          onConfirm={handleConfirmSave}
-        />
+    <div className="space-y-3 mb-6">
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 px-1">
+          Deviation Path
+        </p>
+        {deviationBar}
       </div>
 
-      <div className="fixed top-16 right-0 bottom-0 z-40">
-        <AIAssistant
-          isOpen={chatOpen}
-          onToggle={() => setChatOpen(!chatOpen)}
-        />
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 px-1">
+          Change Control Path
+        </p>
+        {changeControlBar}
+      </div>
+    </div>
+  );
+}
+
+function DeviationBar({
+  pathname,
+  classification,
+  capaAccepted,
+  implementationAccepted,
+}: {
+  pathname: string;
+  classification?: Classification;
+  capaAccepted?: boolean;
+  implementationAccepted?: boolean;
+}) {
+  const currentStep = DEVIATION_STEP_ROUTES[pathname] ?? 0;
+  const steps = getDeviationSteps(classification);
+
+  return (
+    <ProgressBarShell
+      steps={steps}
+      currentStep={currentStep}
+      isStepCompleted={(index) =>
+        // Everything before the current step is done. Once we reach the
+        // Summary step, every prior step (including CAPA) is already
+        // green via `index < currentStep`.
+        index < currentStep ||
+        (index === CAPA_STEP_INDEX && (capaAccepted || implementationAccepted))
+      }
+    />
+  );
+}
+
+function ChangeControlBar({
+  pathname,
+  classification,
+  implementationAccepted,
+  changeControlStepAccepted,
+}: {
+  pathname: string;
+  classification?: Classification;
+  implementationAccepted?: boolean;
+  changeControlStepAccepted?: boolean;
+}) {
+  const currentStep = CHANGE_CONTROL_STEP_ROUTES[pathname] ?? 0;
+  const steps = getChangeControlSteps(classification);
+
+  return (
+    <ProgressBarShell
+      steps={steps}
+      currentStep={currentStep}
+      isStepCompleted={(index) =>
+        // On the Summary step every prior step (including Implementation)
+        // is already green via `index < currentStep`.
+        index < currentStep ||
+        (index === CC_IMPLEMENTATION_STEP_INDEX && implementationAccepted) ||
+        (index === currentStep && changeControlStepAccepted)
+      }
+    />
+  );
+}
+
+function ProgressBarShell({
+  steps,
+  currentStep,
+  isStepCompleted,
+}: {
+  steps: { label: string }[];
+  currentStep: number;
+  isStepCompleted: (index: number) => boolean;
+}) {
+  return (
+    <div
+      className="bg-card border border-border rounded-xl px-6 py-4 w-full"
+      style={{ fontFamily: "'Inter', sans-serif" }}
+    >
+      <div className="flex items-center w-full">
+        {steps.map((step, index) => {
+          const isCompleted = isStepCompleted(index);
+          const isActive = index === currentStep && !isCompleted;
+
+          return (
+            <div
+              key={step.label}
+              className={`flex items-center ${index < steps.length - 1 ? "flex-1" : ""}`}
+            >
+              <div className="flex items-center gap-2 shrink-0">
+                <div
+                  className={`
+                    flex items-center justify-center rounded-full w-8 h-8 text-sm font-semibold transition-all
+                    ${
+                      isCompleted
+                        ? "bg-green-500 text-white"
+                        : isActive
+                          ? "bg-blue-600 text-white"
+                          : "bg-muted text-muted-foreground border border-border"
+                    }
+                  `}
+                >
+                  {isCompleted ? (
+                    <Check className="w-4 h-4 stroke-[2.5]" />
+                  ) : (
+                    <span>{index + 1}</span>
+                  )}
+                </div>
+
+                <span
+                  className={`text-sm font-medium whitespace-nowrap ${
+                    isActive
+                      ? "text-foreground"
+                      : isCompleted
+                        ? "text-muted-foreground"
+                        : "text-muted-foreground"
+                  }`}
+                >
+                  {step.label}
+                </span>
+              </div>
+
+              {index < steps.length - 1 && (
+                <div
+                  className={`mx-3 h-0.5 flex-1 rounded-full transition-all ${
+                    index < currentStep ? "bg-green-400" : "bg-muted"
+                  }`}
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

@@ -195,9 +195,9 @@ export function useCapaReview() {
     due_date: form.dueDate,
   });
 
-  const proceed = () => {
+  const proceed = (confirmedOverride: boolean = override.overrideConfirmed) => {
     if (!result) return;
-    const capaProvenance = buildCAPAProvenance(override.overrideConfirmed);
+    const capaProvenance = buildCAPAProvenance(confirmedOverride);
     mergePipelineResult({
       stages: {
         ...result.stages,
@@ -237,9 +237,19 @@ export function useCapaReview() {
     override.setIsOverrideEditing(false);
   };
 
+  // Accepting the CAPA is the final decision for the deviation flow, so it
+  // advances straight to the summary (no extra "Get Summary" button).
+  const handleAccept = () => {
+    setCapaAccepted(true);
+    proceed(false);
+  };
+
   const handleOverrideConfirm = () => {
     if (!override.overrideJustification.trim()) return;
     override.confirmOverride();
+    // Confirming an override is also a final decision — go to the summary.
+    // Pass `true` explicitly since the confirmed state hasn't committed yet.
+    proceed(true);
   };
 
   const handleReject = () => {
@@ -281,6 +291,7 @@ export function useCapaReview() {
     setRejectJustification: override.setRejectJustification,
     proceed,
     handleCancelOverride,
+    handleAccept,
     handleOverrideConfirm,
     handleReject,
   };

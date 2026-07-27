@@ -9,6 +9,7 @@ import {
   getEventsBySite,
   getSeverityDistribution,
   getEventsByStatusDistribution,
+  getPendingAiReviewsCount,
   type DashboardDateRange,
 } from "../repository/dashboardRepository.js";
 
@@ -62,6 +63,7 @@ export async function getDashboardSummary(
     eventsBySite,
     severityDistribution,
     eventsByStatusRaw,
+    pendingAiReviews,
   ] = await Promise.all([
     getDashboardCounts(range),
     getRecurrenceRate(range),
@@ -71,10 +73,16 @@ export async function getDashboardSummary(
     getEventsBySite(range),
     getSeverityDistribution(range),
     getEventsByStatusDistribution(range),
+    getPendingAiReviewsCount(range),
   ]);
 
   const totalEvents = counts.totalDeviations + counts.totalChangeControls;
-  const openCases = counts.openDeviations + counts.openChangeControls;
+  // Open Cases = halted-for-human-review deviations/change controls that
+  // already exist as a case, PLUS queries that never made it to a case at
+  // all because the AI pipeline halted first (Pending AI Reviews). Both are
+  // "open work requiring action or review".
+  const openCases =
+    counts.openDeviations + counts.openChangeControls + pendingAiReviews;
 
   const eventsByType = buildEventsByTypeChart(counts).map((d) => ({
     ...d,

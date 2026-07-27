@@ -20,6 +20,7 @@ import {
   FlaskConical,
   Link2,
   ListChecks,
+  RefreshCcw,
   Users,
 } from "lucide-react";
 import { AIAssistant } from "../../components/chat/AiAssistant";
@@ -132,7 +133,7 @@ export function ValidationTesting() {
             icon={<ListChecks className="h-4 w-4 text-blue-500" />}
             title={VALIDATION_TESTING_FIELD_LABELS.scenario_based_testing}
             fieldId="scenarioTesting"
-            label="One test scenario per line"
+            label="One test scenario"
             value={scenarioTesting}
             originalValue={validationParsed.scenario_based_testing.join("\n")}
             isOverrideEditing={isOverrideEditing}
@@ -142,10 +143,23 @@ export function ValidationTesting() {
           />
 
           <ListTextareaCard
+            icon={<RefreshCcw className="h-4 w-4 text-blue-500" />}
+            title={VALIDATION_TESTING_FIELD_LABELS.regression_scope}
+            fieldId="regressionScope"
+            label="Existing functionality to retest"
+            value={regressionScope}
+            originalValue={validationParsed.regression_scope.join("\n")}
+            isOverrideEditing={isOverrideEditing}
+            overrideConfirmed={overrideConfirmed}
+            onChange={setRegressionScope}
+            placeholder="Describe the regression testing scope..."
+          />
+
+          <ListTextareaCard
             icon={<Users className="h-4 w-4 text-blue-500" />}
             title={VALIDATION_TESTING_FIELD_LABELS.uat_requirements}
             fieldId="uatRequirements"
-            label="One UAT requirement per line"
+            label="One UAT requirement"
             value={uatRequirements}
             originalValue={validationParsed.uat_requirements.join("\n")}
             isOverrideEditing={isOverrideEditing}
@@ -158,7 +172,7 @@ export function ValidationTesting() {
             icon={<Link2 className="h-4 w-4 text-blue-500" />}
             title={VALIDATION_TESTING_FIELD_LABELS.traceability}
             fieldId="traceability"
-            label="One requirement / procedure link per line"
+            label="One requirement / procedure link"
             value={traceability}
             originalValue={validationParsed.traceability.join("\n")}
             isOverrideEditing={isOverrideEditing}

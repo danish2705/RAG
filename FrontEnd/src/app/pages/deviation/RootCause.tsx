@@ -13,6 +13,7 @@ import {
   NoRcaDataGuard,
   RcaConfidenceCard,
   PrimaryRootCauseCard,
+  ListTextareaCard,
 } from "../../components/deviation/RootCauseCards";
 
 export function RootCause() {
@@ -84,6 +85,26 @@ export function RootCause() {
             overrideConfirmed={overrideConfirmed}
             onPrimaryChange={setPrimaryRootCause}
             onImmediateChange={setImmediateCause}
+          />
+
+          <ListTextareaCard
+            title="Contributing Factors"
+            label=""
+            value={contributingFactors}
+            originalValue={(rcaParsed.contributing_factors ?? []).join("\n")}
+            isOverrideEditing={isOverrideEditing}
+            overrideConfirmed={overrideConfirmed}
+            onChange={setContributingFactors}
+          />
+
+          <ListTextareaCard
+            title="Supporting Evidence"
+            label=""
+            value={evidence}
+            originalValue={(rcaParsed.evidence ?? []).join("\n")}
+            isOverrideEditing={isOverrideEditing}
+            overrideConfirmed={overrideConfirmed}
+            onChange={setEvidence}
           />
 
           <DecisionAction

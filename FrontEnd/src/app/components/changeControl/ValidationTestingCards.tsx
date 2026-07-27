@@ -199,7 +199,7 @@ export const ListTextareaCard = React.memo<ListTextareaCardProps>(
       <CardContent>
         <div className="space-y-2">
           <div className="flex items-center gap-2 flex-wrap">
-            <Label htmlFor={fieldId}>{label}</Label>
+            {label && <Label htmlFor={fieldId}>{label}</Label>}
             {!isOverrideEditing && (
               <ModifiedStatus
                 enabled={overrideConfirmed}

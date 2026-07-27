@@ -120,7 +120,7 @@ export const ListTextareaCard: React.FC<ListTextareaCardProps> = ({
     <CardContent>
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <Label>{label}</Label>
+          {label && <Label>{label}</Label>}
           {!isOverrideEditing && (
             <ModifiedStatus enabled={overrideConfirmed} original={originalValue} current={value} />
           )}

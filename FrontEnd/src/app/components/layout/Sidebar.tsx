@@ -5,6 +5,7 @@ import {
   Settings,
   FolderOpen,
   ClipboardPlus,
+  ClipboardCheck,
   ScrollText,
   Clock,
   Lock,
@@ -12,12 +13,48 @@ import {
 import { useAuth } from "../../context/AuthContext";
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard, allowedRoles: ["admin", "user"] },
-  { name: "Quality Event Intake", href: "/deviation", icon: ClipboardPlus, allowedRoles: ["admin", "user", "guest"] },
-  { name: "Records", href: "/records", icon: FolderOpen, allowedRoles: ["admin", "user"] },
-  { name: "Audit Logs", href: "/audit-trail", icon: ScrollText, allowedRoles: ["admin"] },
-  { name: "Pending AI Reviews", href: "/pending-ai-reviews", icon: Clock, allowedRoles: ["admin", "user"] },
-  { name: "Settings", href: "/settings", icon: Settings, allowedRoles: ["admin", "user"] },
+  {
+    name: "Dashboard",
+    href: "/",
+    icon: LayoutDashboard,
+    allowedRoles: ["admin", "user"],
+  },
+  {
+    name: "Quality Event Intake",
+    href: "/deviation",
+    icon: ClipboardPlus,
+    allowedRoles: ["admin", "user", "guest"],
+  },
+  {
+    name: "Records",
+    href: "/records",
+    icon: FolderOpen,
+    allowedRoles: ["admin", "user"],
+  },
+  {
+    name: "Approvals",
+    href: "/approvals",
+    icon: ClipboardCheck,
+    allowedRoles: ["admin", "user"],
+  },
+  {
+    name: "Audit Logs",
+    href: "/audit-trail",
+    icon: ScrollText,
+    allowedRoles: ["admin"],
+  },
+  {
+    name: "Pending AI Reviews",
+    href: "/pending-ai-reviews",
+    icon: Clock,
+    allowedRoles: ["admin", "user"],
+  },
+  {
+    name: "Settings",
+    href: "/settings",
+    icon: Settings,
+    allowedRoles: ["admin", "user"],
+  },
 ];
 
 function useDarkMode() {
@@ -138,9 +175,7 @@ export function Sidebar() {
                         {item.name}
                       </span>
                     )}
-                    {!collapsed && (
-                      <Lock className="h-3.5 w-3.5 shrink-0" />
-                    )}
+                    {!collapsed && <Lock className="h-3.5 w-3.5 shrink-0" />}
                   </div>
 
                   {/* Tooltip (collapsed mode only) */}

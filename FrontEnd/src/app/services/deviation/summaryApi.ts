@@ -9,6 +9,8 @@ export interface SaveDeviationPayload {
   status: string;
   halted_at: string | null;
   saved_by: string;
+  /** Approver name captured on the Summary submit popup (first letter capitalised). */
+  submitted_to: string;
   provenance: any;
 }
 

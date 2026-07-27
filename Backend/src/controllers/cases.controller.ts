@@ -9,6 +9,8 @@ import {
   getChangeControlCaseById,
   deleteDeviationCase,
   deleteChangeControlCase,
+  approveDeviationCase,
+  approveChangeControlCase,
   type ListCasesParams,
 } from "../repository/caseRepository.js";
 import {
@@ -29,12 +31,17 @@ function parseListParams(req: Request): ListCasesParams {
     classification:
       typeof q.classification === "string" ? q.classification : undefined,
     status: typeof q.status === "string" ? q.status : undefined,
+    submittedTo: typeof q.submittedTo === "string" ? q.submittedTo : undefined,
+    approvalStatus:
+      typeof q.approvalStatus === "string" ? q.approvalStatus : undefined,
   };
 }
 
 // SAVE: Persist a completed deviation case to the DB.
 export async function saveCase(req: Request, res: Response): Promise<void> {
   const body = req.body ?? {};
+  // `submitted_to` (the approver) rides along in the same body the client
+  // already sends; the repository defaults approval_status to 'pending'.
   const id = await saveDeviationCase(body);
 
   // The frontend already sends `provenance` carrying every field's
@@ -124,6 +131,47 @@ export async function getCaseDetail(
     return;
   }
   res.json({ ...record, case_type: "Deviation" });
+}
+
+// APPROVE ONE CASE (by id + case_type): applies the approver's edits and
+// flips approval_status to 'approved' in a single UPDATE, then snapshots the
+// approved row into the audit log. Body carries the (partial) edited
+// sections; anything omitted is left untouched via COALESCE in the repo.
+export async function approveCase(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const caseType = req.query.case_type;
+  const body = req.body ?? {};
+
+  const approvedBy =
+    typeof body.approved_by === "string" && body.approved_by.trim()
+      ? body.approved_by.trim()
+      : "Unknown";
+
+  const isChangeControl = caseType === "Change Control";
+  const updatedRow = isChangeControl
+    ? await approveChangeControlCase(id, body.updates ?? {})
+    : await approveDeviationCase(id, body.updates ?? {});
+
+  if (!updatedRow) {
+    res.status(404).json({
+      error: isChangeControl
+        ? "Change control case not found"
+        : "Deviation case not found",
+    });
+    return;
+  }
+
+  await recordAuditEntry({
+    entity_type: isChangeControl ? "Change Control" : "Deviation",
+    entity_id: id,
+    action: "approved",
+    source: "human",
+    performed_by: approvedBy,
+    record_snapshot: updatedRow,
+    reason: null,
+  });
+
+  res.json({ success: true, id, approval_status: "approved" });
 }
 
 // DELETE ONE CASE (by id + case_type): hard-deletes the row from the DB.

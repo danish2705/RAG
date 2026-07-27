@@ -1,6 +1,7 @@
 import { AIAssistant } from "../../components/chat/AiAssistant";
 import { StepProgressBar } from "../../components/eventIntake/StepProgressBar";
 import { useSummary } from "../../hooks/changeControl/useSummary";
+import { SubmitToApproverDialog } from "../../components/approvals/SubmitToApproverDialog";
 import {
   NoSummaryDataGuard,
   ClassificationSummaryCard,
@@ -9,7 +10,6 @@ import {
   ValidationTestingSummarySection,
   ImplementationSummarySection,
   SummarySaveSection,
-  SavedByDialog,
 } from "../../components/changeControl/SummaryCards";
 
 export function ChangecontrolSummary() {
@@ -29,6 +29,9 @@ export function ChangecontrolSummary() {
     saveError,
 
     handleSaveClick,
+    approverDialogOpen,
+    setApproverDialogOpen,
+    handleConfirmSubmit,
   } = useSummary();
 
   // Guard: no submission yet
@@ -93,6 +96,14 @@ export function ChangecontrolSummary() {
           isSaving={isSaving}
           isSaved={isSaved}
           onSave={handleSaveClick}
+        />
+
+        {/* Submit → collect the "Submitted to" approver name (capital first letter). */}
+        <SubmitToApproverDialog
+          open={approverDialogOpen}
+          onOpenChange={setApproverDialogOpen}
+          onConfirm={handleConfirmSubmit}
+          isSubmitting={isSaving}
         />
       </div>
 

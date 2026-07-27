@@ -13,6 +13,9 @@ export interface ListCasesParams {
   search?: string; // matches saved_by OR query (ILIKE)
   classification?: string; // exact match against classification->>'classification'
   status?: string;
+  // Approvals page filters:
+  submittedTo?: string; // case-insensitive exact match on submitted_to
+  approvalStatus?: string; // 'pending' | 'approved'
 }
 
 export interface PaginatedResult<T> {
@@ -64,6 +67,8 @@ export interface CombinedCaseRow {
   id: number | string;
   query: unknown;
   saved_by: unknown;
+  submitted_to: unknown;
+  approval_status: unknown;
   classification: unknown;
   status: unknown;
   created_at: string;
@@ -102,6 +107,16 @@ export async function getCombinedCases(
   if (params.status && params.status !== "all") {
     searchParams.push(params.status);
     conditions.push(`status = $PLACEHOLDER`);
+  }
+  // Approvals page: only rows assigned to a given approver (case-insensitive).
+  if (params.submittedTo) {
+    searchParams.push(params.submittedTo);
+    conditions.push(`LOWER(submitted_to) = LOWER($PLACEHOLDER)`);
+  }
+  // Approvals page: filter by pending / approved.
+  if (params.approvalStatus && params.approvalStatus !== "all") {
+    searchParams.push(params.approvalStatus);
+    conditions.push(`approval_status = $PLACEHOLDER`);
   }
 
   // Substitute real, sequential placeholders separately for each half of
@@ -144,13 +159,13 @@ export async function getCombinedCases(
   const offsetIdx = limitIdx + 1;
 
   const dataResult = await pool.query(
-    `SELECT id, query, saved_by, classification, status, created_at, 'Deviation' AS case_type
+    `SELECT id, query, saved_by, submitted_to, approval_status, classification, status, created_at, 'Deviation' AS case_type
      FROM deviation_cases
      ${dataWhereA}
 
      UNION ALL
 
-     SELECT id, query, saved_by, classification, status, created_at, 'Change Control' AS case_type
+     SELECT id, query, saved_by, submitted_to, approval_status, classification, status, created_at, 'Change Control' AS case_type
      FROM change_control_cases
      ${dataWhereB}
 
@@ -174,8 +189,8 @@ export async function getDeviationCaseById(
   id: string,
 ): Promise<unknown | null> {
   const result = await pool.query(
-    `SELECT id, query, saved_by, classification, impact_assessment,
-            rca, capa, status, halted_at, created_at
+    `SELECT id, query, saved_by, submitted_to, approval_status, classification,
+            impact_assessment, rca, capa, status, halted_at, created_at
      FROM deviation_cases
      WHERE id = $1`,
     [id],
@@ -187,9 +202,9 @@ export async function getChangeControlCaseById(
   id: string,
 ): Promise<unknown | null> {
   const result = await pool.query(
-    `SELECT id, query, saved_by, classification, change_impact_assessment,
-            risk_criticality, validation_testing, implementation_control,
-            final_summary, status, halted_at, created_at
+    `SELECT id, query, saved_by, submitted_to, approval_status, classification,
+            change_impact_assessment, risk_criticality, validation_testing,
+            implementation_control, final_summary, status, halted_at, created_at
      FROM change_control_cases
      WHERE id = $1`,
     [id],
@@ -210,6 +225,7 @@ export interface SaveDeviationCaseInput {
   status: unknown;
   halted_at: unknown;
   saved_by: unknown;
+  submitted_to?: unknown; // approver name captured on the Summary submit popup
 }
 
 export async function saveDeviationCase(
@@ -223,8 +239,9 @@ export async function saveDeviationCase(
 
   const result = await pool.query(
     `INSERT INTO deviation_cases
-      (query, classification, impact_assessment, rca, capa, status, halted_at, saved_by, metadata)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      (query, classification, impact_assessment, rca, capa, status, halted_at,
+       saved_by, submitted_to, approval_status, metadata)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending', $10)
      RETURNING id`,
     [
       data.query,
@@ -235,6 +252,7 @@ export async function saveDeviationCase(
       data.status,
       data.halted_at,
       data.saved_by,
+      data.submitted_to ?? null,
       JSON.stringify(metadata),
     ],
   );
@@ -345,6 +363,7 @@ export interface SaveChangeControlCaseInput {
   status: unknown;
   halted_at: unknown;
   saved_by: unknown;
+  submitted_to?: unknown; // approver name captured on the Summary submit popup
 }
 
 export async function saveChangeControlCase(
@@ -358,8 +377,8 @@ export async function saveChangeControlCase(
     `INSERT INTO change_control_cases
       (query, classification, change_impact_assessment, risk_criticality,
        validation_testing, implementation_control, final_summary,
-       status, halted_at, saved_by, metadata)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       status, halted_at, saved_by, submitted_to, approval_status, metadata)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending', $12)
      RETURNING id`,
     [
       data.query,
@@ -372,6 +391,7 @@ export async function saveChangeControlCase(
       data.status,
       data.halted_at,
       data.saved_by,
+      data.submitted_to ?? null,
       JSON.stringify(metadata),
     ],
   );
@@ -467,4 +487,105 @@ export async function getAllChangeControlCases(): Promise<unknown[]> {
      ORDER BY created_at DESC`,
   );
   return result.rows;
+}
+// ---------------------------------------------------------------------------
+// Approvals — apply the approver's edits and flip approval_status to
+// 'approved' in a single UPDATE. Only the JSON pipeline sections plus the
+// free-text query are editable in the approval modal; the immutable fields
+// (id, saved_by, submitted_to, created_at) are never touched here.
+//
+// Each `updates` value is optional: only the keys present are overwritten,
+// so a partial edit won't blank out sections the approver didn't open.
+// Returns the fully-updated row (for the audit snapshot), or null if the
+// id doesn't exist.
+// ---------------------------------------------------------------------------
+
+export interface ApproveDeviationInput {
+  query?: unknown;
+  classification?: unknown;
+  impact_assessment?: unknown;
+  rca?: unknown;
+  capa?: unknown;
+}
+
+export async function approveDeviationCase(
+  id: string,
+  updates: ApproveDeviationInput,
+): Promise<Record<string, unknown> | null> {
+  const result = await pool.query(
+    `UPDATE deviation_cases
+        SET query             = COALESCE($2, query),
+            classification    = COALESCE($3, classification),
+            impact_assessment = COALESCE($4, impact_assessment),
+            rca               = COALESCE($5, rca),
+            capa              = COALESCE($6, capa),
+            approval_status   = 'approved'
+      WHERE id = $1
+      RETURNING *`,
+    [
+      id,
+      updates.query ?? null,
+      updates.classification !== undefined
+        ? JSON.stringify(updates.classification)
+        : null,
+      updates.impact_assessment !== undefined
+        ? JSON.stringify(updates.impact_assessment)
+        : null,
+      updates.rca !== undefined ? JSON.stringify(updates.rca) : null,
+      updates.capa !== undefined ? JSON.stringify(updates.capa) : null,
+    ],
+  );
+  return result.rows[0] ?? null;
+}
+
+export interface ApproveChangeControlInput {
+  query?: unknown;
+  classification?: unknown;
+  change_impact_assessment?: unknown;
+  risk_criticality?: unknown;
+  validation_testing?: unknown;
+  implementation_control?: unknown;
+  final_summary?: unknown;
+}
+
+export async function approveChangeControlCase(
+  id: string,
+  updates: ApproveChangeControlInput,
+): Promise<Record<string, unknown> | null> {
+  const result = await pool.query(
+    `UPDATE change_control_cases
+        SET query                     = COALESCE($2, query),
+            classification            = COALESCE($3, classification),
+            change_impact_assessment  = COALESCE($4, change_impact_assessment),
+            risk_criticality          = COALESCE($5, risk_criticality),
+            validation_testing        = COALESCE($6, validation_testing),
+            implementation_control    = COALESCE($7, implementation_control),
+            final_summary             = COALESCE($8, final_summary),
+            approval_status           = 'approved'
+      WHERE id = $1
+      RETURNING *`,
+    [
+      id,
+      updates.query ?? null,
+      updates.classification !== undefined
+        ? JSON.stringify(updates.classification)
+        : null,
+      updates.change_impact_assessment !== undefined
+        ? JSON.stringify(updates.change_impact_assessment)
+        : null,
+      updates.risk_criticality !== undefined
+        ? JSON.stringify(updates.risk_criticality)
+        : null,
+      updates.validation_testing !== undefined
+        ? JSON.stringify(updates.validation_testing)
+        : null,
+      updates.implementation_control !== undefined
+        ? JSON.stringify(updates.implementation_control)
+        : null,
+      updates.final_summary !== undefined
+        ? JSON.stringify(updates.final_summary)
+        : null,
+    ],
+  );
+  return result.rows[0] ?? null;
 }

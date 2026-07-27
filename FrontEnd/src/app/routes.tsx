@@ -12,6 +12,7 @@ import { RootCause } from "./pages/deviation/RootCause";
 import { Capa } from "./pages/deviation/Capa";
 import { Summary } from "./pages/deviation/Summary";
 import { Records } from "./pages/Records";
+import { Approvals } from "./pages/Approvals";
 import { AuditLogs } from "./pages/AuditLogs";
 import { PendingAiReviews } from "./pages/PendingAiReviews";
 import { Settings } from "./pages/Settings";
@@ -80,6 +81,7 @@ export const router = createBrowserRouter([
                 Component: ChangecontrolSummary,
               },
               { path: "records", Component: Records },
+              { path: "approvals", Component: Approvals },
               { path: "pending-ai-reviews", Component: PendingAiReviews },
               { path: "settings", Component: Settings },
             ],

@@ -23,6 +23,9 @@ export function useSummaryReview() {
   const [isSaved, setIsSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  // Controls the "Submit for Approval" popup that collects the approver name.
+  const [approverDialogOpen, setApproverDialogOpen] = useState(false);
+
   const impactEntries = impactParsed
     ? Object.entries(impactParsed.impact_assessment).map(([key, val]) => ({
         key,
@@ -32,10 +35,21 @@ export function useSummaryReview() {
       }))
     : [];
 
-  // Saving is tied directly to the logged-in identity — there is no
-  // free-text "saved by" field, so a record can never be attributed to
-  // anyone other than the account that actually saved it.
-  const handleSaveClick = async () => {
+  // Step 1 — Submit button just opens the approver popup. Nothing is saved
+  // until the user confirms a "Submitted to" name in the dialog.
+  const handleSaveClick = () => {
+    if (!user?.username) {
+      setSaveError("You must be logged in to save a record.");
+      return;
+    }
+    setSaveError(null);
+    setApproverDialogOpen(true);
+  };
+
+  // Step 2 — the dialog confirmed with a validated (capitalised) approver
+  // name; now actually persist the record with submitted_to set and
+  // approval_status defaulting to 'pending' server-side.
+  const handleConfirmSubmit = async (submittedTo: string) => {
     if (!user?.username) {
       setSaveError("You must be logged in to save a record.");
       return;
@@ -54,9 +68,11 @@ export function useSummaryReview() {
         status: result!.status,
         halted_at: result!.haltedAt,
         saved_by: user.displayName || user.username,
+        submitted_to: submittedTo,
         provenance: provenance ?? null,
       });
 
+      setApproverDialogOpen(false);
       setIsSaved(true);
       setTimeout(() => {
         clearWorkflow();
@@ -66,7 +82,7 @@ export function useSummaryReview() {
       setSaveError(
         err instanceof Error
           ? err.message
-          : "Something went wrong saving the record. Please try again."
+          : "Something went wrong saving the record. Please try again.",
       );
     } finally {
       setIsSaving(false);
@@ -74,11 +90,22 @@ export function useSummaryReview() {
   };
 
   return {
-    result, classificationParsed, impactParsed, rcaParsed, capaParsed, provenance,
-    chatOpen, setChatOpen,
-    isSaving, isSaved, saveError,
+    result,
+    classificationParsed,
+    impactParsed,
+    rcaParsed,
+    capaParsed,
+    provenance,
+    chatOpen,
+    setChatOpen,
+    isSaving,
+    isSaved,
+    saveError,
     impactEntries,
     handleSaveClick,
-    navigate
+    approverDialogOpen,
+    setApproverDialogOpen,
+    handleConfirmSubmit,
+    navigate,
   };
 }

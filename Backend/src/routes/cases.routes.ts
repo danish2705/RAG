@@ -26,6 +26,11 @@ router.get("/records", asyncHandler(casesController.listCombinedRecords));
 // by the View modal, since /records only returns summary columns.
 router.get("/records/:id", asyncHandler(casesController.getCaseDetail));
 
+// Approve a record (by id + ?case_type=Deviation|Change Control). Body:
+// { approved_by: string, updates: { ...edited sections... } }. Applies the
+// approver's edits and sets approval_status = 'approved'.
+router.patch("/records/:id/approve", asyncHandler(casesController.approveCase));
+
 // Hard-delete a record (by id + ?case_type=Deviation|Change Control), body:
 // { deleted_by: string, reason?: string }. The full row is snapshotted into
 // the audit log before it's removed.

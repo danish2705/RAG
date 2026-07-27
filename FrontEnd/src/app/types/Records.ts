@@ -42,6 +42,10 @@ export interface DeviationCase {
   id: number;
   query: string;
   saved_by: string;
+  /** Approver name, captured on the Summary submit popup. */
+  submitted_to: string | null;
+  /** 'pending' on save, 'approved' once the approver approves. */
+  approval_status: "pending" | "approved";
   classification: ClassificationParsed | null;
   impact_assessment: ImpactAssessmentParsed | null;
   rca: RCAResult | null;
@@ -110,6 +114,10 @@ export interface ChangeControlCase {
   id: number;
   query: string;
   saved_by: string;
+  /** Approver name, captured on the Summary submit popup. */
+  submitted_to: string | null;
+  /** 'pending' on save, 'approved' once the approver approves. */
+  approval_status: "pending" | "approved";
   classification: ClassificationParsed | null;
   change_impact_assessment: ChangeImpactAssessmentParsed | null;
   risk_criticality: RiskCriticalityParsed | null;

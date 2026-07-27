@@ -27,10 +27,30 @@ export function useSummary() {
   const [isSaved, setIsSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Saving is tied directly to the logged-in identity — there is no
-  // free-text "saved by" field, so a record can never be attributed to
-  // anyone other than the account that actually saved it.
-  const handleSaveClick = async () => {
+  // Controls the "Submit for Approval" popup that collects the approver name.
+  const [approverDialogOpen, setApproverDialogOpen] = useState(false);
+
+  // Step 1 — Submit button just opens the approver popup.
+  const handleSaveClick = () => {
+    if (!user?.username) {
+      setSaveError("You must be logged in to save a record.");
+      return;
+    }
+    if (
+      !result ||
+      !classificationParsed ||
+      !changeImpactParsed ||
+      !riskParsed ||
+      !implementationParsed
+    ) {
+      return;
+    }
+    setSaveError(null);
+    setApproverDialogOpen(true);
+  };
+
+  // Step 2 — dialog confirmed with a validated (capitalised) approver name.
+  const handleConfirmSubmit = async (submittedTo: string) => {
     if (!user?.username) {
       setSaveError("You must be logged in to save a record.");
       return;
@@ -60,9 +80,11 @@ export function useSummary() {
         status: result.status,
         halted_at: result.haltedAt,
         saved_by: user.displayName || user.username,
+        submitted_to: submittedTo,
         provenance: provenance ?? null,
       });
 
+      setApproverDialogOpen(false);
       setIsSaved(true);
       setTimeout(() => {
         clearWorkflow();
@@ -97,5 +119,8 @@ export function useSummary() {
     saveError,
 
     handleSaveClick,
+    approverDialogOpen,
+    setApproverDialogOpen,
+    handleConfirmSubmit,
   };
 }

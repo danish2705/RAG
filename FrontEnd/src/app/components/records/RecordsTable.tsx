@@ -9,7 +9,7 @@ import {
 } from "../ui/table";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { Eye, Trash2, ArrowUpDown, Loader2, AlertCircle } from "lucide-react";
+import { Eye, ArrowUpDown, Loader2, AlertCircle } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -73,7 +73,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow>
-              <TableHead className="w-32 font-semibold">UI ID</TableHead>
+              <TableHead className="w-32 font-semibold">Records ID</TableHead>
               <TableHead className="w-44 font-semibold">
                 <button
                   onClick={() => onSort?.("submittedBy")}
@@ -127,7 +127,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                   key={record.uiId || record.id || idx}
                   className="hover:bg-muted/40 transition-colors"
                 >
-                  <TableCell className="font-mono text-xs font-semibold text-blue-600 dark:text-blue-400">
+                  <TableCell className="font-mono text-xs font-semibold text-white">
                     {record.uiId || `#${record.id?.slice(0, 8)}`}
                   </TableCell>
                   <TableCell className="font-medium text-sm text-foreground">
@@ -171,9 +171,9 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                     })}
                   </TableCell>
 
-                  {/* Side-by-Side Eye & Delete Icons in Actions Column */}
+                  {/* Actions Column: View only (delete icon removed) */}
                   <TableCell className="text-center">
-                    <div className="flex items-center justify-center gap-1.5">
+                    <div className="flex items-center justify-center">
                       {/* View Button */}
                       <Button
                         variant="ghost"
@@ -183,17 +183,6 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                         aria-label="View record details"
                       >
                         <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                      </Button>
-
-                      {/* Delete Button */}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onDeleteCase?.(record)}
-                        className="h-8 w-8 rounded-full hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50 dark:hover:text-red-400 transition-colors"
-                        aria-label="Delete record"
-                      >
-                        <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
                       </Button>
                     </div>
                   </TableCell>

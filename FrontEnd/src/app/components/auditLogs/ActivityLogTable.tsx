@@ -115,7 +115,7 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
             <Table className="w-full min-w-[900px]">
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead className="w-26">UID</TableHead>
+                  <TableHead className="w-26">Audit ID</TableHead>
                   <TableHead className="w-34">User / System</TableHead>
                   <TableHead>Details</TableHead>
                   <TableHead className="w-28">Source</TableHead>
@@ -138,7 +138,7 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
                     const meta = actionMeta(entry);
                     return (
                       <TableRow key={entry.id} className={meta.rowClass}>
-                        <TableCell className="text-sm font-medium text-blue-600 dark:text-blue-400 truncate">
+                        <TableCell className="text-sm font-medium text-white truncate">
                           {entry.entity_id
                             ? `#${entry.entity_id.slice(0, 8)}`
                             : "—"}

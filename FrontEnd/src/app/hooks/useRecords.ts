@@ -47,7 +47,7 @@ export function useRecords() {
   const [chatOpen, setChatOpen] = useState(false);
 
   const [submittedByFilter, setSubmittedByFilter] = useState("");
-  const [classificationFilter, setClassificationFilter] = useState("All Types");
+  const [classificationFilter, setClassificationFilter] = useState("all");
   const [sortField, setSortField] = useState<string>("savedOn");
   const [sortAsc, setSortAsc] = useState<boolean>(false);
 
@@ -97,7 +97,7 @@ export function useRecords() {
           item.query?.toLowerCase().includes(submittedByFilter.toLowerCase());
 
         const matchesType =
-          classificationFilter === "All Types" ||
+          classificationFilter === "all" ||
           item.classification === classificationFilter;
 
         return matchesUser && matchesType;

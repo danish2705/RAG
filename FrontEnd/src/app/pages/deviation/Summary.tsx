@@ -39,6 +39,7 @@ export function Summary() {
     approverDialogOpen,
     setApproverDialogOpen,
     handleConfirmSubmit,
+    submittedBy,
     navigate,
   } = useSummaryReview();
 
@@ -143,6 +144,7 @@ export function Summary() {
           open={approverDialogOpen}
           onOpenChange={setApproverDialogOpen}
           onConfirm={handleConfirmSubmit}
+          submittedBy={submittedBy}
           isSubmitting={isSaving}
         />
 

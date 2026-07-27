@@ -122,5 +122,6 @@ export function useSummary() {
     approverDialogOpen,
     setApproverDialogOpen,
     handleConfirmSubmit,
+    submittedBy: user?.displayName || user?.username || "",
   };
 }

@@ -106,6 +106,7 @@ export function useSummaryReview() {
     approverDialogOpen,
     setApproverDialogOpen,
     handleConfirmSubmit,
+    submittedBy: user?.displayName || user?.username || "",
     navigate,
   };
 }

@@ -32,6 +32,7 @@ export function ChangecontrolSummary() {
     approverDialogOpen,
     setApproverDialogOpen,
     handleConfirmSubmit,
+    submittedBy,
   } = useSummary();
 
   // Guard: no submission yet
@@ -103,6 +104,7 @@ export function ChangecontrolSummary() {
           open={approverDialogOpen}
           onOpenChange={setApproverDialogOpen}
           onConfirm={handleConfirmSubmit}
+          submittedBy={submittedBy}
           isSubmitting={isSaving}
         />
       </div>

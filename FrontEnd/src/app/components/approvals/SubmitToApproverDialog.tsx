@@ -11,6 +11,17 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 
+/**
+ * Shown at the very end of the Summary page (both Deviation and Change
+ * Control) when the user clicks Submit. Collects the "Submitted to" name —
+ * i.e. the approver who will later be able to review & approve this case.
+ *
+ * Rule: the first word must start with a capital letter. We enforce it two
+ * ways so it's impossible to get wrong: the first character is auto-uppercased
+ * as they type, and we re-validate on confirm.
+ */
+
+/** Uppercases the first alphabetic character; leaves the rest untouched. */
 function capitaliseFirstWord(value: string): string {
   return value.replace(
     /^(\s*)([a-z])/,
@@ -22,12 +33,15 @@ export function SubmitToApproverDialog({
   open,
   onOpenChange,
   onConfirm,
+  submittedBy = "",
   isSubmitting = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Called with the validated, capitalised approver name. */
   onConfirm: (submittedTo: string) => void;
+  /** The logged-in user's name (the "submitted by"), used to block self-approval. */
+  submittedBy?: string;
   isSubmitting?: boolean;
 }) {
   const [name, setName] = useState("");
@@ -47,6 +61,14 @@ export function SubmitToApproverDialog({
     // First word must start with a capital letter.
     if (!/^[A-Z]/.test(trimmed)) {
       setError("The first letter of the name must be a capital letter.");
+      return;
+    }
+    // Cannot submit a case to yourself for approval.
+    if (
+      submittedBy &&
+      trimmed.toLowerCase() === submittedBy.trim().toLowerCase()
+    ) {
+      setError("You can't submit a case to yourself for approval.");
       return;
     }
     onConfirm(trimmed);

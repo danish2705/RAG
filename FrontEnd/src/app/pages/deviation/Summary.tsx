@@ -9,7 +9,7 @@ import { Badge } from "../../components/ui/badge";
 import { CheckCircle2, Sparkles } from "lucide-react";
 import { AIAssistant } from "../../components/chat/AiAssistant";
 import { useSummaryReview } from "../../hooks/deviation/useSummaryReview";
-import { SubmitToApproverDialog } from "../../components/approvals/SubmitToApprovalDialogs";
+import { SubmitToApproverDialog } from "../../components/approvals/SubmitToApproverDialog";
 import {
   NoSummaryDataGuard,
   ConfidenceBar,

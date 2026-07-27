@@ -1,7 +1,7 @@
 import { AIAssistant } from "../../components/chat/AiAssistant";
 import { StepProgressBar } from "../../components/eventIntake/StepProgressBar";
 import { useSummary } from "../../hooks/changeControl/useSummary";
-import { SubmitToApproverDialog } from "../../components/approvals/SubmitToApprovalDialogs";
+import { SubmitToApproverDialog } from "../../components/approvals/SubmitToApproverDialog";
 import {
   NoSummaryDataGuard,
   ClassificationSummaryCard,

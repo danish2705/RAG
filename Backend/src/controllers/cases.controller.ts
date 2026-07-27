@@ -11,6 +11,7 @@ import {
   deleteChangeControlCase,
   approveDeviationCase,
   approveChangeControlCase,
+  getSimilarQueryCandidates,
   type ListCasesParams,
 } from "../repository/caseRepository.js";
 import {
@@ -18,6 +19,7 @@ import {
   recordAuditEntry,
 } from "../repository/auditRepository.js";
 import { buildAuditEntriesForSave } from "../utils/provenanceDiff.js";
+import { textSimilarity } from "../utils/textSimilarity.js";
 
 function parseListParams(req: Request): ListCasesParams {
   const q = req.query;
@@ -131,6 +133,52 @@ export async function getCaseDetail(
     return;
   }
   res.json({ ...record, case_type: "Deviation" });
+}
+
+// CHECK SIMILAR QUERY: called from the New Deviation/Change Control intake
+// form before it submits for AI analysis. Compares the free-text description
+// the user just typed against recent cases' descriptions and returns the
+// closest few matches (if any look like a near-duplicate), so the frontend
+// can prompt "this looks like something already asked" before proceeding.
+const SIMILARITY_THRESHOLD = 0.35;
+const MAX_MATCHES = 5;
+// Below this length there just isn't enough text to compare meaningfully —
+// skip the check rather than risk noisy false positives on short input.
+const MIN_DESCRIPTION_LENGTH = 15;
+
+export async function checkSimilarQuery(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const description =
+    typeof req.body?.description === "string"
+      ? req.body.description.trim()
+      : "";
+
+  if (description.length < MIN_DESCRIPTION_LENGTH) {
+    res.json({ hasSimilar: false, matches: [] });
+    return;
+  }
+
+  const candidates = await getSimilarQueryCandidates();
+
+  const scored = candidates
+    .filter((c) => !!c.description)
+    .map((c) => ({
+      id: c.id,
+      case_type: c.case_type,
+      classification: c.classification,
+      saved_by: c.saved_by,
+      created_at: c.created_at,
+      query: c.query,
+      description: c.description as string,
+      similarity: textSimilarity(description, c.description as string),
+    }))
+    .filter((c) => c.similarity >= SIMILARITY_THRESHOLD)
+    .sort((a, b) => b.similarity - a.similarity)
+    .slice(0, MAX_MATCHES);
+
+  res.json({ hasSimilar: scored.length > 0, matches: scored });
 }
 
 // APPROVE ONE CASE (by id + case_type): applies the approver's edits and

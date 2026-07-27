@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router";
 import { apiFetch } from "../utils/api";
 import { fetchRecords, fetchCaseDetail } from "../services/recordsApi";
 import { useAuth } from "../context/AuthContext";
@@ -49,7 +50,13 @@ export function useRecords() {
   const [caseToDelete, setCaseToDelete] = useState<any | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
 
-  const [submittedByFilter, setSubmittedByFilter] = useState("");
+  // Arriving from the "Similar query" prompt's Explore button passes the
+  // matching case's text via ?q=... — use it to pre-fill the search filter
+  // so the Records table opens already scoped to that query.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [submittedByFilter, setSubmittedByFilter] = useState(
+    () => searchParams.get("q") || "",
+  );
   const [classificationFilter, setClassificationFilter] = useState("all");
   const [sortField, setSortField] = useState<string>("savedOn");
   const [sortAsc, setSortAsc] = useState<boolean>(false);
@@ -72,6 +79,22 @@ export function useRecords() {
     loadRecords();
   }, [loadRecords]);
 
+  // Consume the ?q= param once, then strip it so it doesn't linger in the
+  // URL/browser history once the user starts editing the filter themselves.
+  useEffect(() => {
+    if (searchParams.get("q")) {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete("q");
+          return next;
+        },
+        { replace: true },
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Handle column header clicks for sorting
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -90,14 +113,23 @@ export function useRecords() {
   }, [cases, role, identity]);
 
   const filteredCases = useMemo(() => {
+    const filterWords = submittedByFilter
+      .trim()
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean);
+
     return ownRecordsOnly
       .filter((item) => {
+        // Word-based match (rather than one literal substring) so that
+        // navigating in with a full sentence — e.g. from the "similar
+        // query" Explore button — still finds the matching record even
+        // though the stored query text wraps across multiple lines.
+        const combinedText =
+          `${item.submittedBy ?? ""} ${item.query ?? ""}`.toLowerCase();
         const matchesUser =
-          !submittedByFilter ||
-          item.submittedBy
-            ?.toLowerCase()
-            .includes(submittedByFilter.toLowerCase()) ||
-          item.query?.toLowerCase().includes(submittedByFilter.toLowerCase());
+          filterWords.length === 0 ||
+          filterWords.every((word) => combinedText.includes(word));
 
         const matchesType =
           classificationFilter === "all" ||

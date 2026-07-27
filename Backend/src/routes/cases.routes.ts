@@ -18,6 +18,13 @@ router.get(
   asyncHandler(casesController.listChangeControlCases),
 );
 
+// Similar-query check: used by the New Deviation/Change Control intake form
+// to warn when the description looks like something already submitted.
+router.post(
+  "/cases/check-similar",
+  asyncHandler(casesController.checkSimilarQuery),
+);
+
 // Combined Records page: single UNION ALL query across both case types,
 // so pagination/sorting is accurate across the merged view.
 router.get("/records", asyncHandler(casesController.listCombinedRecords));

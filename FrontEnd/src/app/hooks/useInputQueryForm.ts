@@ -8,6 +8,8 @@ import {
 } from "../mocks/mockInputQuery";
 import { useWorkflowStore } from "../store/workflowStore";
 import { useLlmFailureRecovery } from "./shared/useLlmFailureRecovery";
+import { checkSimilarQuery } from "../services/recordsApi";
+import type { SimilarQueryMatch } from "../services/recordsApi";
 import type { PipelineResult } from "../types/pipeline";
 import type { FormState, FormErrors } from "../types/InputQuery";
 
@@ -32,6 +34,11 @@ export function useInputQueryForm() {
   const [rejectedFiles, setRejectedFiles] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // "Similar query already submitted" prompt — shown after validation,
+  // before the query is sent off for AI analysis.
+  const [similarMatches, setSimilarMatches] = useState<SimilarQueryMatch[]>([]);
+  const [similarDialogOpen, setSimilarDialogOpen] = useState(false);
 
   const setPipelineResult = useWorkflowStore((s) => s.setPipelineResult);
   const llmFailure = useLlmFailureRecovery();
@@ -115,13 +122,10 @@ export function useInputQueryForm() {
     return Object.keys(nextErrors).length === 0;
   };
 
-  // Submit
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitError(null);
-
-    if (!validate()) return;
-
+  // Actual submission — runs the query through AI analysis. Called either
+  // straight from handleSubmit (no similar queries found) or after the user
+  // dismisses the "similar query" prompt with "Skip & Continue".
+  const doSubmit = async () => {
     setIsSubmitting(true);
 
     const query = buildQueryFromForm(formData);
@@ -155,6 +159,60 @@ export function useInputQueryForm() {
     }
   };
 
+  // Submit
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitError(null);
+
+    if (!validate()) return;
+
+    setIsSubmitting(true);
+
+    // Check for a similar query already on file before running AI analysis.
+    // If the check itself fails for any reason, don't block the user —
+    // just fall through to the normal submit flow.
+    try {
+      const { hasSimilar, matches } = await checkSimilarQuery(
+        formData.description,
+      );
+      if (hasSimilar && matches.length > 0) {
+        setSimilarMatches(matches);
+        setSimilarDialogOpen(true);
+        setIsSubmitting(false);
+        return;
+      }
+    } catch {
+      // ignore — proceed to submit as normal
+    }
+
+    await doSubmit();
+  };
+
+  // "Explore" — take the user to Records, pre-filtered to the matching case.
+  const handleExploreSimilar = (match: SimilarQueryMatch) => {
+    setSimilarDialogOpen(false);
+    navigate(`/records?q=${encodeURIComponent(match.description)}`);
+  };
+
+  // "Skip & Continue" — dismiss the prompt and proceed exactly as if no
+  // similar query had been found.
+  const handleSkipSimilar = () => {
+    setSimilarDialogOpen(false);
+    void doSubmit();
+  };
+
+  const similarQuery = {
+    isOpen: similarDialogOpen,
+    matches: similarMatches,
+    onExplore: handleExploreSimilar,
+    onSkip: handleSkipSimilar,
+    onOpenChange: (open: boolean) => {
+      // Closing via the X / overlay behaves the same as "Skip & Continue" —
+      // the user still wants to submit, they just dismissed the prompt.
+      if (!open) handleSkipSimilar();
+    },
+  };
+
   return {
     navigate,
     fileInputRef,
@@ -174,5 +232,6 @@ export function useInputQueryForm() {
     removeFile,
     handleSubmit,
     llmFailure,
+    similarQuery,
   };
 }

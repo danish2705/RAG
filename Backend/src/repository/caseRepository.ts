@@ -185,6 +185,47 @@ export async function getCombinedCases(
   };
 }
 
+// ---------------------------------------------------------------------------
+// Similar-query candidates — used by the "this looks like something already
+// asked" prompt on the New Deviation/Change Control intake form. Pulls the
+// most recent rows (cheap upper bound) from both tables; the actual
+// similarity scoring happens in JS (see utils/textSimilarity.ts) since it's
+// only comparing free text, not something worth a DB extension for.
+// ---------------------------------------------------------------------------
+
+export interface SimilarQueryCandidate {
+  id: number | string;
+  query: string;
+  description: string | null;
+  saved_by: unknown;
+  classification: unknown;
+  created_at: string;
+  case_type: "Deviation" | "Change Control";
+}
+
+export async function getSimilarQueryCandidates(
+  limit = 300,
+): Promise<SimilarQueryCandidate[]> {
+  const result = await pool.query(
+    `SELECT id, query, metadata->>'description' AS description, saved_by,
+            classification->>'classification' AS classification, created_at,
+            'Deviation' AS case_type
+     FROM deviation_cases
+
+     UNION ALL
+
+     SELECT id, query, metadata->>'description' AS description, saved_by,
+            classification->>'classification' AS classification, created_at,
+            'Change Control' AS case_type
+     FROM change_control_cases
+
+     ORDER BY created_at DESC
+     LIMIT $1`,
+    [limit],
+  );
+  return result.rows;
+}
+
 export async function getDeviationCaseById(
   id: string,
 ): Promise<unknown | null> {

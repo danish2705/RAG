@@ -104,104 +104,126 @@ function describeEntry(entry: AuditLogEntry): string {
   return entry.reason ?? entry.field_name ?? "—";
 }
 
+function toTitleCase(value: string): string {
+  if (!value) return "—";
+
+  return value
+    .replace(/[_-]+/g, " ") // Replace underscores and hyphens with spaces
+    .trim()
+    .split(/\s+/)
+    .map(
+      (word) =>
+        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    )
+    .join(" ");
+}
+
 export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
-      <TooltipProvider delayDuration={150}>
-        <div className="overflow-x-auto">
-          <Table className="w-full min-w-[900px]">
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="w-26 font-semibold">Audit ID</TableHead>
-                <TableHead className="w-34 font-semibold">User</TableHead>
-                <TableHead className="w-60 font-semibold text-center">Details</TableHead>
-                <TableHead className="w-25 font-semibold text-center">Source</TableHead>
-                <TableHead className="w-32 font-semibold text-center">Action</TableHead>
-                <TableHead className="w-50 font-semibold text-center">Timestamp</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="bg-white dark:bg-background">
-              {entries.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="h-24 text-center text-muted-foreground text-sm"
-                  >
-                    No audit activity found for the selected filters.
-                  </TableCell>
+    <Card>
+      <CardContent className="p-0">
+        <TooltipProvider delayDuration={150}>
+          <div className="overflow-x-auto rounded-lg border border-border">
+            <Table className="w-full min-w-[900px]">
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="w-26">Audit ID</TableHead>
+                  <TableHead className="w-34">User / System</TableHead>
+                  <TableHead>Details</TableHead>
+                  <TableHead className="w-28">Source</TableHead>
+                  <TableHead className="w-32">Action</TableHead>
+                  <TableHead className="w-44">Timestamp</TableHead>
                 </TableRow>
-              ) : (
-                entries.map((entry) => {
-                  const meta = actionMeta(entry);
-                  return (
-                    <TableRow key={entry.id} className={meta.rowClass}>
-                      <TableCell className="text-xs font-medium truncate">
-                        {entry.entity_id
-                          ? `#${entry.entity_id.slice(0, 8)}`
-                          : "—"}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center min-w-0">
-                          <span className="text-xs font-medium truncate">
-                            {entry.performed_by}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="w-64 text-xs text-gray-900 dark:text-white overflow-hidden">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="block break-words">
-                              {truncateWords(describeEntry(entry), 12)}
+              </TableHeader>
+              <TableBody className="bg-white dark:bg-background">
+                {entries.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="h-24 text-center text-muted-foreground text-sm"
+                    >
+                      No audit activity found for the selected filters.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  entries.map((entry) => {
+                    const meta = actionMeta(entry);
+                    return (
+                      <TableRow key={entry.id} className={meta.rowClass}>
+                        <TableCell className="text-sm font-medium text-white truncate">
+                          {entry.entity_id
+                            ? `#${entry.entity_id.slice(0, 8)}`
+                            : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2 min-w-0">
+                            {entry.source === "ai" ? (
+                              <Bot className="h-4 w-4 text-blue-600 shrink-0" />
+                            ) : (
+                              <User className="h-4 w-4 text-muted-foreground shrink-0" />
+                            )}
+                            <span className="text-sm font-medium truncate">
+                              {toTitleCase(entry.performed_by)}
                             </span>
-                          </TooltipTrigger>
-                          <TooltipContent
-                            side="bottom"
-                            className="max-w-sm whitespace-pre-wrap text-xs"
-                          >
-                            {describeEntry(entry)}
-                          </TooltipContent>
-                        </Tooltip>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge
-                          variant="outline"
-                          className={
-                            entry.source === "ai"
-                              ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                              : entry.source === "system"
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm overflow-hidden">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="block break-words">
+                                {truncateWords(describeEntry(entry), 12)}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent
+                              side="bottom"
+                              className="max-w-sm whitespace-pre-wrap text-xs"
+                            >
+                              {describeEntry(entry)}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={
+                              entry.source === "ai"
                                 ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                                : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                          }
-                        >
-                          {entry.source === "ai"
-                            ? "AI"
-                            : entry.source === "system"
-                              ? "System"
-                              : "Human"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={`text-xs gap-1 ${meta.badgeClass}`}
-                        >
-                          {meta.icon}
-                          {meta.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-xs font-mono text-gray-900 dark:text-white whitespace-nowrap text-center">
-                        {formatTimestamp(entry.created_at, {
-                          dateStyle: "numeric",
-                        })}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </TooltipProvider>
-    </div>
+                                : entry.source === "system"
+                                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                                  : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                            }
+                          >
+                            {entry.source === "ai"
+                              ? "AI"
+                              : entry.source === "system"
+                                ? "System"
+                                : "Human"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={`text-xs gap-1 ${meta.badgeClass}`}
+                          >
+                            {meta.icon}
+                            {meta.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs font-mono text-muted-foreground whitespace-nowrap">
+                          {formatTimestamp(entry.created_at, {
+                            dateStyle: "numeric",
+                          })}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+        </TooltipProvider>
+      </CardContent>
+    </Card>
   );
 }

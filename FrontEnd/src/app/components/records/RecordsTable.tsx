@@ -29,6 +29,19 @@ interface RecordsTableProps {
   onDeleteCase?: (record: any) => void;
 }
 
+function toTitleCase(value: string): string {
+  if (!value) return "—";
+
+  return value
+    .replace(/[_-]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .map(
+      (word) =>
+        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    )
+    .join(" ");
+}
 export const RecordsTable: React.FC<RecordsTableProps> = ({
   loading,
   error,
@@ -134,8 +147,8 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                   <TableCell className="text-xs font-medium truncate">
                     {record.uiId || `#${record.id?.slice(0, 8)}`}
                   </TableCell>
-                  <TableCell className="font-medium text-xs text-foreground">
-                    {record.submittedBy || record.user || "N/A"}
+                  <TableCell className="font-medium text-sm text-foreground">
+                    {toTitleCase(record.submittedBy || record.user || "") || "N/A"}
                   </TableCell>
                   <TableCell className="text-xs text-gray-900 dark:text-white overflow-hidden">
                     {record.query || record.description ? (

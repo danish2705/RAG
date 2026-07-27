@@ -85,6 +85,22 @@ export async function getDashboardCounts(
   };
 }
 
+// --- Pending AI reviews -----------------------------------------------
+// Rows in llm_retry_queue that are still awaiting a retry/resume (i.e. the
+// AI pipeline halted before a case could even be created). These belong in
+// "Open Cases" alongside halted-for-human-review deviations/change
+// controls, since they're both work that still needs action.
+export async function getPendingAiReviewsCount(
+  range?: DashboardDateRange,
+): Promise<number> {
+  const { clause, values } = buildDateFilter(range);
+  const result = await pool.query(
+    `SELECT COUNT(*) AS cnt FROM llm_retry_queue WHERE status = 'pending'${clause}`,
+    values,
+  );
+  return Number(result.rows[0].cnt);
+}
+
 // --- Recurrence rate ------------------------------------------------------
 // Proxy metric: among deviations from the last 90 days that reached the RCA
 // stage, what share share an (exact-match) primary root cause with at least
@@ -393,11 +409,11 @@ export async function getEventsOverTime(
     let guard = 0;
     while (cursor <= end && guard < 31) {
       const bucket = dateToYMD(cursor);
-      // dd/mm/yy so the year is always visible on daily-granularity labels.
-      const dd = String(cursor.getDate()).padStart(2, "0");
-      const mm = String(cursor.getMonth() + 1).padStart(2, "0");
-      const yy = String(cursor.getFullYear()).slice(-2);
-      const label = `${dd}/${mm}/${yy}`;
+      // "20 Jul" — day granularity only ever spans a single calendar month,
+      // so the month name alone is enough context without a full date/year.
+      const label = `${cursor.getDate()} ${cursor.toLocaleString("en-US", {
+        month: "short",
+      })}`;
       days.push({ bucket, label });
       cursor.setDate(cursor.getDate() + 1);
       guard++;

@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { MoreHorizontal } from "lucide-react";
 import {
   PieChart,
   Pie,
@@ -101,13 +100,10 @@ export function ChartCard({
     <div
       className={`bg-white dark:bg-black rounded-xl border border-gray-100 dark:border-white/10 shadow-sm dark:shadow-none p-4 cursor-pointer transition-transform duration-200 ease-out hover:scale-105 ${className}`}
     >
-      <div className="flex items-center justify-between mb-3">
+      <div className="mb-3">
         <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
           {title}
         </h3>
-        <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-          <MoreHorizontal className="h-4 w-4" />
-        </button>
       </div>
       {children}
     </div>
@@ -126,11 +122,10 @@ export function ChartCardSkeleton({
 }) {
   return (
     <div className="bg-white dark:bg-black rounded-xl border border-gray-100 dark:border-white/10 shadow-sm dark:shadow-none p-4">
-      <div className="flex items-center justify-between mb-3">
+      <div className="mb-3">
         <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
           {title}
         </h3>
-        <MoreHorizontal className="h-4 w-4 text-gray-300 dark:text-gray-700" />
       </div>
 
       {variant === "donut" && (
@@ -259,8 +254,17 @@ export function DonutChart({
 // ---------------------------------------------------------------------------
 // Events Over Time (line chart)
 // ---------------------------------------------------------------------------
+// Beyond this many points, ticks/labels/dots get too cramped in the card's
+// natural width — past this we give each point a fixed pixel width and let
+// the chart scroll horizontally instead of squeezing everything together.
+const DAY_OVERFLOW_THRESHOLD = 8;
+const MIN_PX_PER_POINT = 56;
+
 export function EventsOverTimeChart({ data }: { data: EventsOverTimeDatum[] }) {
   const { gridStroke, axisTick, tooltip } = useChartTheme();
+
+  const needsScroll = data.length > DAY_OVERFLOW_THRESHOLD;
+  const chartMinWidth = needsScroll ? data.length * MIN_PX_PER_POINT : undefined;
 
   return (
     <div>
@@ -272,61 +276,85 @@ export function EventsOverTimeChart({ data }: { data: EventsOverTimeDatum[] }) {
           label="Change Control"
         />
       </div>
-      <ResponsiveContainer width="100%" height={EVENTS_OVER_TIME_CHART_HEIGHT}>
-        <LineChart
-          data={data}
-          margin={{ top: 18, right: 10, left: -20, bottom: 0 }}
+      <div className={needsScroll ? "overflow-x-auto" : undefined}>
+        <div
+          style={{
+            minWidth: chartMinWidth ?? "100%",
+            height: EVENTS_OVER_TIME_CHART_HEIGHT,
+          }}
         >
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridStroke} />
-          <XAxis
-            dataKey="label"
-            tick={{ fontSize: 11, fill: axisTick }}
-            axisLine={false}
-            tickLine={false}
-          />
-          <YAxis
-            tick={{ fontSize: 12, fill: axisTick }}
-            axisLine={false}
-            tickLine={false}
-            allowDecimals={false}
-          />
-          <Tooltip {...tooltip} />
-          <Line
-            type="monotone"
-            dataKey="allEvents"
-            name="All Events"
-            stroke={eventsOverTimeColors.allEvents}
-            strokeWidth={2}
-            dot={{ r: 4, fill: eventsOverTimeColors.allEvents, strokeWidth: 0 }}
-            activeDot={{ r: 5 }}
-            label={renderPointValueLabel(eventsOverTimeColors.allEvents, -10)}
-          />
-          <Line
-            type="monotone"
-            dataKey="deviation"
-            name="Deviation"
-            stroke={eventsOverTimeColors.deviation}
-            strokeWidth={2}
-            dot={{ r: 4, fill: eventsOverTimeColors.deviation, strokeWidth: 0 }}
-            activeDot={{ r: 5 }}
-            label={renderPointValueLabel(eventsOverTimeColors.deviation, -22)}
-          />
-          <Line
-            type="monotone"
-            dataKey="changeControl"
-            name="Change Control"
-            stroke={eventsOverTimeColors.changeControl}
-            strokeWidth={2}
-            dot={{
-              r: 4,
-              fill: eventsOverTimeColors.changeControl,
-              strokeWidth: 0,
-            }}
-            activeDot={{ r: 5 }}
-            label={renderPointValueLabel(eventsOverTimeColors.changeControl, 16)}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={data}
+              margin={{ top: 18, right: 24, left: -20, bottom: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridStroke} />
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 11, fill: axisTick }}
+                axisLine={false}
+                tickLine={false}
+                // Force every bucket's label to render — recharts otherwise
+                // auto-thins ticks (e.g. every other day), which was
+                // silently dropping dates from a multi-day range. Now that
+                // wide ranges get a fixed min-width + horizontal scroll
+                // instead, every label has room and none get dropped or
+                // overlapped.
+                interval={0}
+                // Without padding, the first/last tick sits exactly on the
+                // plot's edge and its centered label text overflows outside
+                // the chart (the last date was getting clipped/hidden).
+                padding={{ left: 12, right: 12 }}
+              />
+              <YAxis
+                tick={{ fontSize: 12, fill: axisTick }}
+                axisLine={false}
+                tickLine={false}
+                allowDecimals={false}
+              />
+              <Tooltip {...tooltip} />
+              <Line
+                type="monotone"
+                dataKey="allEvents"
+                name="All Events"
+                stroke={eventsOverTimeColors.allEvents}
+                strokeWidth={2}
+                dot={{ r: 4, fill: eventsOverTimeColors.allEvents, strokeWidth: 0 }}
+                activeDot={{ r: 5 }}
+                label={renderPointValueLabel(eventsOverTimeColors.allEvents, -10)}
+              />
+              <Line
+                type="monotone"
+                dataKey="deviation"
+                name="Deviation"
+                stroke={eventsOverTimeColors.deviation}
+                strokeWidth={2}
+                dot={{ r: 4, fill: eventsOverTimeColors.deviation, strokeWidth: 0 }}
+                activeDot={{ r: 5 }}
+                label={renderPointValueLabel(eventsOverTimeColors.deviation, -22)}
+              />
+              <Line
+                type="monotone"
+                dataKey="changeControl"
+                name="Change Control"
+                stroke={eventsOverTimeColors.changeControl}
+                strokeWidth={2}
+                dot={{
+                  r: 4,
+                  fill: eventsOverTimeColors.changeControl,
+                  strokeWidth: 0,
+                }}
+                activeDot={{ r: 5 }}
+                // Was +16 (below the dot) — every series' value should sit
+                // above its dot, so this now uses a negative dy like the
+                // other two lines, offset further up to avoid colliding with
+                // the All Events / Deviation labels when lines run close.
+                label={renderPointValueLabel(eventsOverTimeColors.changeControl, -34)}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   );
 }
@@ -360,16 +388,90 @@ function renderPointValueLabel(color: string, dy: number) {
 // ---------------------------------------------------------------------------
 // Events by Site (bar chart)
 // ---------------------------------------------------------------------------
+
+// Splits a site name into multiple lines (instead of letting recharts jam
+// long labels like "Manufacturing Plant B" / "Manufacturing Plant A" side by
+// side, where they visually overlap once several bars share the axis).
+// Greedily packs whole words onto a line up to maxCharsPerLine, wrapping to
+// a new line rather than truncating or overlapping.
+function wrapAxisLabel(text: string, maxCharsPerLine = 14): string[] {
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    if (next.length > maxCharsPerLine && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = next;
+    }
+  }
+  if (current) lines.push(current);
+  return lines.length ? lines : [text];
+}
+
+const SITE_TICK_LINE_HEIGHT = 13;
+
+// Custom XAxis tick renderer: recharts clones this element and injects
+// x/y/payload, so we read the label off payload.value and lay each wrapped
+// line out as its own <tspan>-equivalent <text> element rather than relying
+// on recharts' single-line tick which just clips/overlaps long text.
+function SiteAxisTick({
+  x,
+  y,
+  payload,
+  fill,
+}: {
+  x?: number;
+  y?: number;
+  payload?: { value: string };
+  fill?: string;
+}) {
+  if (x === undefined || y === undefined || !payload) return null;
+  const lines = wrapAxisLabel(String(payload.value));
+  return (
+    <g transform={`translate(${x},${y})`}>
+      {lines.map((line, i) => (
+        <text
+          key={i}
+          x={0}
+          y={0}
+          dy={12 + i * SITE_TICK_LINE_HEIGHT}
+          textAnchor="middle"
+          fontSize={11}
+          fill={fill}
+        >
+          {line}
+        </text>
+      ))}
+    </g>
+  );
+}
+
 export function EventsBySiteChart({ data }: { data: EventsBySiteDatum[] }) {
   const { gridStroke, axisTick, tooltip } = useChartTheme();
 
+  // Reserve extra height for the axis when any site name needs to wrap to
+  // a second (or third) line, so wrapped labels have room and don't get
+  // cut off or bleed into the chart below.
+  const maxLines = Math.max(
+    1,
+    ...data.map((d) => wrapAxisLabel(d.site).length),
+  );
+  const axisHeight = 20 + maxLines * SITE_TICK_LINE_HEIGHT;
+
   return (
     <ResponsiveContainer width="100%" height={CHART_ROW_HEIGHT}>
-      <BarChart data={data} margin={{ top: 18, right: 10, left: -20, bottom: 0 }}>
+      <BarChart
+        data={data}
+        margin={{ top: 18, right: 10, left: -20, bottom: 0 }}
+      >
         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridStroke} />
         <XAxis
           dataKey="site"
-          tick={{ fontSize: 11, fill: axisTick }}
+          tick={<SiteAxisTick fill={axisTick} />}
+          height={axisHeight}
           axisLine={false}
           tickLine={false}
           interval={0}

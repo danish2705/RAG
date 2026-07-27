@@ -63,19 +63,19 @@ export function PendingAiReviewsTable({
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 dark:bg-muted/30">
-              <TableHead>Name</TableHead>
-              <TableHead>Pipeline</TableHead>
-              <TableHead>Stage</TableHead>
-              <TableHead>Query</TableHead>
-              <TableHead>Saved At</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead className="w-30 font-semibold">User</TableHead>
+              <TableHead className="w-40 font-semibold">Pipeline</TableHead>
+              <TableHead className="w-50 font-semibold">Stage</TableHead>
+              <TableHead className="w-70 font-semibold text-center">Query</TableHead>
+              <TableHead className="w-60 font-semibold text-center">Saved At</TableHead>
+              <TableHead className="w-40 font-semibold text-center">Status</TableHead>
+              <TableHead className="w-30 font-semibold text-center">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="bg-white dark:bg-background">
             {entries.map((entry) => (
               <TableRow key={entry.id}>
-                <TableCell className="font-bold text-foreground">{entry.full_name}</TableCell>
+                <TableCell className="font-medium text-xs text-foreground">{entry.full_name}</TableCell>
                 <TableCell>
                   <Badge
                     variant="outline"
@@ -88,10 +88,10 @@ export function PendingAiReviewsTable({
                     {entry.entity_type}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
+                <TableCell className="text-xs text-gray-900 dark:text-white">
                   {STAGE_LABELS[entry.pipeline_stage] ?? entry.pipeline_stage}
                 </TableCell>
-                <TableCell className="max-w-[220px] text-sm text-muted-foreground truncate">
+                <TableCell className="max-w-[220px] text-xs text-gray-900 dark:text-white truncate">
                   {entry.query_text ? (
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -110,10 +110,10 @@ export function PendingAiReviewsTable({
                     "—"
                   )}
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                <TableCell className="text-xs font-mono text-gray-900 dark:text-white whitespace-nowrap text-center">
                   {formatTimestamp(entry.created_at)}
                 </TableCell>
-                <TableCell>
+                <TableCell className="text-center">
                   <Button
                     size="sm"
                     variant={
@@ -137,7 +137,7 @@ export function PendingAiReviewsTable({
                   </Button>
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center gap-3">
                     <button
                       type="button"
                       disabled={resumingId === entry.id}

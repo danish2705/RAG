@@ -1,4 +1,3 @@
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import {
   Table,
   TableBody,
@@ -14,7 +13,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../ui/tooltip";
-import { Bot, User, Trash2, Pencil, PlusCircle, Settings2 } from "lucide-react";
+import { Bot, Trash2, Pencil, PlusCircle, Settings2 } from "lucide-react";
 import type { AuditLogEntry } from "../../types/audit";
 import { formatTimestamp } from "../../utils/timezone";
 import { truncateWords } from "../../utils/queryPreview";
@@ -51,8 +50,7 @@ function actionMeta(entry: AuditLogEntry): {
         label: "Deleted",
         badgeClass:
           "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-        rowClass:
-          "bg-red-50 dark:bg-red-950/30 border-l-2 border-l-red-500 dark:border-l-red-500",
+        rowClass: "",
       };
     case "field_edited":
       return {
@@ -108,110 +106,102 @@ function describeEntry(entry: AuditLogEntry): string {
 
 export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
   return (
-    <Card>
-      <CardContent className="p-0">
-        <TooltipProvider delayDuration={150}>
-          <div className="overflow-x-auto rounded-lg border border-border">
-            <Table className="w-full min-w-[900px]">
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="w-26">Audit ID</TableHead>
-                  <TableHead className="w-34">User / System</TableHead>
-                  <TableHead>Details</TableHead>
-                  <TableHead className="w-28">Source</TableHead>
-                  <TableHead className="w-32">Action</TableHead>
-                  <TableHead className="w-44">Timestamp</TableHead>
+    <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
+      <TooltipProvider delayDuration={150}>
+        <div className="overflow-x-auto">
+          <Table className="w-full min-w-[900px]">
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="w-26 font-semibold">Audit ID</TableHead>
+                <TableHead className="w-34 font-semibold">User</TableHead>
+                <TableHead className="w-60 font-semibold text-center">Details</TableHead>
+                <TableHead className="w-25 font-semibold text-center">Source</TableHead>
+                <TableHead className="w-32 font-semibold text-center">Action</TableHead>
+                <TableHead className="w-50 font-semibold text-center">Timestamp</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="bg-white dark:bg-background">
+              {entries.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="h-24 text-center text-muted-foreground text-sm"
+                  >
+                    No audit activity found for the selected filters.
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody className="bg-white dark:bg-background">
-                {entries.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="h-24 text-center text-muted-foreground text-sm"
-                    >
-                      No audit activity found for the selected filters.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  entries.map((entry) => {
-                    const meta = actionMeta(entry);
-                    return (
-                      <TableRow key={entry.id} className={meta.rowClass}>
-                        <TableCell className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                          {entry.entity_id
-                            ? `#${entry.entity_id.slice(0, 8)}`
-                            : "—"}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2 min-w-0">
-                            {entry.source === "ai" ? (
-                              <Bot className="h-4 w-4 text-blue-600 shrink-0" />
-                            ) : (
-                              <User className="h-4 w-4 text-muted-foreground shrink-0" />
-                            )}
-                            <span className="text-sm font-medium truncate">
-                              {entry.performed_by}
+              ) : (
+                entries.map((entry) => {
+                  const meta = actionMeta(entry);
+                  return (
+                    <TableRow key={entry.id} className={meta.rowClass}>
+                      <TableCell className="text-xs font-medium truncate">
+                        {entry.entity_id
+                          ? `#${entry.entity_id.slice(0, 8)}`
+                          : "—"}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center min-w-0">
+                          <span className="text-xs font-medium truncate">
+                            {entry.performed_by}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="w-64 text-xs text-gray-900 dark:text-white overflow-hidden">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="block break-words">
+                              {truncateWords(describeEntry(entry), 12)}
                             </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm overflow-hidden">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="block break-words">
-                                {truncateWords(describeEntry(entry), 12)}
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent
-                              side="bottom"
-                              className="max-w-sm whitespace-pre-wrap text-xs"
-                            >
-                              {describeEntry(entry)}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={
-                              entry.source === "ai"
-                                ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                                : entry.source === "system"
-                                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                                  : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                            }
+                          </TooltipTrigger>
+                          <TooltipContent
+                            side="bottom"
+                            className="max-w-sm whitespace-pre-wrap text-xs"
                           >
-                            {entry.source === "ai"
-                              ? "AI"
+                            {describeEntry(entry)}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge
+                          variant="outline"
+                          className={
+                            entry.source === "ai"
+                              ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
                               : entry.source === "system"
-                                ? "System"
-                                : "Human"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={`text-xs gap-1 ${meta.badgeClass}`}
-                          >
-                            {meta.icon}
-                            {meta.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-xs font-mono text-muted-foreground whitespace-nowrap">
-                          {formatTimestamp(entry.created_at, {
-                            dateStyle: "numeric",
-                          })}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-        </TooltipProvider>
-      </CardContent>
-    </Card>
+                                ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                                : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                          }
+                        >
+                          {entry.source === "ai"
+                            ? "AI"
+                            : entry.source === "system"
+                              ? "System"
+                              : "Human"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={`text-xs gap-1 ${meta.badgeClass}`}
+                        >
+                          {meta.icon}
+                          {meta.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs font-mono text-gray-900 dark:text-white whitespace-nowrap text-center">
+                        {formatTimestamp(entry.created_at, {
+                          dateStyle: "numeric",
+                        })}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </TooltipProvider>
+    </div>
   );
 }

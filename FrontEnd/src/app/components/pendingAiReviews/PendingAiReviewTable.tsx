@@ -30,7 +30,19 @@ const STAGE_LABELS: Record<LlmRetryStage, string> = {
   implementation_control: "Implementation & Control",
   final_summary: "Final Summary",
 };
+export function toTitleCase(value: string): string {
+  if (!value) return "";
 
+  return value
+    .replace(/[_-]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .map(
+      (word) =>
+        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    )
+    .join(" ");
+}
 export function PendingAiReviewsTable({
   entries,
   updatingId,
@@ -75,8 +87,9 @@ export function PendingAiReviewsTable({
           <TableBody className="bg-white dark:bg-background">
             {entries.map((entry) => (
               <TableRow key={entry.id}>
-                <TableCell className="font-medium text-xs text-foreground">{entry.full_name}</TableCell>
-                <TableCell>
+                <TableCell className="font-medium text-xs text-foreground">
+                  {toTitleCase(entry.full_name || "") || "N/A"}
+                </TableCell>                <TableCell>
                   <Badge
                     variant="outline"
                     className={

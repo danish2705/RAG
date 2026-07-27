@@ -23,9 +23,10 @@ export interface LlmFailureContext {
  * Drop this into any hook that calls the AI pipeline. When a call fails
  * (LLM down, timeout, 5xx, etc.), call `openLlmFailureDialog({...})` from
  * the catch block instead of — or in addition to — showing an inline error.
- * It captures the user's name, saves the in-progress query to
- * llm_retry_queue (visible later on the "Pending AI Reviews" page), and
- * confirms back to the user that it was saved.
+ * The name shown is always the logged-in user's identity (display name,
+ * falling back to username) — there's no free-text field to edit. It saves
+ * the in-progress query to llm_retry_queue (visible later on the "Pending
+ * AI Reviews" page), and confirms back to the user that it was saved.
  *
  * Render <LlmFailureDialog control={llmFailure} /> once per page that uses
  * this hook.
@@ -37,7 +38,6 @@ export function useLlmFailureRecovery() {
   const [context, setContext] = useState<LlmFailureContext | null>(null);
 
   const [name, setName] = useState("");
-  const [nameError, setNameError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
@@ -45,8 +45,7 @@ export function useLlmFailureRecovery() {
   const openLlmFailureDialog = useCallback(
     (ctx: LlmFailureContext) => {
       setContext(ctx);
-      setName(user?.username ?? "");
-      setNameError("");
+      setName(user?.displayName || user?.username || "");
       setSaveError(null);
       setIsSaved(false);
       setIsOpen(true);
@@ -61,13 +60,8 @@ export function useLlmFailureRecovery() {
   }, []);
 
   const submitLlmFailure = useCallback(async () => {
-    if (!name.trim()) {
-      setNameError("Please enter your name before saving.");
-      return;
-    }
     if (!context) return;
 
-    setNameError("");
     setSaveError(null);
     setIsSaving(true);
 
@@ -98,7 +92,6 @@ export function useLlmFailureRecovery() {
     closeLlmFailureDialog,
     name,
     setName,
-    nameError,
     isSaving,
     saveError,
     isSaved,

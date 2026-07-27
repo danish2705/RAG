@@ -8,8 +8,6 @@ import {
   DialogFooter,
 } from "./ui/dialog";
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
 import type { LlmFailureRecoveryControl } from "../hooks/shared/useLlmFailureRecovery";
 
 export function LlmFailureDialog({
@@ -20,9 +18,6 @@ export function LlmFailureDialog({
   const {
     isOpen,
     closeLlmFailureDialog,
-    name,
-    setName,
-    nameError,
     isSaving,
     saveError,
     isSaved,
@@ -68,27 +63,11 @@ export function LlmFailureDialog({
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-2">
-              <Label htmlFor="llm-failure-name">Your name</Label>
-              <Input
-                id="llm-failure-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your name"
-                aria-invalid={!!nameError}
-                disabled={isSaving}
-              />
-              {nameError && (
-                <p className="text-sm text-red-600 dark:text-red-400">
-                  {nameError}
-                </p>
-              )}
-              {saveError && (
-                <p className="text-sm text-red-600 dark:text-red-400">
-                  {saveError}
-                </p>
-              )}
-            </div>
+            {saveError && (
+              <p className="text-sm text-red-600 dark:text-red-400">
+                {saveError}
+              </p>
+            )}
 
             <DialogFooter>
               <Button

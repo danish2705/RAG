@@ -85,7 +85,7 @@ export function Capa() {
 
           <CapaActionCard
             title="Corrective Action"
-            label="Corrective Action (What will prevent THIS deviation from recurring?) — one action per line"
+            label="Corrective Action (What will prevent THIS deviation from recurring?)"
             placeholder="Define specific actions to eliminate the root cause and prevent recurrence..."
             value={correctiveAction}
             originalValue={capaParsed.corrective_actions.join("\n")}
@@ -97,7 +97,7 @@ export function Capa() {
 
           <CapaActionCard
             title="Preventive Action"
-            label="Preventive Action (What will prevent SIMILAR deviations?) — one action per line"
+            label="Preventive Action (What will prevent SIMILAR deviations?)"
             placeholder="Define actions to prevent similar issues in other areas or systems..."
             value={preventiveAction}
             originalValue={capaParsed.preventive_actions.join("\n")}

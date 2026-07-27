@@ -127,7 +127,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                   key={record.uiId || record.id || idx}
                   className="hover:bg-muted/40 transition-colors"
                 >
-                  <TableCell className="font-mono text-xs font-semibold text-white">
+                  <TableCell className="font-mono text-xs font-semibold text-gray-900 dark:text-white">
                     {record.uiId || `#${record.id?.slice(0, 8)}`}
                   </TableCell>
                   <TableCell className="font-medium text-sm text-foreground">

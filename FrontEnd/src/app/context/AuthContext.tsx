@@ -31,10 +31,10 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    const saved = localStorage.getItem(AUTH_STORAGE_KEY);
-    return saved ? (JSON.parse(saved) as AuthUser) : null;
-  });
+  // Always start signed out on a fresh page load — visiting the site
+  // (or reloading it) should land on /login, not auto-restore a
+  // previous session and jump straight to the Dashboard.
+  const [user, setUser] = useState<AuthUser | null>(null);
 
   const login = async (username: string, password: string) => {
     try {

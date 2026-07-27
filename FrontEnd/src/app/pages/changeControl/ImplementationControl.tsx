@@ -116,7 +116,7 @@ export function ImplementationControl() {
             icon={<ClipboardList className="h-5 w-5 text-blue-600" />}
             title="Required Actions"
             fieldId="requiredActions"
-            label="Config updates, documentation updates, training — one action per line"
+            label="Config updates, documentation updates, training"
             rows={4}
             value={requiredActions}
             original={implementationParsed.required_actions.join("\n")}

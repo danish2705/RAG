@@ -11,6 +11,7 @@ interface RecordRow {
   query: string;
   classification: "Deviation" | "Change Control";
   savedOn: string;
+  approvalStatus: "pending" | "approved";
   raw: AnyCase;
 }
 
@@ -22,6 +23,8 @@ function toRecordRow(row: AnyCase): RecordRow {
     query: row.query || "",
     classification: row.case_type,
     savedOn: row.created_at,
+    approvalStatus:
+      ((row as any).approval_status as "pending" | "approved") || "pending",
     raw: row,
   };
 }
@@ -109,7 +112,13 @@ export function useRecords() {
         if (valA > valB) return sortAsc ? 1 : -1;
         return 0;
       });
-  }, [ownRecordsOnly, submittedByFilter, classificationFilter, sortField, sortAsc]);
+  }, [
+    ownRecordsOnly,
+    submittedByFilter,
+    classificationFilter,
+    sortField,
+    sortAsc,
+  ]);
 
   // Handle Record Deletion
   const handleDeleteRecord = async (recordId: string, deletedBy: string) => {

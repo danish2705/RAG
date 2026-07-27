@@ -164,11 +164,13 @@ export async function approveCase(req: Request, res: Response): Promise<void> {
   await recordAuditEntry({
     entity_type: isChangeControl ? "Change Control" : "Deviation",
     entity_id: id,
-    action: "approved",
+    action: "status_changed",
     source: "human",
     performed_by: approvedBy,
+    field_name: "approval_status",
+    new_value: "approved",
     record_snapshot: updatedRow,
-    reason: null,
+    reason: "Case approved",
   });
 
   res.json({ success: true, id, approval_status: "approved" });

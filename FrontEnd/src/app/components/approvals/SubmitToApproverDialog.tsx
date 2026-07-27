@@ -11,17 +11,6 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 
-/**
- * Shown at the very end of the Summary page (both Deviation and Change
- * Control) when the user clicks Submit. Collects the "Submitted to" name —
- * i.e. the approver who will later be able to review & approve this case.
- *
- * Rule: the first word must start with a capital letter. We enforce it two
- * ways so it's impossible to get wrong: the first character is auto-uppercased
- * as they type, and we re-validate on confirm.
- */
-
-/** Uppercases the first alphabetic character; leaves the rest untouched. */
 function capitaliseFirstWord(value: string): string {
   return value.replace(
     /^(\s*)([a-z])/,

@@ -7,16 +7,8 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import {
-  ClipboardCheck,
-  CheckCircle2,
-  Clock,
-  Eye,
-  Loader2,
-  AlertCircle,
-} from "lucide-react";
+import { ClipboardCheck, Loader2, AlertCircle } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -30,9 +22,9 @@ interface ApprovalsTableProps {
   loading: boolean;
   error: string | null;
   rows: any[];
-  /** True when the logged-in user is the approver for this row. */
+  /** True when the logged-in user is the assigned approver for this row. */
   canApprove: (row: any) => boolean;
-  /** Open the editable review modal for a row. */
+  /** Open the review/approve modal for a row. */
   onReview: (row: any) => void;
 }
 
@@ -43,14 +35,6 @@ export const ApprovalsTable: React.FC<ApprovalsTableProps> = ({
   canApprove,
   onReview,
 }) => {
-  const getBadgeColor = (type: string) => {
-    if (type === "Deviation")
-      return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
-    if (type === "Change Control")
-      return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
-    return "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800";
-  };
-
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 bg-card rounded-xl border border-border">
@@ -78,16 +62,14 @@ export const ApprovalsTable: React.FC<ApprovalsTableProps> = ({
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow>
-              <TableHead className="w-32 font-semibold">Assigned ID</TableHead>
+              <TableHead className="w-32 font-semibold">Approval ID</TableHead>
               <TableHead className="font-semibold w-[220px] pl-4">
                 Query
               </TableHead>
               <TableHead className="w-40 font-semibold">Submitted By</TableHead>
               <TableHead className="w-40 font-semibold">Submitted To</TableHead>
-              <TableHead className="w-52 font-semibold">
-                Saved Date &amp; Time
-              </TableHead>
-              <TableHead className="w-44 text-center font-semibold">
+              <TableHead className="w-52 font-semibold">Timestamp</TableHead>
+              <TableHead className="w-48 text-center font-semibold">
                 Action
               </TableHead>
             </TableRow>
@@ -99,13 +81,11 @@ export const ApprovalsTable: React.FC<ApprovalsTableProps> = ({
                   colSpan={6}
                   className="h-32 text-center text-muted-foreground text-sm"
                 >
-                  No cases have been submitted to you for approval yet.
+                  No pending cases for approval.
                 </TableCell>
               </TableRow>
             ) : (
               rows.map((row, idx) => {
-                const isApproved = row.approvalStatus === "approved";
-                const allowed = canApprove(row);
                 return (
                   <TableRow
                     key={row.uiId || row.id || idx}
@@ -143,56 +123,37 @@ export const ApprovalsTable: React.FC<ApprovalsTableProps> = ({
                       {formatTimestamp(row.savedOn, { dateStyle: "numeric" })}
                     </TableCell>
 
-                    {/* Action: status badge + gated Review & Approve button */}
+                    {/* Action: enabled only for the assigned approver. */}
                     <TableCell className="text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        {isApproved ? (
-                          <>
-                            <Badge className="bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800 text-xs px-2.5 py-0.5 font-medium shadow-none">
-                              <CheckCircle2 className="h-3 w-3 mr-1" /> Approved
-                            </Badge>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => onReview(row)}
-                              className="h-8 w-8 rounded-full hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/50 dark:hover:text-blue-400 transition-colors"
-                              aria-label="View approved case"
-                            >
-                              <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <Badge className="bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800 text-xs px-2.5 py-0.5 font-medium shadow-none">
-                              <Clock className="h-3 w-3 mr-1" /> Pending
-                            </Badge>
-                            {allowed ? (
+                      {canApprove(row) ? (
+                        <Button
+                          size="sm"
+                          onClick={() => onReview(row)}
+                          className="h-8 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-xs font-medium shadow-sm border-0 gap-1.5"
+                        >
+                          <ClipboardCheck className="h-3.5 w-3.5" />
+                          Go for Approval
+                        </Button>
+                      ) : (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            {/* span wrapper so the tooltip works on a disabled button */}
+                            <span className="inline-block">
                               <Button
                                 size="sm"
-                                onClick={() => onReview(row)}
-                                className="h-8 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-xs font-medium shadow-sm border-0 gap-1.5"
+                                disabled
+                                className="h-8 bg-blue-600 text-white text-xs font-medium gap-1.5 border-0 disabled:opacity-40 cursor-not-allowed"
                               >
                                 <ClipboardCheck className="h-3.5 w-3.5" />
-                                Review &amp; Approve
+                                Go for Approval
                               </Button>
-                            ) : (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="text-xs text-muted-foreground italic select-none">
-                                    Awaiting approver
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent
-                                  side="bottom"
-                                  className="text-xs"
-                                >
-                                  Only {row.submittedTo} can approve this case.
-                                </TooltipContent>
-                              </Tooltip>
-                            )}
-                          </>
-                        )}
-                      </div>
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="text-xs">
+                            Only {row.submittedTo} can approve this case.
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
                     </TableCell>
                   </TableRow>
                 );

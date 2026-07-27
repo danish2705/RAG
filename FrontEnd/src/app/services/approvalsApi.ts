@@ -11,15 +11,18 @@ export interface ApprovalsListResponse {
   };
 }
 
+/**
+ * Fetch ALL cases (both types), optionally filtered by approval status.
+ * The Approvals page shows every case; per-row gating decides who may
+ * actually approve. Reuses the same combined /api/records endpoint.
+ */
 export const fetchApprovals = async (
-  submittedTo: string,
   approvalStatus: "all" | "pending" | "approved" = "all",
 ): Promise<ApprovalsListResponse> => {
   const params = new URLSearchParams({
     pageSize: "100",
     sortField: "created_at",
     sortDir: "desc",
-    submittedTo,
   });
   if (approvalStatus !== "all") params.set("approvalStatus", approvalStatus);
 

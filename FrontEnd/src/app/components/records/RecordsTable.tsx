@@ -9,7 +9,14 @@ import {
 } from "../ui/table";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { Eye, ArrowUpDown, Loader2, AlertCircle } from "lucide-react";
+import {
+  Eye,
+  ArrowUpDown,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+} from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -83,7 +90,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                   <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
               </TableHead>
-              <TableHead className="font-semibold w-[220px] pl-12">Query</TableHead>
+              <TableHead className="font-semibold w-[220px]">Query</TableHead>
               <TableHead className="w-44 font-semibold">
                 <button
                   onClick={() => onSort?.("classification")}
@@ -103,6 +110,10 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                   <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
               </TableHead>
+              {/* Approval status */}
+              <TableHead className="w-32 text-center font-semibold">
+                Status
+              </TableHead>
               {/* 2. Renamed Column: Actions */}
               <TableHead className="w-28 text-center font-semibold">
                 Actions
@@ -113,7 +124,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
             {filteredCases.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={7}
                   className="h-32 text-center text-muted-foreground text-sm"
                 >
                   {cases.length === 0
@@ -169,6 +180,19 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                     {formatTimestamp(record.savedOn || record.timestamp, {
                       dateStyle: "numeric",
                     })}
+                  </TableCell>
+
+                  {/* Approval status badge */}
+                  <TableCell className="text-center">
+                    {record.approvalStatus === "approved" ? (
+                      <Badge className="bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800 text-xs px-2.5 py-0.5 font-medium shadow-none">
+                        <CheckCircle2 className="h-3 w-3 mr-1" /> Approved
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800 text-xs px-2.5 py-0.5 font-medium shadow-none">
+                        <Clock className="h-3 w-3 mr-1" /> Pending
+                      </Badge>
+                    )}
                   </TableCell>
 
                   {/* Actions Column: View only (delete icon removed) */}

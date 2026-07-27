@@ -19,15 +19,17 @@ export function Approvals() {
     rows,
     loading,
     error,
-    statusFilter,
-    setStatusFilter,
     searchText,
     setSearchText,
+    submittedToFilter,
+    setSubmittedToFilter,
+    submittedToOptions,
     selectedId,
     selectedDetail,
     detailLoading,
     detailError,
     isApproving,
+    approveError,
     canApprove,
     openCase,
     closeCase,
@@ -35,11 +37,9 @@ export function Approvals() {
   } = useApprovals();
 
   const selectedRow = rows.find((r) => r.id === selectedId);
-  // Already-approved cases open read-only; pending cases open editable, but
-  // only when the logged-in user is genuinely the assigned approver.
-  const readOnly = selectedRow
-    ? selectedRow.approvalStatus === "approved" || !canApprove(selectedRow)
-    : false;
+  // Only the assigned approver can open a case here, and always editable
+  // (approved cases no longer appear on this page).
+  const readOnly = selectedRow ? !canApprove(selectedRow) : false;
 
   return (
     <div className="relative h-full w-full">
@@ -74,6 +74,7 @@ export function Approvals() {
             record={selectedDetail}
             readOnly={readOnly}
             isApproving={isApproving}
+            approveError={approveError}
             onClose={closeCase}
             onApprove={submitApproval}
           />
@@ -83,14 +84,14 @@ export function Approvals() {
           <h1 className="text-xl font-bold text-foreground">Approvals</h1>
           <p className="text-sm text-muted-foreground mt-0.5 font-medium">
             {identity
-              ? `Cases submitted to you (${identity}) for approval`
-              : "Cases submitted to you for approval"}
+              ? `Pending cases — you (${identity}) can approve cases submitted to you`
+              : "Pending cases awaiting approval"}
           </p>
         </div>
 
-        {/* Filter bar — search + status */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="relative flex-1">
+        {/* Filter bar — search + submitted by + submitted to + status */}
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div className="relative flex-1 min-w-[220px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search submitted by, query…"
@@ -99,19 +100,21 @@ export function Approvals() {
               className="pl-9"
             />
           </div>
+
           <Select
-            value={statusFilter}
-            onValueChange={(v) =>
-              setStatusFilter(v as "all" | "pending" | "approved")
-            }
+            value={submittedToFilter}
+            onValueChange={setSubmittedToFilter}
           >
-            <SelectTrigger className="w-40">
-              <SelectValue />
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Submitted To" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="approved">Approved</SelectItem>
+              <SelectItem value="all">All submitted to</SelectItem>
+              {submittedToOptions.map((name: string) => (
+                <SelectItem key={name} value={name}>
+                  {name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

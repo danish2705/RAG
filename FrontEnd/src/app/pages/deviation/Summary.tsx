@@ -132,8 +132,8 @@ export function Summary() {
 
           <SummarySaveSection
             saveError={saveError}
-            isSaving={isSaving}
-            isSaved={isSaved}
+            isSaving={false}
+            isSaved={isSaved || approverDialogOpen}
             onSave={handleSaveClick}
           />
         </div>

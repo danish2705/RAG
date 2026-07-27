@@ -515,10 +515,10 @@ export async function approveDeviationCase(
   const result = await pool.query(
     `UPDATE deviation_cases
         SET query             = COALESCE($2, query),
-            classification    = COALESCE($3, classification),
-            impact_assessment = COALESCE($4, impact_assessment),
-            rca               = COALESCE($5, rca),
-            capa              = COALESCE($6, capa),
+            classification    = COALESCE($3::jsonb, classification),
+            impact_assessment = COALESCE($4::jsonb, impact_assessment),
+            rca               = COALESCE($5::jsonb, rca),
+            capa              = COALESCE($6::jsonb, capa),
             approval_status   = 'approved'
       WHERE id = $1
       RETURNING *`,
@@ -555,12 +555,12 @@ export async function approveChangeControlCase(
   const result = await pool.query(
     `UPDATE change_control_cases
         SET query                     = COALESCE($2, query),
-            classification            = COALESCE($3, classification),
-            change_impact_assessment  = COALESCE($4, change_impact_assessment),
-            risk_criticality          = COALESCE($5, risk_criticality),
-            validation_testing        = COALESCE($6, validation_testing),
-            implementation_control    = COALESCE($7, implementation_control),
-            final_summary             = COALESCE($8, final_summary),
+            classification            = COALESCE($3::jsonb, classification),
+            change_impact_assessment  = COALESCE($4::jsonb, change_impact_assessment),
+            risk_criticality          = COALESCE($5::jsonb, risk_criticality),
+            validation_testing        = COALESCE($6::jsonb, validation_testing),
+            implementation_control    = COALESCE($7::jsonb, implementation_control),
+            final_summary             = COALESCE($8::jsonb, final_summary),
             approval_status           = 'approved'
       WHERE id = $1
       RETURNING *`,

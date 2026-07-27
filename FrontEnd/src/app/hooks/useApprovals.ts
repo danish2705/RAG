@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
 import {
   fetchApprovals,
@@ -37,6 +38,7 @@ function toApprovalRow(row: any): ApprovalRow {
 
 export function useApprovals() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   // The identity the user is "logged in as" — same rule the save flow uses to
   // set saved_by, so it lines up with submitted_to written by other users.
   const identity = (user?.displayName || user?.username || "").trim();
@@ -49,6 +51,8 @@ export function useApprovals() {
     "all" | "pending" | "approved"
   >("all");
   const [searchText, setSearchText] = useState("");
+  const [submittedByFilter, setSubmittedByFilter] = useState("all");
+  const [submittedToFilter, setSubmittedToFilter] = useState("all");
 
   // Selected case + its full detail (fetched on demand for the edit modal).
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -57,17 +61,13 @@ export function useApprovals() {
   const [detailError, setDetailError] = useState<string | null>(null);
 
   const [isApproving, setIsApproving] = useState(false);
+  const [approveError, setApproveError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!identity) {
-      setRows([]);
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     setError(null);
     try {
-      const result = await fetchApprovals(identity, statusFilter);
+      const result = await fetchApprovals(statusFilter);
       setRows(result.data.map(toApprovalRow));
     } catch (err) {
       setError(
@@ -77,21 +77,44 @@ export function useApprovals() {
     } finally {
       setLoading(false);
     }
-  }, [identity, statusFilter]);
+  }, [statusFilter]);
 
   useEffect(() => {
     load();
   }, [load]);
 
+  // Distinct names for the dropdowns, taken from the full (unfiltered) set.
+  const submittedByOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(rows.map((r) => r.submittedBy).filter(Boolean)),
+      ).sort(),
+    [rows],
+  );
+  const submittedToOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(rows.map((r) => r.submittedTo).filter(Boolean)),
+      ).sort(),
+    [rows],
+  );
+
   const filteredRows = useMemo(() => {
-    if (!searchText) return rows;
-    const q = searchText.toLowerCase();
-    return rows.filter(
-      (r) =>
-        r.submittedBy.toLowerCase().includes(q) ||
-        r.query.toLowerCase().includes(q),
-    );
-  }, [rows, searchText]);
+    const q = searchText.trim().toLowerCase();
+    return rows.filter((r) => {
+      // Approved cases drop off the Approvals page entirely.
+      if (r.approvalStatus === "approved") return false;
+      if (submittedToFilter !== "all" && r.submittedTo !== submittedToFilter)
+        return false;
+      if (
+        q &&
+        !r.submittedBy.toLowerCase().includes(q) &&
+        !r.query.toLowerCase().includes(q)
+      )
+        return false;
+      return true;
+    });
+  }, [rows, searchText, submittedToFilter]);
 
   // True when the current user is the approver this case was submitted to.
   const canApprove = useCallback(
@@ -121,7 +144,9 @@ export function useApprovals() {
     setDetailError(null);
   }, []);
 
-  // Persist the approver's edits + flip to approved, then refresh the queue.
+  // Persist the approver's edits + flip to approved, then go to Records
+  // (where the case now shows an "Approved" status). Errors are surfaced
+  // instead of failing silently.
   const submitApproval = useCallback(
     async (
       id: string,
@@ -129,6 +154,7 @@ export function useApprovals() {
       updates: Record<string, unknown>,
     ) => {
       setIsApproving(true);
+      setApproveError(null);
       try {
         const payload: ApprovePayload = {
           approved_by: identity || "Unknown",
@@ -136,12 +162,18 @@ export function useApprovals() {
         };
         await approveCase(id, caseType, payload);
         closeCase();
-        await load();
+        navigate("/records");
+      } catch (err) {
+        setApproveError(
+          err instanceof Error
+            ? err.message
+            : "Could not save the approval. Please try again.",
+        );
       } finally {
         setIsApproving(false);
       }
     },
-    [identity, closeCase, load],
+    [identity, closeCase, navigate],
   );
 
   return {
@@ -154,11 +186,18 @@ export function useApprovals() {
     setStatusFilter,
     searchText,
     setSearchText,
+    submittedByFilter,
+    setSubmittedByFilter,
+    submittedToFilter,
+    setSubmittedToFilter,
+    submittedByOptions,
+    submittedToOptions,
     selectedId,
     selectedDetail,
     detailLoading,
     detailError,
     isApproving,
+    approveError,
     canApprove,
     openCase,
     closeCase,

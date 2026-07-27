@@ -190,6 +190,7 @@ export function ApprovalEditModal({
   record,
   readOnly = false,
   isApproving = false,
+  approveError = null,
   onClose,
   onApprove,
 }: {
@@ -197,6 +198,7 @@ export function ApprovalEditModal({
   /** Approved cases open read-only (no edits, no Approve button). */
   readOnly?: boolean;
   isApproving?: boolean;
+  approveError?: string | null;
   onClose: () => void;
   onApprove: (
     id: string,
@@ -321,10 +323,18 @@ export function ApprovalEditModal({
 
         {/* Footer with Approve */}
         <div className="px-6 py-3 bg-muted/40 border-t border-border flex items-center justify-between shrink-0">
-          <p className="text-xs text-muted-foreground">
-            {readOnly
-              ? "This case has already been approved."
-              : "Edits are saved when you approve."}
+          <p
+            className={
+              approveError
+                ? "text-xs text-red-600 font-medium"
+                : "text-xs text-muted-foreground"
+            }
+          >
+            {approveError
+              ? approveError
+              : readOnly
+                ? "This case has already been approved."
+                : "Edits are saved when you approve."}
           </p>
           <div className="flex items-center gap-3">
             <Button

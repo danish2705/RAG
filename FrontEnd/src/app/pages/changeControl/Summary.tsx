@@ -93,8 +93,8 @@ export function ChangecontrolSummary() {
 
         <SummarySaveSection
           saveError={saveError}
-          isSaving={isSaving}
-          isSaved={isSaved}
+          isSaving={false}
+          isSaved={isSaved || approverDialogOpen}
           onSave={handleSaveClick}
         />
 

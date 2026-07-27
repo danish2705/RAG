@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -90,8 +85,7 @@ export const CARD_TITLE_CLASS =
 // section card (label on the left, Modified badge on the right).
 const SUBSECTION_HEADER_CLASS =
   "flex items-center gap-2 flex-wrap justify-between mb-3";
-const SUBSECTION_LABEL_CLASS =
-  "text-sm font-medium text-foreground";
+const SUBSECTION_LABEL_CLASS = "text-sm font-medium text-foreground";
 
 export const ConfidenceBar: React.FC<{ score: number }> = ({ score }) => (
   <div>
@@ -113,7 +107,11 @@ export const ConfidenceBar: React.FC<{ score: number }> = ({ score }) => (
 // Field-level "Modified" badge — mirrors the deviation Summary page's
 // approach of checking each field's provenance source, rather than the
 // blanket per-card ModifiedBadge used elsewhere in the change control flow.
-export function FieldModifiedBadge<T>({ field }: { field?: { source: string } }) {
+export function FieldModifiedBadge<T>({
+  field,
+}: {
+  field?: { source: string };
+}) {
   if (!field || field.source !== "modified") return null;
   return <ModifiedBadge />;
 }
@@ -184,7 +182,9 @@ export const ClassificationSummaryCard: React.FC<{
         >
           {parsed.classification}
         </span>
-        <FieldModifiedBadge field={provenance?.classification?.classification} />
+        <FieldModifiedBadge
+          field={provenance?.classification?.classification}
+        />
       </div>
 
       <ConfidenceBar score={parsed.confidence_score} />
@@ -369,13 +369,16 @@ export const RiskCriticalitySummarySection: React.FC<{
             >
               {parsed.regulatory_impact.level}
             </span>
-            {parsed.regulatory_impact.filings_or_submissions_affected?.length > 0 && (
+            {parsed.regulatory_impact.filings_or_submissions_affected?.length >
+              0 && (
               <div>
                 <p className="text-xs font-medium text-muted-foreground mb-1.5">
                   Filings / Submissions Affected
                 </p>
                 <BulletList
-                  items={parsed.regulatory_impact.filings_or_submissions_affected}
+                  items={
+                    parsed.regulatory_impact.filings_or_submissions_affected
+                  }
                 />
               </div>
             )}
@@ -413,8 +416,7 @@ export const RiskCriticalitySummarySection: React.FC<{
             </p>
             <FieldModifiedBadge
               field={
-                provenance?.riskCriticality?.operational_disruption_risk
-                  ?.level
+                provenance?.riskCriticality?.operational_disruption_risk?.level
               }
             />
           </div>
@@ -606,9 +608,7 @@ export const ImplementationSummarySection: React.FC<{
             {IMPLEMENTATION_CONTROL_FIELD_LABELS.rollback_contingency_plan}
           </p>
           <FieldModifiedBadge
-            field={
-              provenance?.implementationControl?.rollback_contingency_plan
-            }
+            field={provenance?.implementationControl?.rollback_contingency_plan}
           />
         </div>
         <p className="text-sm text-muted-foreground leading-relaxed">
@@ -645,10 +645,10 @@ export const SummarySaveSection: React.FC<{
         {isSaving ? (
           <>
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            Saving...
+            Submitting...
           </>
         ) : (
-          "Save"
+          "Submit"
         )}
       </Button>
     </div>
@@ -708,10 +708,7 @@ export const SavedByDialog: React.FC<{
         <Button variant="outline" onClick={() => onOpenChange(false)}>
           Cancel
         </Button>
-        <Button
-          className="bg-blue-600 hover:bg-blue-700"
-          onClick={onConfirm}
-        >
+        <Button className="bg-blue-600 hover:bg-blue-700" onClick={onConfirm}>
           Confirm &amp; Save
         </Button>
       </DialogFooter>

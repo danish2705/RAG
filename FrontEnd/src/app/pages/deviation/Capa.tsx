@@ -6,7 +6,6 @@ import {
   RejectDialog,
   StepProgressBar,
 } from "../../components/eventIntake";
-import { Button } from "../../components/ui/button";
 import { AIAssistant } from "../../components/chat/AiAssistant";
 import { useCapaReview } from "../../hooks/deviation/useCapaReview";
 import {
@@ -28,7 +27,6 @@ export function Capa() {
     setIsOverrideEditing,
     overrideConfirmed,
     capaAccepted,
-    setCapaAccepted,
     correction,
     setCorrection,
     correctiveAction,
@@ -49,7 +47,7 @@ export function Capa() {
     setShowRejectDialog,
     rejectJustification,
     setRejectJustification,
-    proceed,
+    handleAccept,
     handleCancelOverride,
     handleOverrideConfirm,
     handleReject,
@@ -85,7 +83,7 @@ export function Capa() {
 
           <CapaActionCard
             title="Corrective Action"
-            label="Corrective Action (What will prevent THIS deviation from recurring?) — one action per line"
+            label="Corrective Action (What will prevent THIS deviation from recurring?)"
             placeholder="Define specific actions to eliminate the root cause and prevent recurrence..."
             value={correctiveAction}
             originalValue={capaParsed.corrective_actions.join("\n")}
@@ -97,7 +95,7 @@ export function Capa() {
 
           <CapaActionCard
             title="Preventive Action"
-            label="Preventive Action (What will prevent SIMILAR deviations?) — one action per line"
+            label="Preventive Action (What will prevent SIMILAR deviations?)"
             placeholder="Define actions to prevent similar issues in other areas or systems..."
             value={preventiveAction}
             originalValue={capaParsed.preventive_actions.join("\n")}
@@ -119,7 +117,7 @@ export function Capa() {
 
           <DecisionAction
             acceptLabel="Accept CAPA"
-            onAccept={() => setCapaAccepted(true)}
+            onAccept={handleAccept}
             acceptDisabled={decisionMade}
             acceptSelected={capaAccepted}
             isOverrideEditing={isOverrideEditing}
@@ -134,16 +132,6 @@ export function Capa() {
             rejectDisabled={decisionMade}
             footerText="Your decision will be logged in the audit trail"
           />
-
-          <div className="flex justify-end">
-            <Button
-              onClick={proceed}
-              disabled={!decisionMade}
-              className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Get Summary
-            </Button>
-          </div>
         </div>
 
         <OverrideDialog

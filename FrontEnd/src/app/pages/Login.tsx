@@ -82,7 +82,12 @@ export function Login() {
     // Backend signs the demo user in directly.
     const ssoUser = await loginWithSSO();
     if (ssoUser) {
-      handleLoggedInUser(ssoUser);
+      // SSO logins skip the "what's your name?" prompt and default to
+      // "Anurag" instead.
+      if (!ssoUser.displayName) {
+        setDisplayName("Anurag");
+      }
+      goToDestination();
     } else {
       goToDestination();
     }

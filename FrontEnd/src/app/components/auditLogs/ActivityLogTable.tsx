@@ -138,7 +138,7 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
                     const meta = actionMeta(entry);
                     return (
                       <TableRow key={entry.id} className={meta.rowClass}>
-                        <TableCell className="text-sm font-medium text-white truncate">
+                        <TableCell className="text-sm font-medium text-gray-900 dark:text-white truncate">
                           {entry.entity_id
                             ? `#${entry.entity_id.slice(0, 8)}`
                             : "—"}

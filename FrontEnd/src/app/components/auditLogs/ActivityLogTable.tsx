@@ -112,15 +112,15 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
       <CardContent className="p-0">
         <TooltipProvider delayDuration={150}>
           <div className="overflow-x-auto rounded-lg border border-border">
-            <Table className="w-full">
+            <Table className="w-full min-w-[900px]">
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead className="w-[6%]">UID</TableHead>
-                  <TableHead className="w-[8%]">User / System</TableHead>
-                  <TableHead className="w-[48%]">Details</TableHead>
-                  <TableHead className="w-[8%]">Source</TableHead>
-                  <TableHead className="w-[10%]">Action</TableHead>
-                  <TableHead className="w-[20%]">Timestamp</TableHead>
+                  <TableHead className="w-26">Audit ID</TableHead>
+                  <TableHead className="w-34">User / System</TableHead>
+                  <TableHead>Details</TableHead>
+                  <TableHead className="w-28">Source</TableHead>
+                  <TableHead className="w-32">Action</TableHead>
+                  <TableHead className="w-44">Timestamp</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody className="bg-white dark:bg-background">
@@ -138,7 +138,7 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
                     const meta = actionMeta(entry);
                     return (
                       <TableRow key={entry.id} className={meta.rowClass}>
-                        <TableCell className="text-sm font-medium text-blue-600 dark:text-blue-400 truncate">
+                        <TableCell className="text-sm font-medium text-white truncate">
                           {entry.entity_id
                             ? `#${entry.entity_id.slice(0, 8)}`
                             : "—"}

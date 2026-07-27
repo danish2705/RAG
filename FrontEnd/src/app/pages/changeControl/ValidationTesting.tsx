@@ -20,7 +20,6 @@ import {
   FlaskConical,
   Link2,
   ListChecks,
-  RefreshCcw,
   Users,
 } from "lucide-react";
 import { AIAssistant } from "../../components/chat/AiAssistant";
@@ -140,19 +139,6 @@ export function ValidationTesting() {
             overrideConfirmed={overrideConfirmed}
             onChange={setScenarioTesting}
             placeholder="Describe recommended test scenarios..."
-          />
-
-          <ListTextareaCard
-            icon={<RefreshCcw className="h-4 w-4 text-blue-500" />}
-            title={VALIDATION_TESTING_FIELD_LABELS.regression_scope}
-            fieldId="regressionScope"
-            label="Existing functionality to retest — one item per line"
-            value={regressionScope}
-            originalValue={validationParsed.regression_scope.join("\n")}
-            isOverrideEditing={isOverrideEditing}
-            overrideConfirmed={overrideConfirmed}
-            onChange={setRegressionScope}
-            placeholder="Describe the regression testing scope..."
           />
 
           <ListTextareaCard

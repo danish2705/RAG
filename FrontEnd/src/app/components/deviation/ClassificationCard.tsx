@@ -14,18 +14,20 @@ import {
   TooltipTrigger,
 } from "../ui/tooltip";
 import { Textarea } from "../ui/textarea";
+import { Button } from "../ui/button";
 import { Sparkles, Info } from "lucide-react";
 import { ModifiedStatus } from "../eventIntake";
 import type { ClassificationType } from "../../types/pipeline";
 
 interface ClassificationCardProps {
-  editedClassification: ClassificationType;
+  editedClassification: ClassificationType | "";
   setEditedClassification: (v: ClassificationType) => void;
   confidenceScore: number;
   editedRationale: string;
   setEditedRationale: (v: string) => void;
   originalClassification: ClassificationType;
   originalRationale: string[];
+  onGetAiSuggestion: () => void;
 }
 
 export const ClassificationCard: React.FC<ClassificationCardProps> = ({
@@ -36,14 +38,19 @@ export const ClassificationCard: React.FC<ClassificationCardProps> = ({
   setEditedRationale,
   originalClassification,
   originalRationale,
+  onGetAiSuggestion,
 }) => {
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-blue-600" />
           AI Classification
         </CardTitle>
+        <Button type="button" variant="outline" size="sm" onClick={onGetAiSuggestion}>
+          <Sparkles className="h-4 w-4 mr-2 text-blue-600" />
+          AI Suggestion
+        </Button>
       </CardHeader>
 
       <CardContent className="space-y-6">
@@ -53,13 +60,13 @@ export const ClassificationCard: React.FC<ClassificationCardProps> = ({
             Classification:
           </span>
           <Select
-            value={editedClassification}
+            value={editedClassification || undefined}
             onValueChange={(v) =>
               setEditedClassification(v as ClassificationType)
             }
           >
             <SelectTrigger className="w-48">
-              <SelectValue />
+              <SelectValue placeholder="Select classification..." />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="Deviation">Deviation</SelectItem>

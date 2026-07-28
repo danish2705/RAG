@@ -194,8 +194,41 @@ export async function approveCase(req: Request, res: Response): Promise<void> {
     typeof body.approved_by === "string" && body.approved_by.trim()
       ? body.approved_by.trim()
       : "Unknown";
+  const approverRole =
+    typeof body.approver_role === "string" ? body.approver_role.trim() : "";
 
   const isChangeControl = caseType === "Change Control";
+
+  // Look up the case first so we can check who it was actually submitted
+  // to — the client's own claim of "approved_by" is never trusted alone.
+  // Admins are exempt from the submitted_to match.
+  const existing = (
+    isChangeControl
+      ? await getChangeControlCaseById(id)
+      : await getDeviationCaseById(id)
+  ) as Record<string, unknown> | null;
+
+  if (!existing) {
+    res.status(404).json({
+      error: isChangeControl
+        ? "Change control case not found"
+        : "Deviation case not found",
+    });
+    return;
+  }
+
+  const submittedTo =
+    typeof existing.submitted_to === "string" ? existing.submitted_to : "";
+  const isAssignedApprover =
+    !!submittedTo && approvedBy.toLowerCase() === submittedTo.toLowerCase();
+
+  if (approverRole !== "Admin" && !isAssignedApprover) {
+    res.status(403).json({
+      error: "Only the assigned approver or an Admin can approve this case.",
+    });
+    return;
+  }
+
   const updatedRow = isChangeControl
     ? await approveChangeControlCase(id, body.updates ?? {})
     : await approveDeviationCase(id, body.updates ?? {});

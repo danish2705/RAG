@@ -36,8 +36,9 @@ export function useClassificationReview() {
   // Fields are directly editable at all times — these hold the live form
   // values, seeded from the AI output but freely changeable without first
   // entering any separate "override" mode.
-  const [editedClassification, setEditedClassification] =
-    useState<ClassificationType>(parsed?.classification ?? "Deviation");
+  const [editedClassification, setEditedClassification] = useState(
+    parsed?.classification ?? ("Deviation" as ClassificationType | "")
+  );
   const [editedRationale, setEditedRationale] = useState(
     (parsed?.rationale ?? []).join("\n"),
   );
@@ -54,15 +55,16 @@ export function useClassificationReview() {
 
   const buildClassificationProvenance =
     useCallback((): ClassificationProvenance => {
+      const classificationValue = editedClassification as ClassificationType;
       if (!parsed) {
         return {
-          classification: aiField(editedClassification),
+          classification: aiField(classificationValue),
           rationale: aiField(rationaleLines),
           confidence_score: 0,
         };
       }
       return {
-        classification: autoField(parsed.classification, editedClassification),
+        classification: autoField(parsed.classification, classificationValue),
         rationale: autoField(parsed.rationale, rationaleLines),
         confidence_score: parsed.confidence_score,
       };
@@ -177,7 +179,7 @@ export function useClassificationReview() {
   );
 
   const handleAccept = useCallback(() => {
-    if (!parsed) return;
+    if (!parsed || !editedClassification) return;
 
     // Whatever is currently in the form — edited or left as the AI
     // suggested it — is what gets approved. No separate override flag.
@@ -251,9 +253,23 @@ export function useClassificationReview() {
   const handleReject = useCallback(() => {
     if (rejectJustification.trim()) {
       setShowRejectDialog(false);
-      navigate("/deviation");
+      setRejectJustification("");
+      // Clear the AI-classified fields — the user rejected the AI's
+      // suggestion, so we don't leave it sitting in the form. They can
+      // either fill this in manually or pull the AI suggestion back in
+      // with the button at the top of the page.
+      setEditedClassification("");
+      setEditedRationale("");
     }
-  }, [rejectJustification, navigate]);
+  }, [rejectJustification]);
+
+  // Restores the original AI suggestion into the form — used by the
+  // "AI Suggestion" button so a rejected/cleared field can be brought back.
+  const handleGetAiSuggestion = useCallback(() => {
+    if (!parsed) return;
+    setEditedClassification(parsed.classification);
+    setEditedRationale((parsed.rationale ?? []).join("\n"));
+  }, [parsed]);
 
   return {
     result,
@@ -275,6 +291,7 @@ export function useClassificationReview() {
     currentClassification: editedClassification,
     handleAccept,
     handleReject,
+    handleGetAiSuggestion,
     llmFailure,
   };
 }

@@ -64,7 +64,7 @@ export const ApprovalsTable: React.FC<ApprovalsTableProps> = ({
             <TableRow>
               {/* Added standard header styling: text-[11px] font-semibold text-muted-foreground uppercase tracking-wider */}
               <TableHead className="w-32 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Approval ID</TableHead>
-              <TableHead className="w-[220px] py-3 pl-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <TableHead className="w-[220px] text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
                 Query
               </TableHead>
               <TableHead className="w-40 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Submitted By</TableHead>
@@ -92,7 +92,7 @@ export const ApprovalsTable: React.FC<ApprovalsTableProps> = ({
                     key={row.uiId || row.id || idx}
                     className="hover:bg-muted/40 transition-colors"
                   >
-                    <TableCell className="py-3 px-4 font-mono text-xs font-semibold text-foreground">
+                    <TableCell className="py-3 px-4 font-medium text-xs text-foreground">
                       {row.uiId || `#${row.id?.slice(0, 8)}`}
                     </TableCell>
                     <TableCell className="py-3 pl-4 text-xs text-gray-900 dark:text-white w-[220px] truncate">

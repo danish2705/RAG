@@ -7,6 +7,7 @@ import {
   ALLOWED_FILE_TYPES,
 } from "../mocks/mockInputQuery";
 import { useWorkflowStore } from "../store/workflowStore";
+import { resetStepProgress } from "../components/eventIntake/StepProgressBar";
 import { useLlmFailureRecovery } from "./shared/useLlmFailureRecovery";
 import { checkSimilarQuery } from "../services/recordsApi";
 import type { SimilarQueryMatch } from "../services/recordsApi";
@@ -138,6 +139,9 @@ export function useInputQueryForm() {
       });
 
       setPipelineResult(result);
+      // This is a brand-new event/case — wipe any stepper progress left
+      // over from whatever was previously open before entering its flow.
+      resetStepProgress();
       navigate("/deviation/ai-recommendation");
     } catch (err) {
       const message =

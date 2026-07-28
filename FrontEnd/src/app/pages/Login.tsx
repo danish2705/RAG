@@ -83,9 +83,9 @@ export function Login() {
     const ssoUser = await loginWithSSO();
     if (ssoUser) {
       // SSO logins skip the "what's your name?" prompt and default to
-      // "Anurag" instead.
+      // "Alex" instead.
       if (!ssoUser.displayName) {
-        setDisplayName("Anurag");
+        setDisplayName("Alex");
       }
       goToDestination();
     } else {
@@ -111,6 +111,14 @@ export function Login() {
     setDisplayName(trimmed);
     setNamePromptOpen(false);
     goToDestination();
+  };
+
+  const handleCancelName = () => {
+    // Just close the popup and stay on the login page — no navigation,
+    // no display name saved, no other state changes.
+    setNamePromptOpen(false);
+    setNameInput("");
+    setNameError("");
   };
 
   return (
@@ -246,8 +254,13 @@ export function Login() {
       </div>
 
       {/* One-time "what's your name" prompt for Admin, User, and Guest logins */}
-      <Dialog open={namePromptOpen} onOpenChange={() => {}}>
-        <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
+      <Dialog
+        open={namePromptOpen}
+        onOpenChange={(open) => {
+          if (!open) handleCancelName();
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <UserIcon className="h-5 w-5 text-blue-600" /> What's your name?
@@ -274,12 +287,20 @@ export function Login() {
               {nameError && <p className="text-xs text-red-600">{nameError}</p>}
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="sm:flex-row sm:gap-2">
             <Button
-              className="bg-blue-600 hover:bg-blue-700 text-white w-full"
+              className="bg-blue-600 hover:bg-blue-700 text-white flex-1"
               onClick={handleConfirmName}
             >
               Continue
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              onClick={handleCancelName}
+            >
+              Cancel
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -96,7 +96,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
             <TableRow>
               {/* Added explicit header font styling: text-[11px] font-semibold text-muted-foreground uppercase tracking-wider across all columns */}
               <TableHead className="w-32 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Records ID
+                Record ID
               </TableHead>
               <TableHead className="w-44 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 <button

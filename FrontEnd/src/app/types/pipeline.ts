@@ -41,7 +41,7 @@ export type ImpactSeverity = "None" | "Minor" | "Major" | "Critical";
 export interface AssessmentItem {
   key: string;
   category: string;
-  severity: ImpactSeverity;
+  severity: ImpactSeverity | "";
   description: string;
   originalSeverity: ImpactSeverity;
   originalDescription: string;

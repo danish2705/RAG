@@ -35,6 +35,7 @@ export function ImpactAssessment() {
     updateDescription,
     handleAccept,
     handleReject,
+    handleGetAiSuggestion,
   } = useImpactAssessmentReview();
 
   if (!impactParsed || !classificationParsed) {
@@ -52,6 +53,7 @@ export function ImpactAssessment() {
           <ImpactConfidenceCard
             score={impactParsed.confidence_score}
             classificationName={classificationParsed.classification}
+            onGetAiSuggestion={handleGetAiSuggestion}
           />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -69,6 +71,7 @@ export function ImpactAssessment() {
           <DecisionAction
             acceptLoadingLabel="Generating Root Cause Analysis..."
             onAccept={handleAccept}
+            acceptDisabled={assessments.some((a) => !a.severity)}
             onReject={() => setShowRejectDialog(true)}
             isLoading={isGeneratingRCA}
             error={rcaError}

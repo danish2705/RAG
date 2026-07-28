@@ -40,6 +40,7 @@ export function Capa() {
     setRejectJustification,
     handleAccept,
     handleReject,
+    handleGetAiSuggestion,
   } = useCapaReview();
 
   if (!capaParsed || !result) {
@@ -59,7 +60,10 @@ export function Capa() {
         />
 
         <div className="space-y-6">
-          <CapaConfidenceCard score={capaParsed.confidence_score} />
+          <CapaConfidenceCard
+            score={capaParsed.confidence_score}
+            onGetAiSuggestion={handleGetAiSuggestion}
+          />
 
           <CapaCorrectionCard value={correction} onChange={setCorrection} />
 

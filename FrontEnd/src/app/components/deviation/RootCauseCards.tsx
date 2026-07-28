@@ -19,13 +19,22 @@ export const NoRcaDataGuard: React.FC<{ onGoBack: () => void }> = ({ onGoBack })
   </div>
 );
 
-export const RcaConfidenceCard: React.FC<{ score: number }> = ({ score }) => (
+export const RcaConfidenceCard: React.FC<{
+  score: number;
+  onGetAiSuggestion?: () => void;
+}> = ({ score, onGetAiSuggestion }) => (
   <Card className="shadow-sm">
-    <CardHeader>
+    <CardHeader className="flex flex-row items-center justify-between space-y-0">
       <CardTitle className="flex items-center gap-2">
         <Sparkles className="h-5 w-5 text-blue-600" />
         Overall AI Confidence Score
       </CardTitle>
+      {onGetAiSuggestion && (
+        <Button type="button" variant="outline" size="sm" onClick={onGetAiSuggestion}>
+          <Sparkles className="h-4 w-4 mr-2 text-blue-600" />
+          AI Suggestion
+        </Button>
+      )}
     </CardHeader>
     <CardContent>
       <div className="flex items-center justify-between mb-2">

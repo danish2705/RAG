@@ -184,8 +184,26 @@ export function useRootCauseReview() {
   const handleReject = () => {
     if (rejectJustification.trim()) {
       setShowRejectDialog(false);
-      navigate("/deviation");
+      setRejectJustification("");
+      // Clear the AI-classified fields — the user rejected the AI's
+      // suggestion, so we don't leave it sitting in the form. They can
+      // either fill this in manually or pull the AI suggestion back in
+      // with the button at the top of the page.
+      setPrimaryRootCause("");
+      setImmediateCause("");
+      setContributingFactors("");
+      setEvidence("");
     }
+  };
+
+  // Restores the original AI suggestion into the form — used by the
+  // "AI Suggestion" button so a rejected/cleared field can be brought back.
+  const handleGetAiSuggestion = () => {
+    if (!rcaParsed) return;
+    setPrimaryRootCause(rcaParsed.primary_root_cause ?? "");
+    setImmediateCause(rcaParsed.immediate_cause ?? "");
+    setContributingFactors((rcaParsed.contributing_factors ?? []).join("\n"));
+    setEvidence((rcaParsed.evidence ?? []).join("\n"));
   };
 
   return {
@@ -209,6 +227,7 @@ export function useRootCauseReview() {
     capaError,
     handleAccept,
     handleReject,
+    handleGetAiSuggestion,
     llmFailure,
   };
 }

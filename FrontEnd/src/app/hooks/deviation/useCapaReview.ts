@@ -179,8 +179,29 @@ export function useCapaReview() {
   const handleReject = () => {
     if (override.rejectJustification.trim()) {
       override.setShowRejectDialog(false);
-      navigate("/deviation");
+      override.setRejectJustification("");
+      // Clear the AI-classified fields — the user rejected the AI's
+      // suggestion, so we don't leave it sitting in the form. They can
+      // either fill this in manually or pull the AI suggestion back in
+      // with the button at the top of the page. The Correction field is
+      // user-entered (not AI-classified), so it's left untouched.
+      setCorrectiveAction("");
+      setPreventiveAction("");
+      setEffectivenessCheck("");
+      setDueDate("");
+      setShowWeakCapaWarning(false);
     }
+  };
+
+  // Restores the original AI suggestion into the form — used by the
+  // "AI Suggestion" button so a rejected/cleared field can be brought back.
+  const handleGetAiSuggestion = () => {
+    if (!capaParsed) return;
+    setCorrectiveAction((capaParsed.corrective_actions ?? []).join("\n"));
+    setPreventiveAction((capaParsed.preventive_actions ?? []).join("\n"));
+    setEffectivenessCheck(capaParsed.effectiveness_check ?? "");
+    setDueDate(capaParsed.due_date ?? "");
+    setShowWeakCapaWarning(false);
   };
 
   return {
@@ -209,5 +230,6 @@ export function useCapaReview() {
     proceed,
     handleAccept,
     handleReject,
+    handleGetAiSuggestion,
   };
 }

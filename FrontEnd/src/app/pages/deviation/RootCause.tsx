@@ -37,6 +37,7 @@ export function RootCause() {
     capaError,
     handleAccept,
     handleReject,
+    handleGetAiSuggestion,
     llmFailure,
   } = useRootCauseReview();
 
@@ -55,7 +56,10 @@ export function RootCause() {
         />
 
         <div className="space-y-6">
-          <RcaConfidenceCard score={rcaParsed.confidence_score} />
+          <RcaConfidenceCard
+            score={rcaParsed.confidence_score}
+            onGetAiSuggestion={handleGetAiSuggestion}
+          />
 
           <PrimaryRootCauseCard
             primaryCause={primaryRootCause}
@@ -85,6 +89,7 @@ export function RootCause() {
           <DecisionAction
             acceptLoadingLabel="Generating CAPA..."
             onAccept={handleAccept}
+            acceptDisabled={!primaryRootCause.trim()}
             onReject={() => setShowRejectDialog(true)}
             isLoading={isGeneratingCAPA}
             error={capaError}

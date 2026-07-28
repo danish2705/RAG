@@ -109,7 +109,7 @@ export function useImpactAssessmentReview() {
     >;
 
     assessments.forEach((a) => {
-      updatedImpact[a.key] = { severity: a.severity, rationale: a.description };
+      updatedImpact[a.key] = { severity: a.severity as ImpactSeverity, rationale: a.description };
     });
 
     return {
@@ -227,8 +227,34 @@ export function useImpactAssessmentReview() {
   const handleReject = () => {
     if (rejectJustification.trim()) {
       setShowRejectDialog(false);
-      navigate("/deviation");
+      setRejectJustification("");
+      // Clear the AI-classified fields — the user rejected the AI's
+      // suggestion, so we don't leave it sitting in the form. They can
+      // either fill this in manually or pull the AI suggestion back in
+      // with the button at the top of the page.
+      setAssessments((prev) =>
+        prev.map((a) => ({
+          ...a,
+          severity: "",
+          description: "",
+          severityChangedWithoutDescription: false,
+        })),
+      );
     }
+  };
+
+  // Restores the original AI suggestion into the form — used by the
+  // "AI Suggestion" button so a rejected/cleared assessment can be brought
+  // back.
+  const handleGetAiSuggestion = () => {
+    setAssessments((prev) =>
+      prev.map((a) => ({
+        ...a,
+        severity: a.originalSeverity,
+        description: a.originalDescription,
+        severityChangedWithoutDescription: false,
+      })),
+    );
   };
 
   return {
@@ -251,6 +277,7 @@ export function useImpactAssessmentReview() {
     updateDescription,
     handleAccept,
     handleReject,
+    handleGetAiSuggestion,
     llmFailure,
   };
 }

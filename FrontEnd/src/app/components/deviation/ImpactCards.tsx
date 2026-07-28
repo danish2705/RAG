@@ -22,13 +22,23 @@ export const NoImpactDataGuard: React.FC<{ onGoBack: () => void }> = ({ onGoBack
   </div>
 );
 
-export const ImpactConfidenceCard: React.FC<{ score: number; classificationName: string }> = ({ score, classificationName }) => (
+export const ImpactConfidenceCard: React.FC<{
+  score: number;
+  classificationName: string;
+  onGetAiSuggestion?: () => void;
+}> = ({ score, classificationName, onGetAiSuggestion }) => (
   <Card className="shadow-sm">
-    <CardHeader>
+    <CardHeader className="flex flex-row items-center justify-between space-y-0">
       <CardTitle className="flex items-center gap-2">
         <Sparkles className="h-5 w-5 text-blue-600" />
         Overall AI Confidence Score
       </CardTitle>
+      {onGetAiSuggestion && (
+        <Button type="button" variant="outline" size="sm" onClick={onGetAiSuggestion}>
+          <Sparkles className="h-4 w-4 mr-2 text-blue-600" />
+          AI Suggestion
+        </Button>
+      )}
     </CardHeader>
     <CardContent>
       <div className="flex items-center justify-between mb-2">
@@ -70,9 +80,9 @@ export const ImpactAssessmentCard: React.FC<ImpactAssessmentCardProps> = ({
       <CardContent className="space-y-4">
         <div>
           <label className="text-sm font-medium mb-2 block">Impact Level</label>
-          <Select value={assessment.severity} onValueChange={(value) => onSeverityChange(index, value)}>
-            <SelectTrigger className={getSeverityBadgeClass(assessment.severity)}>
-              <SelectValue />
+          <Select value={assessment.severity || undefined} onValueChange={(value) => onSeverityChange(index, value)}>
+            <SelectTrigger className={assessment.severity ? getSeverityBadgeClass(assessment.severity) : ""}>
+              <SelectValue placeholder="Select impact level..." />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="Critical">🔴 Critical</SelectItem>

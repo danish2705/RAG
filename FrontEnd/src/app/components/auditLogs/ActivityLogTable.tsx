@@ -176,13 +176,13 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
       <div className="overflow-x-auto">
         <Table className="w-full min-w-[900px]">
           <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="w-26 font-semibold">Audit ID</TableHead>
-              <TableHead className="w-34 font-semibold">User</TableHead>
-              <TableHead className="w-60 font-semibold text-center">Details</TableHead>
-              <TableHead className="w-25 font-semibold text-center">Source</TableHead>
-              <TableHead className="w-32 font-semibold text-center">Action</TableHead>
-              <TableHead className="w-50 font-semibold text-center">Timestamp</TableHead>
+            <TableRow className="bg-muted/50 border-b border-border">
+              <TableHead className="w-26 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Audit ID</TableHead>
+              <TableHead className="w-34 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">User</TableHead>
+              <TableHead className="w-60 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Details</TableHead>
+              <TableHead className="w-25 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Source</TableHead>
+              <TableHead className="w-32 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Action</TableHead>
+              <TableHead className="w-50 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Timestamp</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="bg-white dark:bg-background">
@@ -214,8 +214,8 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
                     {/* MAIN TABLE ROW */}
                     <TableRow
                       onClick={() => isLongText && toggleExpand(rowId)}
-                      className={`transition-colors ${meta.rowClass} ${
-                        isLongText ? "cursor-pointer hover:bg-muted/40" : ""
+                      className={`transition-colors hover:bg-muted/40 ${meta.rowClass} ${
+                        isLongText ? "cursor-pointer" : ""
                       } ${isExpanded ? "bg-muted/30 dark:bg-muted/10 border-b-0" : ""}`}
                     >
                       <TableCell className="text-xs font-medium truncate">

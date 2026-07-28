@@ -49,6 +49,7 @@ function toTitleCase(value: string): string {
     )
     .join(" ");
 }
+
 export const RecordsTable: React.FC<RecordsTableProps> = ({
   loading,
   error,
@@ -91,51 +92,54 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
     <TooltipProvider delayDuration={150}>
       <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
         <Table>
-          <TableHeader className="bg-muted/50">
+          <TableHeader className="bg-muted/50 border-b border-border">
             <TableRow>
-              <TableHead className="w-32 text-sm font-semibold text-gray-900 dark:text-white">
+              {/* Added explicit header font styling: text-[11px] font-semibold text-muted-foreground uppercase tracking-wider across all columns */}
+              <TableHead className="w-32 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Records ID
               </TableHead>
-              <TableHead className="w-44 text-sm font-semibold text-gray-900 dark:text-white">
+              <TableHead className="w-44 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 <button
                   onClick={() => onSort?.("submittedBy")}
-                  className="flex items-center gap-1 hover:opacity-80 transition-colors text-sm"
+                  className="flex items-center gap-1 hover:opacity-80 transition-colors text-[11px] font-semibold text-muted-foreground uppercase tracking-wider"
                 >
                   Submitted By{" "}
                   <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
               </TableHead>
-              <TableHead className="font-semibold w-[220px] text-center">Query</TableHead>
-              <TableHead className="w-44 font-semibold">
+              <TableHead className="w-[220px] py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
+                Query
+              </TableHead>
+              <TableHead className="w-44 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 <button
                   onClick={() => onSort?.("classification")}
-                  className="flex items-center gap-1 hover:opacity-80 transition-colors text-sm"
+                  className="flex items-center gap-1 hover:opacity-80 transition-colors text-[11px] font-semibold text-muted-foreground uppercase tracking-wider"
                 >
                   Classification{" "}
                   <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
               </TableHead>
-              {/* 1. Renamed Column: Saved Date & Time */}
-              <TableHead className="w-52 text-sm font-semibold text-gray-900 dark:text-white text-center">
+              {/* Saved Date & Time */}
+              <TableHead className="w-52 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
                 <button
                   onClick={() => onSort?.("savedOn")}
-                  className="flex items-center justify-center gap-1 hover:opacity-80 transition-colors w-full text-sm"
+                  className="flex items-center justify-center gap-1 hover:opacity-80 transition-colors w-full text-[11px] font-semibold text-muted-foreground uppercase tracking-wider"
                 >
                   Saved Date & Time{" "}
                   <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
               </TableHead>
               {/* Approval status */}
-              <TableHead className="w-32 text-center font-semibold">
+              <TableHead className="w-32 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
                 Status
               </TableHead>
-              {/* 2. Renamed Column: Actions */}
-              <TableHead className="w-28 text-center text-sm font-semibold text-gray-900 dark:text-white">
+              {/* Actions */}
+              <TableHead className="w-28 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
                 Actions
               </TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody className="divide-y divide-border">
+          <TableBody className="divide-y divide-border/60">
             {filteredCases.length === 0 ? (
               <TableRow>
                 <TableCell
@@ -153,17 +157,17 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                   key={record.uiId || record.id || idx}
                   className="hover:bg-muted/40 transition-colors"
                 >
-                  <TableCell className="text-xs font-medium truncate">
+                  <TableCell className="py-3 px-4 text-xs font-medium truncate">
                     {record.uiId || `#${record.id?.slice(0, 8)}`}
                   </TableCell>
-                  <TableCell className="font-medium text-xs text-foreground">
+                  <TableCell className="py-3 px-4 font-medium text-xs text-foreground">
                     {toTitleCase(record.submittedBy || record.user || "") || "N/A"}
                   </TableCell>
-                  <TableCell className="text-xs text-gray-900 dark:text-white overflow-hidden">
+                  <TableCell className="py-3 px-4 text-xs text-gray-900 dark:text-white overflow-hidden max-w-[220px]">
                     {record.query || record.description ? (
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <span className="cursor-default">
+                          <span className="cursor-default block truncate">
                             {getQueryPreview(
                               record.query || record.description,
                               12,
@@ -183,22 +187,22 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                       "N/A"
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-3 px-4">
                     <Badge
                       className={`text-xs px-2.5 py-0.5 font-medium shadow-none ${getBadgeColor(record.classification)}`}
                     >
                       {record.classification || "N/A"}
                     </Badge>
                   </TableCell>
-                  {/* Formatted timestamp, auto-detected to the viewer's own timezone, dd-mm-yyyy */}
-                  <TableCell className="text-xs font-mono text-gray-900 dark:text-white whitespace-nowrap text-center">
+                  {/* Formatted timestamp with monospace font */}
+                  <TableCell className="py-3 px-4 text-xs font-mono text-gray-900 dark:text-white whitespace-nowrap text-center">
                     {formatTimestamp(record.savedOn || record.timestamp, {
                       dateStyle: "numeric",
                     })}
                   </TableCell>
 
                   {/* Approval status badge */}
-                  <TableCell className="text-center">
+                  <TableCell className="py-3 px-4 text-center">
                     {record.approvalStatus === "approved" ? (
                       <Badge className="bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800 text-xs px-2.5 py-0.5 font-medium shadow-none">
                         <CheckCircle2 className="h-3 w-3 mr-1" /> Approved
@@ -210,10 +214,9 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                     )}
                   </TableCell>
 
-                  {/* Actions Column: View only (delete icon removed) */}
-                  <TableCell className="text-center">
+                  {/* Actions Column */}
+                  <TableCell className="py-3 px-4 text-center">
                     <div className="flex items-center justify-center">
-                      {/* View Button */}
                       <Button
                         variant="ghost"
                         size="icon"

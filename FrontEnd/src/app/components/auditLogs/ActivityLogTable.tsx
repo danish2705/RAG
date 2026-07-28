@@ -177,7 +177,7 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
         <Table className="w-full min-w-[900px]">
           <TableHeader>
             <TableRow className="bg-muted/50 border-b border-border">
-              <TableHead className="w-26 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Audit ID</TableHead>
+              <TableHead className="w-26 py-3 px-5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Audit ID</TableHead>
               <TableHead className="w-34 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">User</TableHead>
               <TableHead className="w-60 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Details</TableHead>
               <TableHead className="w-25 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Source</TableHead>
@@ -218,13 +218,13 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
                         isLongText ? "cursor-pointer" : ""
                       } ${isExpanded ? "bg-muted/30 dark:bg-muted/10 border-b-0" : ""}`}
                     >
-                      <TableCell className="text-xs font-medium truncate">
+                      <TableCell className="py-3 px-4 text-xs font-medium truncate">
                         {entry.entity_id
                           ? `#${entry.entity_id.slice(0, 8)}`
                           : "—"}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center min-w-0">
+                        <div className="px-2 flex items-center min-w-0">
                           <span className="text-xs font-medium truncate">
                             {toTitleCase(entry.performed_by)}
                           </span>

@@ -107,7 +107,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                   <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
               </TableHead>
-              <TableHead className="w-[220px] py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
+              <TableHead className="w-[400px] py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
                 Query
               </TableHead>
               <TableHead className="w-44 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">

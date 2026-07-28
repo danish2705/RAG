@@ -42,7 +42,16 @@ type ImplementationFormAction =
   | { type: "SET_SOP_WI_UPDATES"; value: string }
   | { type: "SET_APPROVAL_ROUTING"; value: string }
   | { type: "SET_IMPLEMENTATION_PLAN"; value: string }
-  | { type: "SET_ROLLBACK_PLAN"; value: string };
+  | { type: "SET_ROLLBACK_PLAN"; value: string }
+  | { type: "CLEAR" };
+
+const clearedImplementationFormState: ImplementationFormState = {
+  requiredActions: "",
+  sopWiUpdates: "",
+  approvalRouting: "",
+  implementationPlan: "",
+  rollbackPlan: "",
+};
 
 function hydrateImplementationForm(
   parsed: ImplementationControlParsed,
@@ -73,6 +82,8 @@ function implementationFormReducer(
       return { ...state, implementationPlan: action.value };
     case "SET_ROLLBACK_PLAN":
       return { ...state, rollbackPlan: action.value };
+    case "CLEAR":
+      return clearedImplementationFormState;
     default:
       return state;
   }
@@ -171,6 +182,14 @@ export function useImplementationControl() {
 
   const override = useOverrideDialogState();
   const [implementationAccepted, setImplementationAccepted] = useState(false);
+  // Only surfaced after the user rejects the implementation plan (and the
+  // fields get cleared) — hidden otherwise.
+  const [showAiSuggestion, setShowAiSuggestion] = useState(false);
+  // Client-side check so an accidental Accept right after Reject clears the
+  // fields doesn't silently save empty data to the audit trail.
+  const [emptyFieldsWarning, setEmptyFieldsWarning] = useState<string | null>(
+    null,
+  );
 
   // Fields are directly editable at all times — seeded from a previously
   // saved edit (if resuming) or the raw AI output, but freely changeable
@@ -293,21 +312,57 @@ export function useImplementationControl() {
     navigate("/change-control/summary");
   };
 
+  // Accept stays disabled until every field is filled in — most notably
+  // right after a Reject clears them.
+  const canAccept =
+    form.requiredActions.trim() !== "" &&
+    form.sopWiUpdates.trim() !== "" &&
+    form.approvalRouting.trim() !== "" &&
+    form.implementationPlan.trim() !== "" &&
+    form.rollbackPlan.trim() !== "";
+
   // Handlers
   // Accepting the implementation plan is the final decision for the change
   // control flow, so it advances straight to the summary (no extra button).
   // Whatever is currently in the form — edited or left as the AI suggested
   // it — is what gets approved.
   const handleAccept = () => {
+    // Guard against accepting right after a Reject cleared the fields —
+    // don't silently save empty data to the audit trail.
+    if (
+      form.requiredActions.trim() === "" ||
+      form.sopWiUpdates.trim() === "" ||
+      form.approvalRouting.trim() === "" ||
+      form.implementationPlan.trim() === "" ||
+      form.rollbackPlan.trim() === ""
+    ) {
+      setEmptyFieldsWarning(
+        "One or more implementation plan fields are empty. Please fill them in before accepting.",
+      );
+      return;
+    }
+    setEmptyFieldsWarning(null);
+
     setImplementationAccepted(true);
     proceed();
   };
 
   const handleReject = () => {
-    if (override.rejectJustification.trim()) {
-      override.setShowRejectDialog(false);
-      navigate("/deviation");
-    }
+    override.setShowRejectDialog(false);
+    // Clear the AI-generated fields — the user rejected the AI's
+    // suggestion, so we don't leave it sitting in the form. They can
+    // either fill this in manually or pull the AI suggestion back in
+    // with the button above.
+    dispatchForm({ type: "CLEAR" });
+    setShowAiSuggestion(true);
+  };
+
+  // Restores the original AI-generated implementation plan into the form —
+  // used by the "AI Suggestion" button so a rejected/cleared field can be
+  // brought back.
+  const handleGetAiSuggestion = () => {
+    if (!implementationParsed) return;
+    dispatchForm({ type: "HYDRATE", parsed: implementationParsed });
   };
 
   const confidenceScore = implementationParsed?.confidence_score ?? 0;
@@ -343,8 +398,12 @@ export function useImplementationControl() {
     confidenceScore,
     riskLevel,
     llmFailure,
+    showAiSuggestion,
+    emptyFieldsWarning,
+    canAccept,
     proceed,
     handleAccept,
     handleReject,
+    handleGetAiSuggestion,
   };
 }

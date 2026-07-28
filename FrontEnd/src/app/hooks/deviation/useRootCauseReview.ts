@@ -49,6 +49,14 @@ export function useRootCauseReview() {
 
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectJustification, setRejectJustification] = useState("");
+  // Only surfaced after the user rejects the analysis (and the fields get
+  // cleared) — hidden otherwise.
+  const [showAiSuggestion, setShowAiSuggestion] = useState(false);
+  // Client-side check so an accidental Accept right after Reject clears the
+  // fields doesn't silently save empty data to the audit trail.
+  const [emptyFieldsWarning, setEmptyFieldsWarning] = useState<string | null>(
+    null,
+  );
 
   const [isGeneratingCAPA, setIsGeneratingCAPA] = useState(false);
   const [capaError, setCapaError] = useState<string | null>(null);
@@ -164,7 +172,30 @@ export function useRootCauseReview() {
     }
   };
 
+  // Accept stays disabled until every field is filled in — most notably
+  // right after a Reject clears them.
+  const canAccept =
+    primaryRootCause.trim() !== "" &&
+    immediateCause.trim() !== "" &&
+    contributingFactors.trim() !== "" &&
+    evidence.trim() !== "";
+
   const handleAccept = () => {
+    // Guard against accepting right after a Reject cleared the fields —
+    // don't silently save empty data to the audit trail.
+    if (
+      primaryRootCause.trim() === "" ||
+      immediateCause.trim() === "" ||
+      contributingFactors.trim() === "" ||
+      evidence.trim() === ""
+    ) {
+      setEmptyFieldsWarning(
+        "One or more root cause fields are empty. Please fill them in before accepting.",
+      );
+      return;
+    }
+    setEmptyFieldsWarning(null);
+
     const rcaProvenance = buildRCAProvenance();
     const isEdited =
       rcaProvenance.primary_root_cause?.source === "modified" ||
@@ -182,22 +213,21 @@ export function useRootCauseReview() {
   };
 
   const handleReject = () => {
-    if (rejectJustification.trim()) {
-      setShowRejectDialog(false);
-      setRejectJustification("");
-      // Clear the AI-classified fields — the user rejected the AI's
-      // suggestion, so we don't leave it sitting in the form. They can
-      // either fill this in manually or pull the AI suggestion back in
-      // with the button at the top of the page.
-      setPrimaryRootCause("");
-      setImmediateCause("");
-      setContributingFactors("");
-      setEvidence("");
-    }
+    setShowRejectDialog(false);
+    // Clear the AI-generated fields — the user rejected the AI's
+    // suggestion, so we don't leave it sitting in the form. They can
+    // either fill this in manually or pull the AI suggestion back in
+    // with the button above.
+    setPrimaryRootCause("");
+    setImmediateCause("");
+    setContributingFactors("");
+    setEvidence("");
+    setShowAiSuggestion(true);
   };
 
-  // Restores the original AI suggestion into the form — used by the
-  // "AI Suggestion" button so a rejected/cleared field can be brought back.
+  // Restores the original AI-generated root cause analysis into the form —
+  // used by the "AI Suggestion" button so a rejected/cleared field can be
+  // brought back.
   const handleGetAiSuggestion = () => {
     if (!rcaParsed) return;
     setPrimaryRootCause(rcaParsed.primary_root_cause ?? "");
@@ -223,6 +253,9 @@ export function useRootCauseReview() {
     setShowRejectDialog,
     rejectJustification,
     setRejectJustification,
+    showAiSuggestion,
+    emptyFieldsWarning,
+    canAccept,
     isGeneratingCAPA,
     capaError,
     handleAccept,

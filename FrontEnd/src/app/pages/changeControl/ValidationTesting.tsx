@@ -64,8 +64,12 @@ export function ValidationTesting() {
     setShowRationaleWarning,
     isSubmitting,
     submitError,
+    showAiSuggestion,
+    emptyFieldsWarning,
+    canAccept,
     handleAccept,
     handleReject,
+    handleGetAiSuggestion,
     llmFailure,
   } = useValidationTestingReview();
 
@@ -96,7 +100,10 @@ export function ValidationTesting() {
         />
 
         <div className="space-y-6 mt-6">
-          <ValidationConfidenceCard score={validationParsed.confidence_score} />
+          <ValidationConfidenceCard
+            score={validationParsed.confidence_score}
+            onGetAiSuggestion={showAiSuggestion ? handleGetAiSuggestion : undefined}
+          />
 
           <ValidationLevelCard
             icon={<FlaskConical className="h-4 w-4 text-blue-500" />}
@@ -157,10 +164,12 @@ export function ValidationTesting() {
           <DecisionAction
             acceptLoadingLabel="Submitting Strategy..."
             onAccept={handleAccept}
+            acceptDisabled={isSubmitting || !canAccept}
             onReject={() => setShowRejectDialog(true)}
             isLoading={isSubmitting}
             error={submitError}
             errorTitle="Strategy submission failed"
+            warning={emptyFieldsWarning}
             footerText="Your decision will be logged in the audit trail. Accepting submits this strategy and starts Implementation & Control Actions using whatever is currently in the form above."
           />
         </div>

@@ -30,8 +30,11 @@ export function AIRecommendation() {
     setShowRejectDialog,
     rejectJustification,
     setRejectJustification,
+    showAiSuggestion,
     isAssessing,
     assessError,
+    emptyFieldsWarning,
+    canAccept,
     handleAccept,
     handleReject,
     handleGetAiSuggestion,
@@ -77,17 +80,18 @@ export function AIRecommendation() {
             setEditedRationale={setEditedRationale}
             originalClassification={parsed.classification}
             originalRationale={parsed.rationale ?? []}
-            onGetAiSuggestion={handleGetAiSuggestion}
+            onGetAiSuggestion={showAiSuggestion ? handleGetAiSuggestion : undefined}
           />
 
           <DecisionAction
             acceptLoadingLabel="Running Impact Assessment..."
             onAccept={handleAccept}
-            acceptDisabled={isAssessing || !editedClassification}
+            acceptDisabled={isAssessing || !canAccept}
             onReject={() => setShowRejectDialog(true)}
             isLoading={isAssessing}
             error={assessError}
             errorTitle="Impact assessment failed"
+            warning={emptyFieldsWarning}
             footerText="Your decision will be logged in the audit trail. Accepting runs a fresh impact assessment using whatever is currently in the form above."
           />
         </div>

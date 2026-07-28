@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import type { DateRange } from "react-day-picker";
+import { Button } from "../components/ui/button";
 import { AIAssistantPanel } from "../components/chat/AiAssistant";
 import { KpiCardGrid } from "../components/dashboard/KpiCard";
 import { RecentRecordsList } from "../components/dashboard/RecentRecordsList";
@@ -23,6 +24,7 @@ import {
   severityColors,
   statusColors,
 } from "../utils/dashboardConfig";
+import { PenSquare, Plus } from "lucide-react";
 
 export function Dashboard() {
   const [aiOpen, setAiOpen] = useState(false);
@@ -78,18 +80,33 @@ export function Dashboard() {
   return (
     <div className="relative h-full w-full">
       <div
-        className={`h-full p-6 space-y-6 overflow-y-auto transition-[margin] duration-200 ${
-          aiOpen ? "mr-80" : ""
-        }`}
+        className={`h-full p-6 space-y-6 overflow-y-auto transition-[margin] duration-200 ${aiOpen ? "mr-80" : ""
+          }`}
       >
         <div className="flex justify-between items-center gap-3">
           <DateRangePicker range={dateRange} onRangeChange={setDateRange} />
-          <button
+          <Button
             onClick={() => navigate("/deviation")}
-            className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2.5 rounded-lg shadow-sm transition-colors whitespace-nowrap"
+            className="
+    h-10
+    px-4
+    rounded-lg
+    bg-blue-600
+    text-white
+    text-sm
+    font-medium
+    shadow-sm
+    transition-colors
+    hover:bg-blue-700
+    focus-visible:ring-2
+    focus-visible:ring-blue-500/20
+    whitespace-nowrap
+    flex items-center gap-2
+  "
           >
-            + New Case
-          </button>
+            <PenSquare className="h-4 w-4" />
+            <span>New Case</span>
+          </Button>
         </div>
 
         {error && (

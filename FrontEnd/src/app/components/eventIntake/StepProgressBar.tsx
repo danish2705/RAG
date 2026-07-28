@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { Check, Lock } from "lucide-react";
 import { useLocation, useNavigate } from "react-router";
-
+ 
 export type Classification = "Deviation" | "Change Control" | "Hybrid";
-
+ 
 interface Step {
   label: string;
   path: string;
 }
-
+ 
 interface StepProgressBarProps {
   classification?: Classification;
-
+ 
   /**
    * Which Deviation-flow steps actually have real, saved data behind them —
    * in order: [Intake, Classification, Severity, RCA, CAPA, Summary].
@@ -23,14 +23,14 @@ interface StepProgressBarProps {
    * with Intake implicitly true whenever a case is open).
    */
   deviationStepsComplete?: boolean[];
-
+ 
   /**
    * Same idea for the Change Control flow, in order:
    * [Intake, Classification, Impact, Risk, Validation, Implementation, Summary]
    */
   changeControlStepsComplete?: boolean[];
 }
-
+ 
 const DEVIATION_STEP_ROUTES: Record<string, number> = {
   "/deviation": 0,
   "/deviation/ai-recommendation": 1,
@@ -39,7 +39,7 @@ const DEVIATION_STEP_ROUTES: Record<string, number> = {
   "/deviation/capa": 4,
   "/deviation/summary": 5,
 };
-
+ 
 const CHANGE_CONTROL_STEP_ROUTES: Record<string, number> = {
   "/deviation": 0,
   "/deviation/ai-recommendation": 1,
@@ -49,7 +49,7 @@ const CHANGE_CONTROL_STEP_ROUTES: Record<string, number> = {
   "/change-control/implementation": 5,
   "/change-control/summary": 6,
 };
-
+ 
 function deviationSteps(classification?: Classification): Step[] {
   return [
     { label: "Intake", path: "/deviation" },
@@ -60,7 +60,7 @@ function deviationSteps(classification?: Classification): Step[] {
     { label: "Summary", path: "/deviation/summary" },
   ];
 }
-
+ 
 function changeControlSteps(classification?: Classification): Step[] {
   return [
     { label: "Intake", path: "/deviation" },
@@ -72,7 +72,7 @@ function changeControlSteps(classification?: Classification): Step[] {
     { label: "Summary", path: "/change-control/summary" },
   ];
 }
-
+ 
 /**
  * A step only counts toward the green line if it AND everything before it
  * is actually done. One gap anywhere breaks the chain from that point on —
@@ -85,23 +85,23 @@ function highestCompletedIndex(completed: boolean[] | undefined): number {
   while (i < completed.length && completed[i]) i++;
   return i - 1;
 }
-
+ 
 export function StepProgressBar({
   classification,
   deviationStepsComplete,
   changeControlStepsComplete,
 }: StepProgressBarProps) {
   const { pathname } = useLocation();
-
+ 
   const showChangeControl =
     classification === "Change Control" || pathname.startsWith("/change-control");
-
+ 
   const showDeviationOnly =
     classification === "Deviation" ||
     (pathname.startsWith("/deviation") &&
       pathname !== "/deviation" &&
       pathname !== "/deviation/ai-recommendation");
-
+ 
   if (showChangeControl) {
     return (
       <div className="mb-6">
@@ -113,7 +113,7 @@ export function StepProgressBar({
       </div>
     );
   }
-
+ 
   if (showDeviationOnly) {
     return (
       <div className="mb-6">
@@ -125,7 +125,7 @@ export function StepProgressBar({
       </div>
     );
   }
-
+ 
   // Classification not decided yet (Intake / AI Classification pages) —
   // show both paths so the user can see where either would lead.
   return (
@@ -153,7 +153,7 @@ export function StepProgressBar({
     </div>
   );
 }
-
+ 
 function Bar({
   steps,
   currentActiveStep,
@@ -165,13 +165,13 @@ function Bar({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
-
+ 
   // Create a unique storage key per case so step progress doesn't bleed into new cases
   const stateObj = (location.state || {}) as Record<string, unknown>;
   const recordObj = (stateObj.record || {}) as Record<string, unknown>;
   const caseId = String(stateObj.id || recordObj.id || stateObj.uiId || "active_case");
   const storageKey = `workflow_max_step_${caseId}_${steps[0]?.path || "root"}`;
-
+ 
   // Track the furthest step index reached during this session
   const [maxVisited, setMaxVisited] = useState<number>(() => {
     try {
@@ -181,7 +181,7 @@ function Bar({
       return 0;
     }
   });
-
+ 
   useEffect(() => {
     // If starting a brand new case on Intake (/deviation) without an existing ID/state, reset frontier
     if (location.pathname === "/deviation" && !location.state) {
@@ -191,7 +191,7 @@ function Bar({
       } catch {}
       return;
     }
-
+ 
     // Always update maxVisited if we step forward to a higher step index
     const currentMax = Math.max(currentActiveStep, highestCompletedStep + 1, 0);
     if (currentMax > maxVisited) {
@@ -201,7 +201,7 @@ function Bar({
       } catch {}
     }
   }, [location.pathname, location.state, currentActiveStep, highestCompletedStep, maxVisited, storageKey]);
-
+ 
   return (
     <div
       className="bg-card border border-border rounded-xl px-6 py-4 w-full shadow-sm"
@@ -211,7 +211,7 @@ function Bar({
         {steps.map((step, index) => {
           const isActive = index === currentActiveStep;
           const isComplete = index <= highestCompletedStep;
-          
+         
           // RULE IMPLEMENTED: The furthest unlocked step is the highest of:
           // 1. Where you stand right now (currentActiveStep)
           // 2. The step right after your last saved data step (highestCompletedStep + 1)
@@ -219,7 +219,7 @@ function Bar({
           // When you jump back from step n to step n-2, maxVisited stays at n, keeping <= n unlocked!
           const maxReachableStep = Math.max(currentActiveStep, highestCompletedStep + 1, maxVisited);
           const isReachable = index <= maxReachableStep;
-
+ 
           return (
             <div key={step.path} className={`flex items-center ${index < steps.length - 1 ? "flex-1" : ""}`}>
               <button
@@ -252,7 +252,7 @@ function Bar({
                     index + 1
                   )}
                 </div>
-
+ 
                 <span
                   className={`text-sm font-medium whitespace-nowrap transition-all duration-200 ${
                     isActive
@@ -265,7 +265,7 @@ function Bar({
                   {step.label}
                 </span>
               </button>
-
+ 
               {index < steps.length - 1 && (
                 <div
                   className={`mx-3 h-0.5 flex-1 rounded-full transition-all duration-300 ${

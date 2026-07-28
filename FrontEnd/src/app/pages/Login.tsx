@@ -83,9 +83,9 @@ export function Login() {
     const ssoUser = await loginWithSSO();
     if (ssoUser) {
       // SSO logins skip the "what's your name?" prompt and default to
-      // "Anurag" instead.
+      // "Alex" instead.
       if (!ssoUser.displayName) {
-        setDisplayName("Anurag");
+        setDisplayName("Alex");
       }
       goToDestination();
     } else {

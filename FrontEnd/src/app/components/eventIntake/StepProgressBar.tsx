@@ -24,6 +24,17 @@ interface StepProgressBarProps {
    * case, as a manual fallback.
    */
   caseId?: string | number | null;
+  /**
+   * Accepted for backward compatibility with existing call sites (CAPA,
+   * Implementation, etc.) from before the unlock logic became purely
+   * positional. They no longer do anything here — reaching a step's page at
+   * all is what advances highestReached now, so these flags are redundant.
+   * Safe to leave in place, and safe to remove from callers whenever it's
+   * convenient; they're intentionally optional and inert.
+   */
+  capaAccepted?: boolean;
+  implementationAccepted?: boolean;
+  changeControlStepAccepted?: boolean;
 }
 
 const DEVIATION_STEP_ROUTES: Record<string, number> = {

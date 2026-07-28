@@ -41,6 +41,9 @@ export const fetchApprovalDetail = async (
 
 export interface ApprovePayload {
   approved_by: string;
+  /** Role of the user performing the approval — lets the backend allow
+   *  Admins to approve cases submitted to someone else. */
+  approver_role: string;
   /** Partial edited sections — only the keys present are overwritten. */
   updates: Record<string, unknown>;
 }

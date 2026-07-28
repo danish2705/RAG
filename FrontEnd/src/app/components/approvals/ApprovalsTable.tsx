@@ -60,21 +60,22 @@ export const ApprovalsTable: React.FC<ApprovalsTableProps> = ({
     <TooltipProvider delayDuration={150}>
       <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
         <Table>
-          <TableHeader className="bg-muted/50">
+          <TableHeader className="bg-muted/50 border-b border-border">
             <TableRow>
-              <TableHead className="w-32 font-semibold">Approval ID</TableHead>
-              <TableHead className="font-semibold w-[220px] pl-4">
+              {/* Added standard header styling: text-[11px] font-semibold text-muted-foreground uppercase tracking-wider */}
+              <TableHead className="w-32 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Approval ID</TableHead>
+              <TableHead className="w-[220px] py-3 pl-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Query
               </TableHead>
-              <TableHead className="w-40 font-semibold">Submitted By</TableHead>
-              <TableHead className="w-40 font-semibold">Submitted To</TableHead>
-              <TableHead className="w-52 font-semibold">Timestamp</TableHead>
-              <TableHead className="w-48 text-center font-semibold">
+              <TableHead className="w-40 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Submitted By</TableHead>
+              <TableHead className="w-40 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Submitted To</TableHead>
+              <TableHead className="w-52 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Timestamp</TableHead>
+              <TableHead className="w-48 py-3 px-4 text-center text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Action
               </TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody className="divide-y divide-border">
+          <TableBody className="divide-y divide-border/60 bg-white dark:bg-background">
             {rows.length === 0 ? (
               <TableRow>
                 <TableCell
@@ -91,10 +92,10 @@ export const ApprovalsTable: React.FC<ApprovalsTableProps> = ({
                     key={row.uiId || row.id || idx}
                     className="hover:bg-muted/40 transition-colors"
                   >
-                    <TableCell className="font-mono text-xs font-semibold text-gray-900 dark:text-white">
+                    <TableCell className="py-3 px-4 font-mono text-xs font-semibold text-foreground">
                       {row.uiId || `#${row.id?.slice(0, 8)}`}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground w-[220px] truncate">
+                    <TableCell className="py-3 pl-4 text-xs text-gray-900 dark:text-white w-[220px] truncate">
                       {row.query ? (
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -113,18 +114,20 @@ export const ApprovalsTable: React.FC<ApprovalsTableProps> = ({
                         "N/A"
                       )}
                     </TableCell>
-                    <TableCell className="font-medium text-sm text-foreground">
+                    {/* Changed text-sm to text-xs font-medium to match standard typography */}
+                    <TableCell className="py-3 px-4 font-medium text-xs text-foreground">
                       {row.submittedBy || "N/A"}
                     </TableCell>
-                    <TableCell className="font-medium text-sm text-foreground">
+                    {/* Changed text-sm to text-xs font-medium to match standard typography */}
+                    <TableCell className="py-3 px-4 font-medium text-xs text-foreground">
                       {row.submittedTo || "N/A"}
                     </TableCell>
-                    <TableCell className="text-xs font-mono text-muted-foreground whitespace-nowrap">
+                    <TableCell className="py-3 px-4 text-xs font-mono text-gray-900 dark:text-white whitespace-nowrap text-center">
                       {formatTimestamp(row.savedOn, { dateStyle: "numeric" })}
                     </TableCell>
 
                     {/* Action: enabled only for the assigned approver. */}
-                    <TableCell className="text-center">
+                    <TableCell className="py-3 px-4 text-center">
                       {canApprove(row) ? (
                         <Button
                           size="sm"

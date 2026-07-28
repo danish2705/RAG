@@ -111,7 +111,6 @@ export const GxpClassificationCard = React.memo<{
   title: string;
   value: string;
   rationale: string;
-  isOverrideEditing: boolean;
   isModified: boolean;
   changedWithoutRationale: boolean;
   onValueChange: (value: string) => void;
@@ -121,7 +120,6 @@ export const GxpClassificationCard = React.memo<{
     title,
     value,
     rationale,
-    isOverrideEditing,
     isModified,
     changedWithoutRationale,
     onValueChange,
@@ -133,47 +131,32 @@ export const GxpClassificationCard = React.memo<{
           <h3 className="font-semibold text-[15px] text-gray-900 dark:text-gray-100">
             {title}
           </h3>
-          {!isOverrideEditing && isModified && <ModifiedBadge />}
+          {isModified && <ModifiedBadge />}
         </div>
 
-        {isOverrideEditing ? (
-          <div className="space-y-3">
-            <Select value={value} onValueChange={onValueChange}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Direct Impact">Direct Impact</SelectItem>
-                <SelectItem value="Indirect Impact">Indirect Impact</SelectItem>
-              </SelectContent>
-            </Select>
-            {changedWithoutRationale && (
-              <p className="text-xs text-orange-600 flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" /> Update rationale below
-              </p>
-            )}
-            <Textarea
-              rows={4}
-              value={rationale}
-              onChange={(e) => onRationaleChange(e.target.value)}
-              placeholder="Explain the reason for this change..."
-              className={`resize-none text-sm ${changedWithoutRationale ? "border-orange-400" : ""}`}
-            />
-          </div>
-        ) : (
-          <div className="flex flex-col flex-1">
-            <div>
-              <span
-                className={`inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium ${getGxpBadgeClass(value)}`}
-              >
-                {value}
-              </span>
-            </div>
-            <p className="text-[13px] text-muted-foreground leading-relaxed mt-4">
-              {rationale || "No rationale provided."}
+        <div className="space-y-3">
+          <Select value={value} onValueChange={onValueChange}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Direct Impact">Direct Impact</SelectItem>
+              <SelectItem value="Indirect Impact">Indirect Impact</SelectItem>
+            </SelectContent>
+          </Select>
+          {changedWithoutRationale && (
+            <p className="text-xs text-orange-600 flex items-center gap-1">
+              <AlertTriangle className="h-3 w-3" /> Update rationale below
             </p>
-          </div>
-        )}
+          )}
+          <Textarea
+            rows={4}
+            value={rationale}
+            onChange={(e) => onRationaleChange(e.target.value)}
+            placeholder="Explain the reason for this change..."
+            className={`resize-none text-sm ${changedWithoutRationale ? "border-orange-400" : ""}`}
+          />
+        </div>
       </CardContent>
     </Card>
   ),
@@ -184,7 +167,6 @@ export const DataValidationImpactCard = React.memo<{
   title: string;
   validatedStateAffected: boolean;
   rationale: string;
-  isOverrideEditing: boolean;
   isModified: boolean;
   changedWithoutRationale: boolean;
   onValueChange: (value: string) => void;
@@ -194,7 +176,6 @@ export const DataValidationImpactCard = React.memo<{
     title,
     validatedStateAffected,
     rationale,
-    isOverrideEditing,
     isModified,
     changedWithoutRationale,
     onValueChange,
@@ -206,52 +187,37 @@ export const DataValidationImpactCard = React.memo<{
           <h3 className="font-semibold text-[15px] text-gray-900 dark:text-gray-100">
             {title}
           </h3>
-          {!isOverrideEditing && isModified && <ModifiedBadge />}
+          {isModified && <ModifiedBadge />}
         </div>
 
-        {isOverrideEditing ? (
-          <div className="space-y-3">
-            <Select
-              value={String(validatedStateAffected)}
-              onValueChange={onValueChange}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="true">Validated State Affected</SelectItem>
-                <SelectItem value="false">
-                  Validated State Not Affected
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            {changedWithoutRationale && (
-              <p className="text-xs text-orange-600 flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" /> Update rationale below
-              </p>
-            )}
-            <Textarea
-              rows={4}
-              value={rationale}
-              onChange={(e) => onRationaleChange(e.target.value)}
-              placeholder="Explain the reason for this change..."
-              className={`resize-none text-sm ${changedWithoutRationale ? "border-orange-400" : ""}`}
-            />
-          </div>
-        ) : (
-          <div className="flex flex-col flex-1">
-            <div>
-              <span
-                className={`inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium ${getValidationImpactBadgeClass(validatedStateAffected)}`}
-              >
-                {validatedStateAffected ? "Affected" : "None"}
-              </span>
-            </div>
-            <p className="text-[13px] text-muted-foreground leading-relaxed mt-4">
-              {rationale || "No rationale provided."}
+        <div className="space-y-3">
+          <Select
+            value={String(validatedStateAffected)}
+            onValueChange={onValueChange}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="true">Validated State Affected</SelectItem>
+              <SelectItem value="false">
+                Validated State Not Affected
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          {changedWithoutRationale && (
+            <p className="text-xs text-orange-600 flex items-center gap-1">
+              <AlertTriangle className="h-3 w-3" /> Update rationale below
             </p>
-          </div>
-        )}
+          )}
+          <Textarea
+            rows={4}
+            value={rationale}
+            onChange={(e) => onRationaleChange(e.target.value)}
+            placeholder="Explain the reason for this change..."
+            className={`resize-none text-sm ${changedWithoutRationale ? "border-orange-400" : ""}`}
+          />
+        </div>
       </CardContent>
     </Card>
   ),
@@ -261,47 +227,26 @@ DataValidationImpactCard.displayName = "DataValidationImpactCard";
 export const ImpactListCard = React.memo<{
   title: string;
   items: string[];
-  isOverrideEditing: boolean;
   isModified: boolean;
   onChange: (items: string[]) => void;
   placeholder: string;
-}>(({ title, items, isOverrideEditing, isModified, onChange, placeholder }) => (
+}>(({ title, items, isModified, onChange, placeholder }) => (
   <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black flex flex-col h-full">
     <CardContent className="pt-6 flex flex-col flex-1">
       <div className="flex items-center gap-2 justify-between mb-4">
         <h3 className="font-semibold text-[15px] text-gray-900 dark:text-gray-100">
           {title}
         </h3>
-        {!isOverrideEditing && isModified && <ModifiedBadge />}
+        {isModified && <ModifiedBadge />}
       </div>
 
-      {isOverrideEditing ? (
-        <Textarea
-          rows={4}
-          value={items.join("\n")}
-          onChange={(e) => onChange(parseLines(e.target.value))}
-          placeholder={placeholder}
-          className="resize-none text-sm"
-        />
-      ) : (
-        <div className="flex flex-col gap-2 flex-1 mt-1">
-          {items.length > 0 ? (
-            items.map((item, idx) => (
-              <div
-                key={idx}
-                className="flex items-start gap-2 text-[13px] text-muted-foreground"
-              >
-                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-gray-400 shrink-0" />
-                <span>{item}</span>
-              </div>
-            ))
-          ) : (
-            <span className="inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 w-fit">
-              None
-            </span>
-          )}
-        </div>
-      )}
+      <Textarea
+        rows={4}
+        value={items.join("\n")}
+        onChange={(e) => onChange(parseLines(e.target.value))}
+        placeholder={placeholder}
+        className="resize-none text-sm"
+      />
     </CardContent>
   </Card>
 ));
@@ -311,7 +256,6 @@ export const RiskScoringCard = React.memo<{
   title: string;
   level: string;
   rationale: string;
-  isOverrideEditing: boolean;
   isModified: boolean;
   changedWithoutRationale: boolean;
   onLevelChange: (value: string) => void;
@@ -321,7 +265,6 @@ export const RiskScoringCard = React.memo<{
     title,
     level,
     rationale,
-    isOverrideEditing,
     isModified,
     changedWithoutRationale,
     onLevelChange,
@@ -333,48 +276,33 @@ export const RiskScoringCard = React.memo<{
           <h3 className="font-semibold text-[15px] text-gray-900 dark:text-gray-100">
             {title}
           </h3>
-          {!isOverrideEditing && isModified && <ModifiedBadge />}
+          {isModified && <ModifiedBadge />}
         </div>
 
-        {isOverrideEditing ? (
-          <div className="space-y-3 md:w-1/2">
-            <Select value={level} onValueChange={onLevelChange}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="High">High</SelectItem>
-                <SelectItem value="Moderate">Moderate</SelectItem>
-                <SelectItem value="Low">Low</SelectItem>
-              </SelectContent>
-            </Select>
-            {changedWithoutRationale && (
-              <p className="text-xs text-orange-600 flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" /> Update rationale below
-              </p>
-            )}
-            <Textarea
-              rows={3}
-              value={rationale}
-              onChange={(e) => onRationaleChange(e.target.value)}
-              placeholder="Explain the reason for this change..."
-              className={`resize-none text-sm ${changedWithoutRationale ? "border-orange-400" : ""}`}
-            />
-          </div>
-        ) : (
-          <div className="flex flex-col flex-1">
-            <div>
-              <span
-                className={`inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium ${getRiskLevelBadgeClass(level)}`}
-              >
-                {level}
-              </span>
-            </div>
-            <p className="text-[13px] text-muted-foreground leading-relaxed mt-4">
-              {rationale || "No rationale provided."}
+        <div className="space-y-3 md:w-1/2">
+          <Select value={level} onValueChange={onLevelChange}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="High">High</SelectItem>
+              <SelectItem value="Moderate">Moderate</SelectItem>
+              <SelectItem value="Low">Low</SelectItem>
+            </SelectContent>
+          </Select>
+          {changedWithoutRationale && (
+            <p className="text-xs text-orange-600 flex items-center gap-1">
+              <AlertTriangle className="h-3 w-3" /> Update rationale below
             </p>
-          </div>
-        )}
+          )}
+          <Textarea
+            rows={3}
+            value={rationale}
+            onChange={(e) => onRationaleChange(e.target.value)}
+            placeholder="Explain the reason for this change..."
+            className={`resize-none text-sm ${changedWithoutRationale ? "border-orange-400" : ""}`}
+          />
+        </div>
       </CardContent>
     </Card>
   ),

@@ -48,73 +48,58 @@ export const ImpactConfidenceCard: React.FC<{ score: number; classificationName:
 interface ImpactAssessmentCardProps {
   assessment: AssessmentItem;
   index: number;
-  isOverrideEditing: boolean;
-  overrideConfirmed: boolean;
   onSeverityChange: (index: number, value: string) => void;
   onDescriptionChange: (index: number, value: string) => void;
 }
 
 export const ImpactAssessmentCard: React.FC<ImpactAssessmentCardProps> = ({
-  assessment, index, isOverrideEditing, overrideConfirmed, onSeverityChange, onDescriptionChange
+  assessment, index, onSeverityChange, onDescriptionChange
 }) => {
-  const isSeverityModified = overrideConfirmed && assessment.severity !== assessment.originalSeverity;
-  const isDescriptionModified = overrideConfirmed && assessment.description !== assessment.originalDescription;
+  const isSeverityModified = assessment.severity !== assessment.originalSeverity;
+  const isDescriptionModified = assessment.description !== assessment.originalDescription;
   const isAnyModified = isSeverityModified || isDescriptionModified;
 
   return (
-    <Card className={`shadow-sm ${assessment.severityChangedWithoutDescription && isOverrideEditing ? "ring-2 ring-orange-400" : ""}`}>
+    <Card className={`shadow-sm ${assessment.severityChangedWithoutDescription ? "ring-2 ring-orange-400" : ""}`}>
       <CardHeader>
         <CardTitle className="flex items-center justify-between text-lg">
           {assessment.category}
-          {!isOverrideEditing && isAnyModified && <ModifiedBadge />}
+          {isAnyModified && <ModifiedBadge />}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {isOverrideEditing ? (
-          <>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Impact Level</label>
-              <Select value={assessment.severity} onValueChange={(value) => onSeverityChange(index, value)}>
-                <SelectTrigger className={getSeverityBadgeClass(assessment.severity)}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Critical">🔴 Critical</SelectItem>
-                  <SelectItem value="Major">🟡 Major</SelectItem>
-                  <SelectItem value="Minor">🟢 Minor</SelectItem>
-                  <SelectItem value="None">⚪ None</SelectItem>
-                </SelectContent>
-              </Select>
-              {assessment.severityChangedWithoutDescription && (
-                <p className="text-xs text-orange-600 mt-1 flex items-center gap-1">
-                  <AlertTriangle className="h-3 w-3" />
-                  Please update the description below to explain this change.
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                Description {assessment.severityChangedWithoutDescription && <span className="text-orange-600 ml-1">*</span>}
-              </label>
-              <Textarea
-                rows={4}
-                value={assessment.description}
-                onChange={(e) => onDescriptionChange(index, e.target.value)}
-                placeholder="Explain the reason for this change..."
-                className={assessment.severityChangedWithoutDescription ? "border-orange-400 focus:ring-orange-400" : ""}
-              />
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getSeverityBadgeClass(assessment.severity)}`}>
-                {assessment.severity}
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">{assessment.description}</p>
-          </>
-        )}
+        <div>
+          <label className="text-sm font-medium mb-2 block">Impact Level</label>
+          <Select value={assessment.severity} onValueChange={(value) => onSeverityChange(index, value)}>
+            <SelectTrigger className={getSeverityBadgeClass(assessment.severity)}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Critical">🔴 Critical</SelectItem>
+              <SelectItem value="Major">🟡 Major</SelectItem>
+              <SelectItem value="Minor">🟢 Minor</SelectItem>
+              <SelectItem value="None">⚪ None</SelectItem>
+            </SelectContent>
+          </Select>
+          {assessment.severityChangedWithoutDescription && (
+            <p className="text-xs text-orange-600 mt-1 flex items-center gap-1">
+              <AlertTriangle className="h-3 w-3" />
+              Please update the description below to explain this change.
+            </p>
+          )}
+        </div>
+        <div>
+          <label className="text-sm font-medium mb-2 block">
+            Description {assessment.severityChangedWithoutDescription && <span className="text-orange-600 ml-1">*</span>}
+          </label>
+          <Textarea
+            rows={4}
+            value={assessment.description}
+            onChange={(e) => onDescriptionChange(index, e.target.value)}
+            placeholder="Explain the reason for this change..."
+            className={assessment.severityChangedWithoutDescription ? "border-orange-400 focus:ring-orange-400" : ""}
+          />
+        </div>
       </CardContent>
     </Card>
   );

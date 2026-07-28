@@ -16,7 +16,7 @@ import { Loader2, PlayCircle } from "lucide-react";
 import type { LlmRetryEntry, LlmRetryStage } from "../../services/llmRetryApi";
 import { formatTimestamp } from "../../utils/timezone";
 import { getQueryPreview, extractDescription } from "../../utils/queryPreview";
-
+ 
 const STAGE_LABELS: Record<LlmRetryStage, string> = {
   classification: "Classification",
   impact_assessment: "Impact Assessment",
@@ -30,7 +30,7 @@ const STAGE_LABELS: Record<LlmRetryStage, string> = {
 };
 export function toTitleCase(value: string): string {
   if (!value) return "";
-
+ 
   return value
     .replace(/[_-]+/g, " ")
     .trim()
@@ -66,7 +66,7 @@ export function PendingAiReviewsTable({
       </div>
     );
   }
-
+ 
   return (
     <div className="rounded-xl border overflow-x-auto">
       <TooltipProvider delayDuration={150}>

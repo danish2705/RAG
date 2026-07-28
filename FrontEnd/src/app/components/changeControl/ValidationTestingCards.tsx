@@ -91,7 +91,6 @@ interface ValidationLevelCardProps {
   title: string;
   level: string;
   levelRationale: string;
-  isOverrideEditing: boolean;
   isLevelModified: boolean;
   levelChangedWithoutRationale: boolean;
   onLevelChange: (value: string) => void;
@@ -104,7 +103,6 @@ export const ValidationLevelCard = React.memo<ValidationLevelCardProps>(
     title,
     level,
     levelRationale,
-    isOverrideEditing,
     isLevelModified,
     levelChangedWithoutRationale,
     onLevelChange,
@@ -117,46 +115,33 @@ export const ValidationLevelCard = React.memo<ValidationLevelCardProps>(
             {icon}
             {title}
           </h3>
-          {!isOverrideEditing && isLevelModified && <ModifiedBadge />}
+          {isLevelModified && <ModifiedBadge />}
         </div>
 
-        {isOverrideEditing ? (
-          <div className="space-y-3">
-            <Select value={level} onValueChange={onLevelChange}>
-              <SelectTrigger className="w-full md:w-1/3">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="None">None</SelectItem>
-                <SelectItem value="Partial">Partial</SelectItem>
-                <SelectItem value="Full">Full</SelectItem>
-              </SelectContent>
-            </Select>
-            {levelChangedWithoutRationale && (
-              <p className="text-xs text-orange-600 flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" /> Update rationale below
-              </p>
-            )}
-            <Textarea
-              rows={3}
-              value={levelRationale}
-              onChange={(e) => onRationaleChange(e.target.value)}
-              placeholder="Explain the reason for this change..."
-              className={`resize-none text-sm ${levelChangedWithoutRationale ? "border-orange-400" : ""}`}
-            />
-          </div>
-        ) : (
-          <div>
-            <span
-              className={`inline-flex items-center px-3 py-0.5 rounded-full text-[13px] font-medium ${getValidationLevelBadgeClass(level)}`}
-            >
-              {level}
-            </span>
-            <p className="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed mt-4">
-              {levelRationale || "No rationale provided."}
+        <div className="space-y-3">
+          <Select value={level} onValueChange={onLevelChange}>
+            <SelectTrigger className="w-full md:w-1/3">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="None">None</SelectItem>
+              <SelectItem value="Partial">Partial</SelectItem>
+              <SelectItem value="Full">Full</SelectItem>
+            </SelectContent>
+          </Select>
+          {levelChangedWithoutRationale && (
+            <p className="text-xs text-orange-600 flex items-center gap-1">
+              <AlertTriangle className="h-3 w-3" /> Update rationale below
             </p>
-          </div>
-        )}
+          )}
+          <Textarea
+            rows={3}
+            value={levelRationale}
+            onChange={(e) => onRationaleChange(e.target.value)}
+            placeholder="Explain the reason for this change..."
+            className={`resize-none text-sm ${levelChangedWithoutRationale ? "border-orange-400" : ""}`}
+          />
+        </div>
       </CardContent>
     </Card>
   ),
@@ -170,25 +155,12 @@ interface ListTextareaCardProps {
   label: string;
   value: string;
   originalValue: string;
-  isOverrideEditing: boolean;
-  overrideConfirmed: boolean;
   placeholder?: string;
   onChange: (value: string) => void;
 }
 
 export const ListTextareaCard = React.memo<ListTextareaCardProps>(
-  ({
-    icon,
-    title,
-    fieldId,
-    label,
-    value,
-    originalValue,
-    isOverrideEditing,
-    overrideConfirmed,
-    placeholder,
-    onChange,
-  }) => (
+  ({ icon, title, fieldId, label, value, originalValue, placeholder, onChange }) => (
     <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-gray-900 dark:text-gray-100">
@@ -200,21 +172,13 @@ export const ListTextareaCard = React.memo<ListTextareaCardProps>(
         <div className="space-y-2">
           <div className="flex items-center gap-2 flex-wrap">
             {label && <Label htmlFor={fieldId}>{label}</Label>}
-            {!isOverrideEditing && (
-              <ModifiedStatus
-                enabled={overrideConfirmed}
-                original={originalValue}
-                current={value}
-              />
-            )}
+            <ModifiedStatus original={originalValue} current={value} />
           </div>
           <Textarea
             id={fieldId}
             rows={4}
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            readOnly={!isOverrideEditing}
-            className={!isOverrideEditing ? "bg-muted cursor-default" : ""}
             placeholder={placeholder}
           />
         </div>

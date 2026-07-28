@@ -1,8 +1,6 @@
 import { useMemo } from "react";
 import {
   DecisionAction,
-  OverrideDialog,
-  OverrideBar,
   RejectDialog,
   StepProgressBar,
 } from "../../components/eventIntake";
@@ -27,7 +25,6 @@ import {
   RiskConfidenceCard,
   RiskLevelCard,
   RegulatoryFilingsEditor,
-  RegulatoryFilingsList,
   RiskRankingCard,
 } from "../../components/changeControl/RiskCriticalityCards";
 
@@ -69,12 +66,6 @@ export function RiskCriticality() {
     isDiModified,
     isOdModified,
     isRankingModified,
-    isOverrideEditing,
-    overrideConfirmed,
-    showOverrideDialog,
-    setShowOverrideDialog,
-    overrideJustification,
-    setOverrideJustification,
     showRejectDialog,
     setShowRejectDialog,
     rejectJustification,
@@ -86,10 +77,6 @@ export function RiskCriticality() {
     submitError,
     confidenceScore,
     handleAccept,
-    handleOverrideClick,
-    handleSaveChanges,
-    handleCancelOverride,
-    handleOverrideConfirm,
     handleReject,
     llmFailure,
   } = useRiskCriticality();
@@ -102,10 +89,6 @@ export function RiskCriticality() {
       <RegulatoryFilingsEditor filings={regFilings} onChange={setRegFilings} />
     ),
     [regFilings, setRegFilings],
-  );
-  const regulatoryFilingsListEl = useMemo(
-    () => <RegulatoryFilingsList filings={regFilings} />,
-    [regFilings],
   );
 
   // Guard
@@ -129,13 +112,6 @@ export function RiskCriticality() {
           }
         />
 
-        <OverrideBar
-          isOverrideEditing={isOverrideEditing}
-          overrideConfirmed={overrideConfirmed}
-          onCancelOverride={handleCancelOverride}
-          overriddenLabel="Overriden"
-        />
-
         <div className="space-y-6 mt-6">
           {/* Top Banner: Confidence Score */}
           <RiskConfidenceCard
@@ -150,7 +126,6 @@ export function RiskCriticality() {
               title={RISK_FIELD_LABELS.patient_safety_product_quality_impact}
               level={psLevel}
               rationale={psRationale}
-              isOverrideEditing={isOverrideEditing}
               isModified={isPsModified}
               changedWithoutRationale={psChangedWithoutRationale}
               onLevelChange={updatePsLevel}
@@ -162,14 +137,12 @@ export function RiskCriticality() {
               title={RISK_FIELD_LABELS.regulatory_impact}
               level={regLevel}
               rationale={regRationale}
-              isOverrideEditing={isOverrideEditing}
               isModified={isRegModified}
               changedWithoutRationale={regChangedWithoutRationale}
               onLevelChange={updateRegLevel}
               onRationaleChange={updateRegRationale}
               badgeSuffix="regulatory risk"
               extraEditor={regulatoryFilingsEditorEl}
-              extraReadOnly={regulatoryFilingsListEl}
             />
 
             {/* 3. Data Integrity Risk */}
@@ -177,7 +150,6 @@ export function RiskCriticality() {
               title={RISK_FIELD_LABELS.data_integrity_risk}
               level={diLevel}
               rationale={diRationale}
-              isOverrideEditing={isOverrideEditing}
               isModified={isDiModified}
               changedWithoutRationale={diChangedWithoutRationale}
               onLevelChange={updateDiLevel}
@@ -189,7 +161,6 @@ export function RiskCriticality() {
               title={RISK_FIELD_LABELS.operational_disruption_risk}
               level={odLevel}
               rationale={odRationale}
-              isOverrideEditing={isOverrideEditing}
               isModified={isOdModified}
               changedWithoutRationale={odChangedWithoutRationale}
               onLevelChange={updateOdLevel}
@@ -199,7 +170,6 @@ export function RiskCriticality() {
             {/* 5. Risk Ranking & Justification (spans full width) */}
             <RiskRankingCard
               rankingJustification={rankingJustification}
-              isOverrideEditing={isOverrideEditing}
               isModified={isRankingModified}
               onChange={setRankingJustification}
             />
@@ -207,19 +177,13 @@ export function RiskCriticality() {
 
           {/* Bottom Decision Area */}
           <DecisionAction
-            acceptLabel="Accept & Continue to Validation & Testing Strategy"
             acceptLoadingLabel="Submitting Evaluation..."
             onAccept={handleAccept}
-            isOverrideEditing={isOverrideEditing}
-            overrideLabel="Override Evaluation"
-            onOverrideClick={handleOverrideClick}
-            onSaveChanges={handleSaveChanges}
-            rejectLabel="Reject Evaluation"
             onReject={() => setShowRejectDialog(true)}
             isLoading={isSubmitting}
             error={submitError}
             errorTitle="Evaluation submission failed"
-            footerText="Your decision will be logged in the audit trail. Accepting or overriding submits this evaluation and starts the Validation & Testing strategy — it only starts now, not before you decide."
+            footerText="Your decision will be logged in the audit trail. Accepting submits this evaluation and starts the Validation & Testing strategy using whatever is currently in the form above."
           />
         </div>
 
@@ -253,7 +217,7 @@ export function RiskCriticality() {
             </ul>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
               Please update the rationale for each changed field with the reason
-              for the new value before saving.
+              for the new value before accepting.
             </p>
             <DialogFooter>
               <Button
@@ -265,19 +229,6 @@ export function RiskCriticality() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
-        {/* Override Justification Dialog */}
-        <OverrideDialog
-          open={showOverrideDialog}
-          onOpenChange={setShowOverrideDialog}
-          title="Override Risk & Criticality Evaluation"
-          subjectLabel="the evaluation"
-          value={overrideJustification}
-          onChange={setOverrideJustification}
-          onCancel={() => setShowOverrideDialog(false)}
-          onConfirm={handleOverrideConfirm}
-          isLoading={isSubmitting}
-        />
 
         {/* Reject Dialog */}
         <RejectDialog

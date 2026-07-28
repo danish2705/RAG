@@ -1,6 +1,5 @@
 import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
-import { Badge } from "../ui/badge";
 import {
   Select,
   SelectContent,
@@ -17,35 +16,26 @@ import {
 import { Textarea } from "../ui/textarea";
 import { Sparkles, Info } from "lucide-react";
 import { ModifiedStatus } from "../eventIntake";
-import { getClassificationBadgeClass } from "../../utils/deviation/classification";
 import type { ClassificationType } from "../../types/pipeline";
 
 interface ClassificationCardProps {
-  isOverrideEditing: boolean;
-  overrideConfirmed: boolean;
-  currentClassification: ClassificationType;
   editedClassification: ClassificationType;
   setEditedClassification: (v: ClassificationType) => void;
   confidenceScore: number;
-  originalRationale: string[];
   editedRationale: string;
   setEditedRationale: (v: string) => void;
-  rationaleLines: string[];
   originalClassification: ClassificationType;
+  originalRationale: string[];
 }
 
 export const ClassificationCard: React.FC<ClassificationCardProps> = ({
-  isOverrideEditing,
-  overrideConfirmed,
-  currentClassification,
   editedClassification,
   setEditedClassification,
   confidenceScore,
-  originalRationale,
   editedRationale,
   setEditedRationale,
-  rationaleLines,
   originalClassification,
+  originalRationale,
 }) => {
   return (
     <Card>
@@ -62,35 +52,24 @@ export const ClassificationCard: React.FC<ClassificationCardProps> = ({
           <span className="text-sm font-medium text-muted-foreground">
             Classification:
           </span>
-          {isOverrideEditing ? (
-            <Select
-              value={editedClassification}
-              onValueChange={(v) =>
-                setEditedClassification(v as ClassificationType)
-              }
-            >
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Deviation">Deviation</SelectItem>
-                <SelectItem value="Change Control">Change Control</SelectItem>
-              </SelectContent>
-            </Select>
-          ) : (
-            <>
-              <Badge
-                className={getClassificationBadgeClass(currentClassification)}
-              >
-                {currentClassification}
-              </Badge>
-              <ModifiedStatus
-                enabled={overrideConfirmed && !isOverrideEditing}
-                original={originalClassification}
-                current={editedClassification}
-              />
-            </>
-          )}
+          <Select
+            value={editedClassification}
+            onValueChange={(v) =>
+              setEditedClassification(v as ClassificationType)
+            }
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Deviation">Deviation</SelectItem>
+              <SelectItem value="Change Control">Change Control</SelectItem>
+            </SelectContent>
+          </Select>
+          <ModifiedStatus
+            original={originalClassification}
+            current={editedClassification}
+          />
         </div>
 
         {/* Confidence Score Section */}
@@ -137,39 +116,22 @@ export const ClassificationCard: React.FC<ClassificationCardProps> = ({
         <div className="border-t border-border pt-4">
           <div className="flex items-center gap-2 mb-3">
             <p className="text-sm font-medium text-foreground">AI Rationale</p>
-            {!isOverrideEditing && (
-              <ModifiedStatus
-                enabled={overrideConfirmed}
-                original={originalRationale.join("\n").trim()}
-                current={editedRationale.trim()}
-              />
-            )}
+            <ModifiedStatus
+              original={originalRationale.join("\n").trim()}
+              current={editedRationale.trim()}
+            />
           </div>
-          {isOverrideEditing ? (
-            <div className="space-y-1">
-              <Textarea
-                rows={5}
-                value={editedRationale}
-                onChange={(e) => setEditedRationale(e.target.value)}
-                placeholder="One rationale point per line..."
-              />
-              <p className="text-xs text-muted-foreground">
-                One point per line
-              </p>
-            </div>
-          ) : (
-            <ul className="space-y-2">
-              {rationaleLines.map((point, i) => (
-                <li
-                  key={i}
-                  className="flex items-start gap-2 text-sm text-muted-foreground"
-                >
-                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
-                  {point}
-                </li>
-              ))}
-            </ul>
-          )}
+          <div className="space-y-1">
+            <Textarea
+              rows={5}
+              value={editedRationale}
+              onChange={(e) => setEditedRationale(e.target.value)}
+              placeholder="One rationale point per line..."
+            />
+            <p className="text-xs text-muted-foreground">
+              One point per line
+            </p>
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -2,8 +2,7 @@ import { useCallback, useEffect, useReducer, useState } from "react";
 import { useNavigate } from "react-router";
 import { generateImplementationControl } from "../../services/changeControl/implementationControlApi";
 import {
-  aiField,
-  markModified,
+  autoField,
   type ValidationTestingProvenance,
 } from "../../types/dataProvenance";
 import type {
@@ -36,6 +35,8 @@ function linesToText(lines: string[]): string {
 // ---------------------------------------------------------------------------
 // Form reducer: the 7 editable fields, previously 7 separate useState calls.
 // Same pattern as useRiskCriticality.ts / useChangeImpactAssessmentReview.ts.
+// Every field is directly editable at all times — seeded from the AI output
+// but freely changeable without first entering any separate "override" mode.
 // ---------------------------------------------------------------------------
 interface ValidationFormState {
   level: ValidationLevel;
@@ -197,70 +198,36 @@ export function useValidationTestingReview() {
     traceability: parseLines(form.traceability),
   });
 
-  const buildValidationProvenance = (
-    confirmed: boolean,
-  ): ValidationTestingProvenance => {
+  const buildValidationProvenance = (): ValidationTestingProvenance => {
     const original = validationParsed!;
-
-    const levelField =
-      confirmed && form.level !== original.required_validation_level.level
-        ? markModified(
-            aiField(original.required_validation_level.level),
-            form.level,
-          )
-        : aiField(original.required_validation_level.level);
-    const levelRationaleField =
-      confirmed &&
-      form.levelRationale !== original.required_validation_level.rationale
-        ? markModified(
-            aiField(original.required_validation_level.rationale),
-            form.levelRationale,
-          )
-        : aiField(original.required_validation_level.rationale);
-
-    const currentScenarios = parseLines(form.scenarioTesting);
-    const scenarioField =
-      confirmed &&
-      JSON.stringify(currentScenarios) !==
-        JSON.stringify(original.scenario_based_testing)
-        ? markModified(
-            aiField(original.scenario_based_testing),
-            currentScenarios,
-          )
-        : aiField(original.scenario_based_testing);
-
-    const currentRegression = parseLines(form.regressionScope);
-    const regressionField =
-      confirmed &&
-      JSON.stringify(currentRegression) !==
-        JSON.stringify(original.regression_scope)
-        ? markModified(aiField(original.regression_scope), currentRegression)
-        : aiField(original.regression_scope);
-
-    const currentUat = parseLines(form.uatRequirements);
-    const uatField =
-      confirmed &&
-      JSON.stringify(currentUat) !== JSON.stringify(original.uat_requirements)
-        ? markModified(aiField(original.uat_requirements), currentUat)
-        : aiField(original.uat_requirements);
-
-    const currentTraceability = parseLines(form.traceability);
-    const traceabilityField =
-      confirmed &&
-      JSON.stringify(currentTraceability) !==
-        JSON.stringify(original.traceability)
-        ? markModified(aiField(original.traceability), currentTraceability)
-        : aiField(original.traceability);
 
     return {
       required_validation_level: {
-        level: levelField,
-        rationale: levelRationaleField,
+        level: autoField(
+          original.required_validation_level.level,
+          form.level,
+        ),
+        rationale: autoField(
+          original.required_validation_level.rationale,
+          form.levelRationale,
+        ),
       },
-      scenario_based_testing: scenarioField,
-      regression_scope: regressionField,
-      uat_requirements: uatField,
-      traceability: traceabilityField,
+      scenario_based_testing: autoField(
+        original.scenario_based_testing,
+        parseLines(form.scenarioTesting),
+      ),
+      regression_scope: autoField(
+        original.regression_scope,
+        parseLines(form.regressionScope),
+      ),
+      uat_requirements: autoField(
+        original.uat_requirements,
+        parseLines(form.uatRequirements),
+      ),
+      traceability: autoField(
+        original.traceability,
+        parseLines(form.traceability),
+      ),
       confidence_score: original.confidence_score,
     };
   };
@@ -354,11 +321,27 @@ export function useValidationTestingReview() {
   };
 
   const handleAccept = () => {
-    const validationProvenance = buildValidationProvenance(
-      override.overrideConfirmed,
-    );
+    // If the validation level was changed but its rationale wasn't updated
+    // to explain why, block Accept and ask for that first — same guardrail
+    // that used to live in the old "Save Changes" step, just triggered by
+    // Accept directly now that there's no separate override mode.
+    if (form.levelChangedWithoutRationale) {
+      override.setShowRationaleWarning(true);
+      return;
+    }
+
+    const validationProvenance = buildValidationProvenance();
+    const isEdited = [
+      validationProvenance.required_validation_level.level,
+      validationProvenance.required_validation_level.rationale,
+      validationProvenance.scenario_based_testing,
+      validationProvenance.regression_scope,
+      validationProvenance.uat_requirements,
+      validationProvenance.traceability,
+    ].some((field) => field.source === "modified");
+
     const existingImplementation = result!.stages?.implementationControl;
-    if (!override.overrideConfirmed && existingImplementation?.parsed) {
+    if (!isEdited && existingImplementation?.parsed) {
       navigateToImplementation(
         existingImplementation,
         validationProvenance,
@@ -367,27 +350,6 @@ export function useValidationTestingReview() {
       return;
     }
     void submitValidationTesting(validationProvenance);
-  };
-
-  const handleOverrideClick = () => override.setIsOverrideEditing(true);
-
-  const handleSaveChanges = () => {
-    if (form.levelChangedWithoutRationale) {
-      override.setShowRationaleWarning(true);
-      return;
-    }
-    override.setShowOverrideDialog(true);
-  };
-
-  const handleCancelOverride = () => {
-    if (!validationParsed) return;
-    override.setIsOverrideEditing(false);
-    dispatchForm({ type: "HYDRATE", parsed: validationParsed });
-  };
-
-  const handleOverrideConfirm = () => {
-    if (!override.overrideJustification.trim()) return;
-    override.confirmOverride();
   };
 
   const handleReject = () => {
@@ -399,7 +361,6 @@ export function useValidationTestingReview() {
 
   const isLevelModified =
     !!validationParsed &&
-    override.overrideConfirmed &&
     (form.level !== validationParsed.required_validation_level.level ||
       form.levelRationale !==
         validationParsed.required_validation_level.rationale);
@@ -411,10 +372,8 @@ export function useValidationTestingReview() {
     impactParsed,
     riskParsed,
     validationParsed,
-
     chatOpen,
     setChatOpen,
-
     level: form.level,
     levelRationale: form.levelRationale,
     scenarioTesting: form.scenarioTesting,
@@ -427,33 +386,18 @@ export function useValidationTestingReview() {
     setTraceability,
     updateLevel,
     updateLevelRationale,
-
     levelChangedWithoutRationale: form.levelChangedWithoutRationale,
     isLevelModified,
-
-    isOverrideEditing: override.isOverrideEditing,
-    overrideConfirmed: override.overrideConfirmed,
-
-    showOverrideDialog: override.showOverrideDialog,
-    setShowOverrideDialog: override.setShowOverrideDialog,
-    overrideJustification: override.overrideJustification,
-    setOverrideJustification: override.setOverrideJustification,
     showRejectDialog: override.showRejectDialog,
     setShowRejectDialog: override.setShowRejectDialog,
     rejectJustification: override.rejectJustification,
     setRejectJustification: override.setRejectJustification,
     showRationaleWarning: override.showRationaleWarning,
     setShowRationaleWarning: override.setShowRationaleWarning,
-
     isSubmitting: override.isSubmitting,
     submitError: override.submitError,
     llmFailure,
-
     handleAccept,
-    handleOverrideClick,
-    handleSaveChanges,
-    handleCancelOverride,
-    handleOverrideConfirm,
     handleReject,
   };
 }

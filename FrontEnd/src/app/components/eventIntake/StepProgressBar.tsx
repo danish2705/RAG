@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Check } from "lucide-react";
+import { useEffect } from "react";
+import { Check, Lock } from "lucide-react";
 import { useLocation, useNavigate } from "react-router";
 
 export type Classification = "Deviation" | "Change Control" | "Hybrid";
@@ -12,7 +12,7 @@ interface StepProgressBarProps {
 }
 
 // Intake ("/deviation") and Classification ("/deviation/ai-recommendation")
-// are shared by both flows — only the routes after classification diverge.[cite: 6]
+// are shared by both flows — only the routes after classification diverge.
 const DEVIATION_STEP_ROUTES: Record<string, number> = {
   "/deviation": 0,
   "/deviation/ai-recommendation": 1,
@@ -22,10 +22,7 @@ const DEVIATION_STEP_ROUTES: Record<string, number> = {
   "/deviation/summary": 5,
 };
 
-// NOTE: keys must match routes.tsx exactly.[cite: 6]
-// routes.tsx defines "change-control/change-impact-assessment", not
-// "change-control/impact-assessment" — that mismatch was making this
-// map miss on that page and silently fall back to step 0.[cite: 6]
+// NOTE: keys must match routes.tsx exactly.
 const CHANGE_CONTROL_STEP_ROUTES: Record<string, number> = {
   "/deviation": 0,
   "/deviation/ai-recommendation": 1,
@@ -38,6 +35,14 @@ const CHANGE_CONTROL_STEP_ROUTES: Record<string, number> = {
 
 const CAPA_STEP_INDEX = 4;
 const CC_IMPLEMENTATION_STEP_INDEX = 5;
+
+// The two flows share Step 0 (Intake) and Step 1 (Classification), so both
+// ratchets must be namespaced consistently and both read/written the SAME
+// way regardless of which top-level branch below decided to render them.
+// This is what previously let the Deviation and Change Control ratchets
+// drift out of sync with each other on the shared pages.
+const DEVIATION_STORAGE_KEY = "qms_deviation_max_step";
+const CHANGE_CONTROL_STORAGE_KEY = "qms_cc_max_step";
 
 function getDeviationSteps(classification?: Classification) {
   const step2 = classification ?? "Classification";
@@ -62,6 +67,33 @@ function getChangeControlSteps(classification?: Classification) {
     { label: "Implementation", path: "/change-control/implementation" },
     { label: "Summary", path: "/change-control/summary" },
   ];
+}
+
+// Ground truth read. NOT cached in React state — called fresh on every
+// single render. sessionStorage is the one durable source of truth; this
+// function's job is just to reconcile it with the step the URL says we're
+// on right now. Because nothing here depends on when a mount/remount/effect
+// happened to run, there is no possible render where a stale, lower value
+// can flash on screen — every render sees the real current value.
+function readHighestCompletedStep(storageKey: string, currentStep: number): number {
+  if (typeof window === "undefined") return currentStep;
+  const saved = sessionStorage.getItem(storageKey);
+  const savedValue = saved !== null ? parseInt(saved, 10) : 0;
+  return Math.max(Number.isFinite(savedValue) ? savedValue : 0, currentStep);
+}
+
+// Idempotent persistence: only writes when the URL has pushed the ratchet
+// further than what's stored. Never call this with a value that could move
+// the ratchet backward — highestCompletedStep passed in must already be the
+// reconciled Math.max() from readHighestCompletedStep above.
+function usePersistHighestCompletedStep(storageKey: string, highestCompletedStep: number) {
+  useEffect(() => {
+    const saved = sessionStorage.getItem(storageKey);
+    const savedValue = saved !== null ? parseInt(saved, 10) : 0;
+    if (highestCompletedStep > savedValue) {
+      sessionStorage.setItem(storageKey, highestCompletedStep.toString());
+    }
+  }, [storageKey, highestCompletedStep]);
 }
 
 export function StepProgressBar({
@@ -90,7 +122,7 @@ export function StepProgressBar({
     />
   );
 
-  // Explicit classification takes priority[cite: 6]
+  // Explicit classification takes priority
   if (classification === "Deviation") {
     return <div className="mb-6">{deviationBar}</div>;
   }
@@ -99,7 +131,7 @@ export function StepProgressBar({
     return <div className="mb-6">{changeControlBar}</div>;
   }
 
-  // If classification isn't available, infer from route[cite: 6]
+  // If classification isn't available, infer from route
   if (pathname.startsWith("/change-control")) {
     return <div className="mb-6">{changeControlBar}</div>;
   }
@@ -112,7 +144,12 @@ export function StepProgressBar({
     return <div className="mb-6">{deviationBar}</div>;
   }
 
-  // Only show both bars on shared pages[cite: 6]
+  // Shared pages (Intake / Classification) where classification isn't known
+  // yet: show both. Because both DeviationBar and ChangeControlBar now read
+  // straight from sessionStorage on every render rather than caching a
+  // value in state, whichever ratchet already has progress recorded (from a
+  // prior visit deeper in that flow) will render correctly here too — there
+  // is no separate "fresh mount" code path that could show a lower number.
   return (
     <div className="space-y-3 mb-6">
       <div>
@@ -143,39 +180,37 @@ function DeviationBar({
   capaAccepted?: boolean;
   implementationAccepted?: boolean;
 }) {
-  const currentStep = DEVIATION_STEP_ROUTES[pathname] ?? 0;
+  // currentActiveStep: derived directly from the URL, every render. This is
+  // deliberately NOT its own useState — the URL is already the single
+  // source of truth for "what page is being viewed," and duplicating it
+  // into state would just create a second value that could drift out of
+  // sync with actual routing.
+  const currentActiveStep = DEVIATION_STEP_ROUTES[pathname] ?? 0;
   const steps = getDeviationSteps(classification);
 
-  // Remember the highest step reached in this session so navigating back keeps progress green
-  const [maxReached, setMaxReached] = useState<number>(() => {
-    const saved = sessionStorage.getItem("qms_deviation_max_step");
-    return saved ? Math.max(parseInt(saved, 10), currentStep) : currentStep;
-  });
+  // highestCompletedStep: the other of the two independent states, read
+  // fresh from sessionStorage every render (see readHighestCompletedStep).
+  // An accepted CAPA step counts as completed even a beat before navigation
+  // has physically caught up to the Summary page.
+  const baseHighestCompletedStep = readHighestCompletedStep(DEVIATION_STORAGE_KEY, currentActiveStep);
+  const highestCompletedStep = (capaAccepted || implementationAccepted)
+    ? Math.max(baseHighestCompletedStep, CAPA_STEP_INDEX + 1)
+    : baseHighestCompletedStep;
 
-  useEffect(() => {
-    if (currentStep > maxReached) {
-      setMaxReached(currentStep);
-      sessionStorage.setItem("qms_deviation_max_step", currentStep.toString());
-    }
-  }, [currentStep, maxReached]);
+  usePersistHighestCompletedStep(DEVIATION_STORAGE_KEY, baseHighestCompletedStep);
 
-  // If user starts over at step 0 (Intake), reset the memory
+  // Explicit reset: only when back at Intake with no case in progress.
   useEffect(() => {
     if (pathname === "/deviation" && !sessionStorage.getItem("qms_active_case")) {
-      setMaxReached(0);
-      sessionStorage.removeItem("qms_deviation_max_step");
+      sessionStorage.removeItem(DEVIATION_STORAGE_KEY);
     }
   }, [pathname]);
 
   return (
     <ProgressBarShell
       steps={steps}
-      currentStep={currentStep}
-      maxReachedStep={maxReached}
-      isStepCompleted={(index) =>
-        index < maxReached ||
-        (index === CAPA_STEP_INDEX && (capaAccepted || implementationAccepted || maxReached > CAPA_STEP_INDEX))
-      }
+      currentActiveStep={currentActiveStep}
+      highestCompletedStep={highestCompletedStep}
     />
   );
 }
@@ -191,53 +226,46 @@ function ChangeControlBar({
   implementationAccepted?: boolean;
   changeControlStepAccepted?: boolean;
 }) {
-  const currentStep = CHANGE_CONTROL_STEP_ROUTES[pathname] ?? 0;
+  const currentActiveStep = CHANGE_CONTROL_STEP_ROUTES[pathname] ?? 0;
   const steps = getChangeControlSteps(classification);
 
-  // Remember the highest step reached in this session so navigating back keeps progress green
-  const [maxReached, setMaxReached] = useState<number>(() => {
-    const saved = sessionStorage.getItem("qms_cc_max_step");
-    return saved ? Math.max(parseInt(saved, 10), currentStep) : currentStep;
-  });
+  const baseHighestCompletedStep = readHighestCompletedStep(CHANGE_CONTROL_STORAGE_KEY, currentActiveStep);
+  // changeControlStepAccepted intentionally isn't folded in here — in the
+  // original code it only ever referred to the *current* step, which the
+  // active-step highlight already covers on its own; it never actually
+  // extended how far the workflow had progressed.
+  const highestCompletedStep = implementationAccepted
+    ? Math.max(baseHighestCompletedStep, CC_IMPLEMENTATION_STEP_INDEX + 1)
+    : baseHighestCompletedStep;
 
-  useEffect(() => {
-    if (currentStep > maxReached) {
-      setMaxReached(currentStep);
-      sessionStorage.setItem("qms_cc_max_step", currentStep.toString());
-    }
-  }, [currentStep, maxReached]);
+  usePersistHighestCompletedStep(CHANGE_CONTROL_STORAGE_KEY, baseHighestCompletedStep);
 
   useEffect(() => {
     if (pathname === "/deviation" && !sessionStorage.getItem("qms_active_case")) {
-      setMaxReached(0);
-      sessionStorage.removeItem("qms_cc_max_step");
+      sessionStorage.removeItem(CHANGE_CONTROL_STORAGE_KEY);
     }
   }, [pathname]);
 
   return (
     <ProgressBarShell
       steps={steps}
-      currentStep={currentStep}
-      maxReachedStep={maxReached}
-      isStepCompleted={(index) =>
-        index < maxReached ||
-        (index === CC_IMPLEMENTATION_STEP_INDEX && (implementationAccepted || maxReached > CC_IMPLEMENTATION_STEP_INDEX)) ||
-        (index === currentStep && changeControlStepAccepted)
-      }
+      currentActiveStep={currentActiveStep}
+      highestCompletedStep={highestCompletedStep}
     />
   );
 }
 
 function ProgressBarShell({
   steps,
-  currentStep,
-  maxReachedStep,
-  isStepCompleted,
+  currentActiveStep,
+  highestCompletedStep,
 }: {
   steps: { label: string; path: string }[];
-  currentStep: number;
-  maxReachedStep: number;
-  isStepCompleted: (index: number) => boolean;
+  // Two independent states, per requirement — neither is derived from the
+  // other, and the render below never uses currentActiveStep to decide the
+  // green line, only to decide the active-step ring/highlight.
+  currentActiveStep: number;
+  highestCompletedStep: number;
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -253,10 +281,20 @@ function ProgressBarShell({
     >
       <div className="flex items-center w-full">
         {steps.map((step, index) => {
-          // A step is considered completed if it was already passed in our max reached history
-          const isCompleted = isStepCompleted(index) && index !== currentStep;
-          // The active step is the exact page we are currently viewing
-          const isActive = index === currentStep;
+          // Active: strictly the page currently being viewed.
+          const isActive = index === currentActiveStep;
+
+          // Completed: strictly index <= highestCompletedStep. Never
+          // references currentActiveStep, so viewing an earlier completed
+          // step never shortens or moves this.
+          const isCompleted = index <= highestCompletedStep;
+
+          // Sequential unlock gate: identical condition to isCompleted by
+          // design — a step is clickable exactly when it's within the
+          // workflow's completed history. Steps beyond highestCompletedStep
+          // are locked, disabled, and unclickable, which is what prevents
+          // jumping ahead to a future/incomplete step.
+          const isUnlocked = index <= highestCompletedStep;
 
           return (
             <div
@@ -265,37 +303,60 @@ function ProgressBarShell({
             >
               <button
                 type="button"
-                onClick={() => handleStepClick(step.path)}
-                className="flex items-center gap-2 shrink-0 group cursor-pointer focus:outline-none rounded-lg px-2 py-1 -mx-2 transition-all duration-200 hover:bg-muted/60 active:scale-95"
-                title={`Click to jump to ${step.label}`}
+                onClick={() => {
+                  if (!isUnlocked) return;
+                  handleStepClick(step.path);
+                }}
+                disabled={!isUnlocked}
+                aria-disabled={!isUnlocked}
+                aria-current={isActive ? "step" : undefined}
+                className={`flex items-center gap-2 shrink-0 group focus:outline-none rounded-lg px-2 py-1 -mx-2 transition-all duration-200 ${
+                  isUnlocked
+                    ? "cursor-pointer hover:bg-muted/60 active:scale-95"
+                    : "cursor-not-allowed opacity-50"
+                }`}
+                title={
+                  isUnlocked
+                    ? `Click to jump to ${step.label}`
+                    : "Complete the previous steps to unlock this step"
+                }
               >
                 <div
                   className={`
-                    flex items-center justify-center rounded-full w-8 h-8 text-sm font-semibold transition-all duration-200 group-hover:scale-110 group-hover:shadow-md shrink-0
+                    flex items-center justify-center rounded-full w-8 h-8 text-sm font-semibold transition-all duration-200 shrink-0
+                    ${isUnlocked ? "group-hover:scale-110 group-hover:shadow-md" : ""}
                     ${
-                      isActive
-                        ? "bg-blue-600 text-white ring-2 ring-blue-600/30 ring-offset-2 ring-offset-background group-hover:bg-blue-700 font-bold"
-                        : isCompleted || index <= maxReachedStep
-                          ? "bg-green-500 text-white group-hover:bg-green-600"
+                      isCompleted
+                        ? `bg-green-500 text-white ${isActive ? "ring-2 ring-blue-600/30 ring-offset-2 ring-offset-background font-bold" : "group-hover:bg-green-600"}`
+                        : isActive
+                          ? "bg-blue-600 text-white ring-2 ring-blue-600/30 ring-offset-2 ring-offset-background group-hover:bg-blue-700 font-bold"
                           : "bg-muted text-muted-foreground border border-border group-hover:border-blue-500/50 group-hover:text-foreground"
                     }
                   `}
                 >
-                  {/* Show checkmark for all completed steps unless we are actively viewing/editing it right now */}
-                  {(isCompleted || (index < maxReachedStep && !isActive)) ? (
+                  {/* Checkmark for every completed step in the ratchet history, active or not */}
+                  {isCompleted ? (
                     <Check className="w-4 h-4 stroke-[2.5]" />
+                  ) : !isUnlocked ? (
+                    <Lock className="w-3.5 h-3.5" />
                   ) : (
                     <span>{index + 1}</span>
                   )}
                 </div>
 
+                {/* Active-step title gets an underline so the current page is
+                    unambiguous at a glance. This is driven purely by isActive
+                    (current URL), never by isCompleted/highestCompletedStep —
+                    the underline and the green line are fully independent. */}
                 <span
-                  className={`text-sm font-medium whitespace-nowrap transition-all duration-200 group-hover:underline group-hover:underline-offset-4 ${
+                  className={`text-sm font-medium whitespace-nowrap transition-all duration-200 ${
+                    isUnlocked ? "group-hover:underline group-hover:underline-offset-4" : ""
+                  } ${
                     isActive
-                      ? "text-foreground font-bold"
-                      : isCompleted || index <= maxReachedStep
+                      ? "text-foreground font-bold underline underline-offset-4 decoration-2 decoration-blue-600"
+                      : isCompleted
                         ? "text-muted-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400"
-                        : "text-muted-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400"
+                        : "text-muted-foreground"
                   }`}
                 >
                   {step.label}
@@ -305,7 +366,9 @@ function ProgressBarShell({
               {index < steps.length - 1 && (
                 <div
                   className={`mx-3 h-0.5 flex-1 rounded-full transition-all duration-300 ${
-                    index < maxReachedStep ? "bg-green-400" : "bg-muted"
+                    // The green line reflects HIGHEST COMPLETED STEP ONLY —
+                    // currentActiveStep never appears in this condition.
+                    index < highestCompletedStep ? "bg-green-400" : "bg-muted"
                   }`}
                 />
               )}

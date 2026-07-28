@@ -1,8 +1,6 @@
 import { useNavigate } from "react-router";
 import {
   DecisionAction,
-  OverrideDialog,
-  OverrideBar,
   RejectDialog,
   StepProgressBar,
 } from "../../components/eventIntake";
@@ -61,12 +59,6 @@ export function ChangeImpactAssessment() {
     isRiskModified,
     isSystemsModified,
     isDependenciesModified,
-    isOverrideEditing,
-    overrideConfirmed,
-    showOverrideDialog,
-    setShowOverrideDialog,
-    overrideJustification,
-    setOverrideJustification,
     showRejectDialog,
     setShowRejectDialog,
     rejectJustification,
@@ -77,10 +69,6 @@ export function ChangeImpactAssessment() {
     isSubmitting,
     submitError,
     handleAccept,
-    handleOverrideClick,
-    handleSaveChanges,
-    handleCancelOverride,
-    handleOverrideConfirm,
     handleReject,
     llmFailure,
   } = useChangeImpactAssessmentReview();
@@ -104,13 +92,6 @@ export function ChangeImpactAssessment() {
           }
         />
 
-        <OverrideBar
-          isOverrideEditing={isOverrideEditing}
-          overrideConfirmed={overrideConfirmed}
-          onCancelOverride={handleCancelOverride}
-          overriddenLabel="Overriden"
-        />
-
         <div className="space-y-6 mt-6">
           <ImpactConfidenceCard score={changeImpactParsed.confidence_score} />
 
@@ -119,7 +100,6 @@ export function ChangeImpactAssessment() {
               title={CHANGE_IMPACT_FIELD_LABELS.gxp_classification}
               value={gxpValue}
               rationale={gxpRationale}
-              isOverrideEditing={isOverrideEditing}
               isModified={isGxpModified}
               changedWithoutRationale={gxpChangedWithoutRationale}
               onValueChange={updateGxpValue}
@@ -130,7 +110,6 @@ export function ChangeImpactAssessment() {
               title={CHANGE_IMPACT_FIELD_LABELS.data_validation_impact}
               validatedStateAffected={validatedStateAffected}
               rationale={dataValidationRationale}
-              isOverrideEditing={isOverrideEditing}
               isModified={isValidationModified}
               changedWithoutRationale={validationChangedWithoutRationale}
               onValueChange={updateValidatedStateAffected}
@@ -140,7 +119,6 @@ export function ChangeImpactAssessment() {
             <ImpactListCard
               title={CHANGE_IMPACT_FIELD_LABELS.impacted_systems}
               items={impactedSystems}
-              isOverrideEditing={isOverrideEditing}
               isModified={isSystemsModified}
               onChange={setImpactedSystems}
               placeholder="One system / process / study per line..."
@@ -149,7 +127,6 @@ export function ChangeImpactAssessment() {
             <ImpactListCard
               title={CHANGE_IMPACT_FIELD_LABELS.downstream_dependencies}
               items={downstreamDependencies}
-              isOverrideEditing={isOverrideEditing}
               isModified={isDependenciesModified}
               onChange={setDownstreamDependencies}
               placeholder="One dependency per line..."
@@ -159,7 +136,6 @@ export function ChangeImpactAssessment() {
               title={CHANGE_IMPACT_FIELD_LABELS.risk_scoring}
               level={riskLevel}
               rationale={riskRationale}
-              isOverrideEditing={isOverrideEditing}
               isModified={isRiskModified}
               changedWithoutRationale={riskChangedWithoutRationale}
               onLevelChange={updateRiskLevel}
@@ -169,19 +145,13 @@ export function ChangeImpactAssessment() {
 
           {/* Bottom Decision Area */}
           <DecisionAction
-            acceptLabel="Accept & Continue to Risk & Criticality"
             acceptLoadingLabel="Submitting Assessment..."
             onAccept={handleAccept}
-            isOverrideEditing={isOverrideEditing}
-            overrideLabel="Override Assessment"
-            onOverrideClick={handleOverrideClick}
-            onSaveChanges={handleSaveChanges}
-            rejectLabel="Reject Assessment"
             onReject={() => setShowRejectDialog(true)}
             isLoading={isSubmitting}
             error={submitError}
             errorTitle="Assessment submission failed"
-            footerText="Your decision will be logged in the audit trail. Accepting or overriding submits this assessment and starts the Risk & Criticality evaluation — it only starts now, not before you decide."
+            footerText="Your decision will be logged in the audit trail. Accepting submits this assessment and starts the Risk & Criticality evaluation using whatever is currently in the form above."
           />
         </div>
 
@@ -215,7 +185,7 @@ export function ChangeImpactAssessment() {
             </ul>
             <p className="text-sm text-muted-foreground mt-3">
               Please update the rationale for each changed field with the reason
-              for the new value before saving.
+              for the new value before accepting.
             </p>
             <DialogFooter>
               <Button
@@ -227,19 +197,6 @@ export function ChangeImpactAssessment() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
-        {/* Override Justification Dialog */}
-        <OverrideDialog
-          open={showOverrideDialog}
-          onOpenChange={setShowOverrideDialog}
-          title="Override Change Impact Assessment"
-          subjectLabel="the assessment"
-          value={overrideJustification}
-          onChange={setOverrideJustification}
-          onCancel={() => setShowOverrideDialog(false)}
-          onConfirm={handleOverrideConfirm}
-          isLoading={isSubmitting}
-        />
 
         {/* Reject Dialog */}
         <RejectDialog

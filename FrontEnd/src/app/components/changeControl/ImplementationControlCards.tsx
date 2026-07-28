@@ -121,52 +121,29 @@ export const ImplementationTextareaCard = React.memo<{
   rows: number;
   value: string;
   original: string;
-  isOverrideEditing: boolean;
-  overrideConfirmed: boolean;
   onChange: (value: string) => void;
-}>(
-  ({
-    icon,
-    title,
-    fieldId,
-    label,
-    rows,
-    value,
-    original,
-    isOverrideEditing,
-    overrideConfirmed,
-    onChange,
-  }) => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          {icon}
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Label htmlFor={fieldId}>{label}</Label>
-            {!isOverrideEditing && (
-              <ModifiedStatus
-                enabled={overrideConfirmed}
-                original={original}
-                current={value}
-              />
-            )}
-          </div>
-          <Textarea
-            id={fieldId}
-            rows={rows}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            readOnly={!isOverrideEditing}
-            className={!isOverrideEditing ? "bg-muted cursor-default" : ""}
-          />
+}>(({ icon, title, fieldId, label, rows, value, original, onChange }) => (
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2">
+        {icon}
+        {title}
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Label htmlFor={fieldId}>{label}</Label>
+          <ModifiedStatus original={original} current={value} />
         </div>
-      </CardContent>
-    </Card>
-  ),
-);
+        <Textarea
+          id={fieldId}
+          rows={rows}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      </div>
+    </CardContent>
+  </Card>
+));
 ImplementationTextareaCard.displayName = "ImplementationTextareaCard";

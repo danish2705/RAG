@@ -1,8 +1,6 @@
 import { useNavigate } from "react-router";
 import {
   DecisionAction,
-  OverrideDialog,
-  OverrideBar,
   RejectDialog,
   StepProgressBar,
 } from "../components/eventIntake";
@@ -24,29 +22,17 @@ export function AIRecommendation() {
     insufficientInput,
     chatOpen,
     setChatOpen,
-    isOverrideEditing,
     editedClassification,
     setEditedClassification,
     editedRationale,
     setEditedRationale,
-    rationaleLines,
-    showOverrideDialog,
-    setShowOverrideDialog,
-    overrideJustification,
-    setOverrideJustification,
     showRejectDialog,
     setShowRejectDialog,
     rejectJustification,
     setRejectJustification,
     isAssessing,
     assessError,
-    overrideConfirmed,
-    currentClassification,
     handleAccept,
-    handleOverrideClick,
-    handleSaveChanges,
-    handleCancelOverride,
-    handleOverrideConfirm,
     handleReject,
     llmFailure,
   } = useClassificationReview();
@@ -81,56 +67,27 @@ export function AIRecommendation() {
       >
         <StepProgressBar classification={parsed.classification} />
 
-        <OverrideBar
-          isOverrideEditing={isOverrideEditing}
-          overrideConfirmed={overrideConfirmed}
-          onCancelOverride={handleCancelOverride}
-          overriddenLabel="Overriden"
-        />
-
         <div className="space-y-6">
           <ClassificationCard
-            isOverrideEditing={isOverrideEditing}
-            overrideConfirmed={overrideConfirmed}
-            currentClassification={currentClassification}
             editedClassification={editedClassification}
             setEditedClassification={setEditedClassification}
             confidenceScore={parsed.confidence_score}
-            originalRationale={parsed.rationale ?? []}
             editedRationale={editedRationale}
             setEditedRationale={setEditedRationale}
-            rationaleLines={rationaleLines}
             originalClassification={parsed.classification}
+            originalRationale={parsed.rationale ?? []}
           />
 
           <DecisionAction
-            acceptLabel="Accept Classification"
             acceptLoadingLabel="Running Impact Assessment..."
             onAccept={handleAccept}
-            isOverrideEditing={isOverrideEditing}
-            overrideLabel="Override Classification"
-            onOverrideClick={handleOverrideClick}
-            onSaveChanges={handleSaveChanges}
-            rejectLabel="Reject Classification"
             onReject={() => setShowRejectDialog(true)}
             isLoading={isAssessing}
             error={assessError}
             errorTitle="Impact assessment failed"
-            footerText="Your decision will be logged in the audit trail. Accepting or overriding runs a fresh impact assessment — it only starts now, not before you decide."
+            footerText="Your decision will be logged in the audit trail. Accepting runs a fresh impact assessment using whatever is currently in the form above."
           />
         </div>
-
-        <OverrideDialog
-          open={showOverrideDialog}
-          onOpenChange={setShowOverrideDialog}
-          title="Override AI Classification"
-          subjectLabel="the AI recommendation"
-          value={overrideJustification}
-          onChange={setOverrideJustification}
-          onCancel={() => setShowOverrideDialog(false)}
-          onConfirm={handleOverrideConfirm}
-          isLoading={isAssessing}
-        />
 
         <RejectDialog
           open={showRejectDialog}

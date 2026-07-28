@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { AlertTriangle, Clock, FileCheck, ShieldAlert, X, Bell, ExternalLink } from "lucide-react";
+import { useAuth } from "./AuthContext";
 
 export interface QMSNotification {
   id: string;
@@ -69,8 +70,34 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  // 1. Trigger Initial Bottom-Right Pop-up on Dashboard Load
+  const { isAuthenticated, user } = useAuth();
+  const hasShownWelcomeThisSessionRef = useRef(false);
+
+  // 1. Trigger the welcome pop-up only once the post-login "what's your
+  // name" popup has actually been completed — not the instant login
+  // succeeds. isAuthenticated flips true right when the login button is
+  // clicked, but the user hasn't finished onboarding until they've entered
+  // their name and hit Continue, which is what actually sets
+  // user.displayName. So this waits for displayName specifically, not just
+  // isAuthenticated.
+  //
+  // NOTE: this assumes the name popup's "Continue" button calls
+  // setDisplayName(...) from AuthContext, based on that function's name. If
+  // the popup actually sets a different flag (e.g. a standalone
+  // "onboardingComplete" boolean instead of displayName), swap the
+  // condition below to match — I don't have that popup's component in
+  // front of me to confirm which it is.
   useEffect(() => {
+    if (!isAuthenticated || !user?.displayName) {
+      // Not logged in, or logged in but still sitting at the name popup —
+      // reset so the toast is ready to fire once onboarding actually finishes.
+      hasShownWelcomeThisSessionRef.current = false;
+      return;
+    }
+
+    if (hasShownWelcomeThisSessionRef.current) return;
+    hasShownWelcomeThisSessionRef.current = true;
+
     const unread = INITIAL_NOTIFICATIONS.filter((n) => !n.read).length;
     if (unread > 0) {
       const welcomeToast: ToastAlert = {
@@ -80,15 +107,15 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         time: "Just now",
         type: "welcome",
       };
-      
-      // Slight delay for smooth entrance after page load
+
+      // Slight delay for smooth entrance after the name popup closes
       const timer = setTimeout(() => {
         setActiveToasts((prev) => [...prev, welcomeToast]);
       }, 1000);
 
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [isAuthenticated, user?.displayName]);
 
   // 2. Function to add new live notification (updates list, count badge, AND pops up bottom-right toast)
   const triggerNewNotification = (

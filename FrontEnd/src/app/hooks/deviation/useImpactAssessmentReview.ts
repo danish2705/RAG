@@ -45,6 +45,14 @@ export function useImpactAssessmentReview() {
 
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectJustification, setRejectJustification] = useState("");
+  // Only surfaced after the user rejects the assessment (and the fields get
+  // cleared) — hidden otherwise.
+  const [showAiSuggestion, setShowAiSuggestion] = useState(false);
+  // Client-side check so an accidental Accept right after Reject clears the
+  // fields doesn't silently save empty data to the audit trail.
+  const [emptyFieldsWarning, setEmptyFieldsWarning] = useState<string | null>(
+    null,
+  );
 
   const [showDescriptionWarning, setShowDescriptionWarning] = useState(false);
   const [warningCards, setWarningCards] = useState<string[]>([]);
@@ -72,6 +80,13 @@ export function useImpactAssessmentReview() {
       updated[index] = item;
       return updated;
     });
+  };
+
+  // Restores the original AI-generated severities/descriptions into the
+  // form — used by the "AI Suggestion" button so a rejected/cleared
+  // assessment can be brought back.
+  const handleGetAiSuggestion = () => {
+    setAssessments(initialAssessments);
   };
 
   const buildImpactProvenance = (): ImpactAssessmentProvenance => {
@@ -109,7 +124,10 @@ export function useImpactAssessmentReview() {
     >;
 
     assessments.forEach((a) => {
-      updatedImpact[a.key] = { severity: a.severity as ImpactSeverity, rationale: a.description };
+      updatedImpact[a.key] = {
+        severity: a.severity || "None",
+        rationale: a.description,
+      };
     });
 
     return {
@@ -190,6 +208,10 @@ export function useImpactAssessmentReview() {
     }
   };
 
+  // Accept stays disabled until every assessment description is filled in —
+  // most notably right after a Reject clears them.
+  const canAccept = assessments.every((a) => a.description.trim() !== "");
+
   const handleAccept = () => {
     // If a severity was changed but its description wasn't updated to
     // explain why, block Accept and ask for that first — same guardrail
@@ -203,6 +225,19 @@ export function useImpactAssessmentReview() {
       setShowDescriptionWarning(true);
       return;
     }
+
+    // Guard against accepting right after a Reject cleared the
+    // descriptions — don't silently save empty data to the audit trail.
+    const emptyDescriptions = assessments.some(
+      (a) => a.description.trim() === "",
+    );
+    if (emptyDescriptions) {
+      setEmptyFieldsWarning(
+        "One or more impact descriptions are empty. Please fill them in before accepting.",
+      );
+      return;
+    }
+    setEmptyFieldsWarning(null);
 
     const impactProvenance = buildImpactProvenance();
     const isEdited = Object.values(impactProvenance.impact_assessment).some(
@@ -225,36 +260,19 @@ export function useImpactAssessmentReview() {
   };
 
   const handleReject = () => {
-    if (rejectJustification.trim()) {
-      setShowRejectDialog(false);
-      setRejectJustification("");
-      // Clear the AI-classified fields — the user rejected the AI's
-      // suggestion, so we don't leave it sitting in the form. They can
-      // either fill this in manually or pull the AI suggestion back in
-      // with the button at the top of the page.
-      setAssessments((prev) =>
-        prev.map((a) => ({
-          ...a,
-          severity: "",
-          description: "",
-          severityChangedWithoutDescription: false,
-        })),
-      );
-    }
-  };
-
-  // Restores the original AI suggestion into the form — used by the
-  // "AI Suggestion" button so a rejected/cleared assessment can be brought
-  // back.
-  const handleGetAiSuggestion = () => {
+    setShowRejectDialog(false);
+    // Clear the AI-assessed fields — the user rejected the AI's suggestion,
+    // so we don't leave it sitting in the form. They can either fill this
+    // in manually or pull the AI suggestion back in with the button above.
     setAssessments((prev) =>
-      prev.map((a) => ({
-        ...a,
-        severity: a.originalSeverity,
-        description: a.originalDescription,
+      prev.map((item) => ({
+        ...item,
+        severity: "None" as ImpactSeverity,
+        description: "",
         severityChangedWithoutDescription: false,
       })),
     );
+    setShowAiSuggestion(true);
   };
 
   return {
@@ -268,6 +286,9 @@ export function useImpactAssessmentReview() {
     setShowRejectDialog,
     rejectJustification,
     setRejectJustification,
+    showAiSuggestion,
+    emptyFieldsWarning,
+    canAccept,
     showDescriptionWarning,
     setShowDescriptionWarning,
     warningCards,

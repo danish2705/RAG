@@ -25,14 +25,14 @@ import {
   statusColors,
 } from "../utils/dashboardConfig";
 import { PenSquare, Plus } from "lucide-react";
-
+ 
 export function Dashboard() {
   const [aiOpen, setAiOpen] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(
     undefined,
   );
   const navigate = useNavigate();
-
+ 
   // Convert the calendar's Date-based selection into the "YYYY-MM-DD"
   // strings the API expects. A range with only a "from" isn't sent until
   // "to" is also picked, so the summary doesn't refetch mid-selection.
@@ -43,27 +43,27 @@ export function Dashboard() {
       endDate: toDateKey(dateRange.to),
     };
   }, [dateRange]);
-
+ 
   const { summary, loading, error } = useDashboard(apiDateRange);
-
+ 
   const eventTypeCards = eventTypeCardMeta.map((meta) => ({
     label: meta.label,
     sub: meta.sub,
     icon: meta.icon,
     value: summary ? String(summary.eventTypeCards[meta.key]) : "\u2013",
   }));
-
+ 
   const metricCards = metricCardMeta.map((meta) => ({
     label: meta.label,
     sub: meta.sub,
     icon: meta.icon,
     value: summary ? meta.format(summary.metricCards[meta.key]) : "\u2013",
   }));
-
+ 
   // The dashboard only ever surfaces the 3 most recent records; anything
   // beyond that lives on the full Records page.
   const recentRecords = summary?.recentRecords.slice(0, 3) ?? [];
-
+ 
   // The chart's title reflects how the data is actually bucketed: monthly
   // by default (or for a multi-month range), daily when the selected range
   // falls entirely within one calendar month.
@@ -71,12 +71,12 @@ export function Dashboard() {
     summary?.charts.eventsOverTimeGranularity === "day"
       ? "Events Over Time (Daily)"
       : "Events Over Time (Monthly)";
-
+ 
   // Only show the full-page loader on the very first load. If a background
   // refetch happens later while data's already on screen, don't yank the
   // existing content away — just let it update quietly in place.
   const isInitialLoad = loading && !summary;
-
+ 
   return (
     <div className="relative h-full w-full">
       <div
@@ -108,13 +108,13 @@ export function Dashboard() {
             <span>New Case</span>
           </Button>
         </div>
-
+ 
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400">
             Couldn't load dashboard data: {error}
           </div>
         )}
-
+ 
         {isInitialLoad ? (
           <Loader message="Loading dashboard..." minHeight="h-[60vh]" />
         ) : (
@@ -127,7 +127,7 @@ export function Dashboard() {
                 <KpiCardGrid title="Performance Metrics" cards={metricCards} />
               </div>
             </div>
-
+ 
             {summary && (
               <>
                 {/* Row: Events by Type / Events Over Time / Events by Site */}
@@ -146,7 +146,7 @@ export function Dashboard() {
                     <EventsBySiteChart data={summary.charts.eventsBySite} />
                   </ChartCard>
                 </div>
-
+ 
                 {/* Row: Severity Distribution + Events by Status (stacked) / Recent Records */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                   <div className="flex flex-col gap-6">
@@ -163,7 +163,7 @@ export function Dashboard() {
                       />
                     </ChartCard>
                   </div>
-
+ 
                   <div className="lg:col-span-2">
                     <RecentRecordsList
                       records={recentRecords}
@@ -182,7 +182,7 @@ export function Dashboard() {
           </>
         )}
       </div>
-
+ 
       <div className="fixed top-16 right-0 bottom-0 z-40">
         <AIAssistantPanel isOpen={aiOpen} onToggle={() => setAiOpen(!aiOpen)} />
       </div>

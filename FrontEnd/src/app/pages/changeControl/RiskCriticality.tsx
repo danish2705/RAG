@@ -76,8 +76,12 @@ export function RiskCriticality() {
     isSubmitting,
     submitError,
     confidenceScore,
+    showAiSuggestion,
+    emptyFieldsWarning,
+    canAccept,
     handleAccept,
     handleReject,
+    handleGetAiSuggestion,
     llmFailure,
   } = useRiskCriticality();
 
@@ -117,6 +121,7 @@ export function RiskCriticality() {
           <RiskConfidenceCard
             score={confidenceScore}
             impactRiskLevel={impactParsed.risk_scoring.level}
+            onGetAiSuggestion={showAiSuggestion ? handleGetAiSuggestion : undefined}
           />
 
           {/* Grid Container for the 4 risk category fields */}
@@ -179,10 +184,12 @@ export function RiskCriticality() {
           <DecisionAction
             acceptLoadingLabel="Submitting Evaluation..."
             onAccept={handleAccept}
+            acceptDisabled={isSubmitting || !canAccept}
             onReject={() => setShowRejectDialog(true)}
             isLoading={isSubmitting}
             error={submitError}
             errorTitle="Evaluation submission failed"
+            warning={emptyFieldsWarning}
             footerText="Your decision will be logged in the audit trail. Accepting submits this evaluation and starts the Validation & Testing strategy using whatever is currently in the form above."
           />
         </div>

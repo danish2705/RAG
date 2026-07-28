@@ -26,6 +26,9 @@ export function ImpactAssessment() {
     setShowRejectDialog,
     rejectJustification,
     setRejectJustification,
+    showAiSuggestion,
+    emptyFieldsWarning,
+    canAccept,
     showDescriptionWarning,
     setShowDescriptionWarning,
     warningCards,
@@ -53,7 +56,7 @@ export function ImpactAssessment() {
           <ImpactConfidenceCard
             score={impactParsed.confidence_score}
             classificationName={classificationParsed.classification}
-            onGetAiSuggestion={handleGetAiSuggestion}
+            onGetAiSuggestion={showAiSuggestion ? handleGetAiSuggestion : undefined}
           />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -71,11 +74,12 @@ export function ImpactAssessment() {
           <DecisionAction
             acceptLoadingLabel="Generating Root Cause Analysis..."
             onAccept={handleAccept}
-            acceptDisabled={assessments.some((a) => !a.severity)}
+            acceptDisabled={isGeneratingRCA || !canAccept}
             onReject={() => setShowRejectDialog(true)}
             isLoading={isGeneratingRCA}
             error={rcaError}
             errorTitle="Root cause analysis failed"
+            warning={emptyFieldsWarning}
             footerText="Your decision will be logged in the audit trail. Accepting runs root cause analysis using whatever is currently in the form above."
           />
         </div>

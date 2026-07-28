@@ -61,13 +61,22 @@ export const NoRiskCriticalityDataGuard: React.FC<{ onGoBack: () => void }> = ({
 export const RiskConfidenceCard = React.memo<{
   score: number;
   impactRiskLevel: string;
-}>(({ score, impactRiskLevel }) => (
+  onGetAiSuggestion?: () => void;
+}>(({ score, impactRiskLevel, onGetAiSuggestion }) => (
   <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black">
     <CardHeader className="pb-2">
-      <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-gray-900 dark:text-gray-100">
-        <Sparkles className="h-4 w-4 text-blue-500" />
-        Overall AI Confidence Score
-      </CardTitle>
+      <div className="flex items-center justify-between">
+        <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-gray-900 dark:text-gray-100">
+          <Sparkles className="h-4 w-4 text-blue-500" />
+          Overall AI Confidence Score
+        </CardTitle>
+        {onGetAiSuggestion && (
+          <Button type="button" variant="outline" size="sm" onClick={onGetAiSuggestion}>
+            <Sparkles className="h-4 w-4 mr-2 text-blue-600" />
+            AI Suggestion
+          </Button>
+        )}
+      </div>
       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
         Based on Change Impact Assessment (risk scoring: {impactRiskLevel})
       </p>

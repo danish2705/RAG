@@ -70,6 +70,10 @@ export function ChangeImpactAssessment() {
     submitError,
     handleAccept,
     handleReject,
+    handleGetAiSuggestion,
+    showAiSuggestion,
+    emptyFieldsWarning,
+    canAccept,
     llmFailure,
   } = useChangeImpactAssessmentReview();
 
@@ -93,7 +97,10 @@ export function ChangeImpactAssessment() {
         />
 
         <div className="space-y-6 mt-6">
-          <ImpactConfidenceCard score={changeImpactParsed.confidence_score} />
+          <ImpactConfidenceCard
+            score={changeImpactParsed.confidence_score}
+            onGetAiSuggestion={showAiSuggestion ? handleGetAiSuggestion : undefined}
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <GxpClassificationCard
@@ -147,10 +154,12 @@ export function ChangeImpactAssessment() {
           <DecisionAction
             acceptLoadingLabel="Submitting Assessment..."
             onAccept={handleAccept}
+            acceptDisabled={isSubmitting || !canAccept}
             onReject={() => setShowRejectDialog(true)}
             isLoading={isSubmitting}
             error={submitError}
             errorTitle="Assessment submission failed"
+            warning={emptyFieldsWarning}
             footerText="Your decision will be logged in the audit trail. Accepting submits this assessment and starts the Risk & Criticality evaluation using whatever is currently in the form above."
           />
         </div>

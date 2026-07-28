@@ -23,6 +23,13 @@ export interface DecisionActionProps {
   isLoading?: boolean;
   error?: string | null;
   errorTitle?: string;
+  /**
+   * Client-side validation notice (e.g. required fields are empty after a
+   * Reject cleared them) — shown distinctly from `error`, which is reserved
+   * for API/submission failures. Accept should not have been allowed to
+   * proceed when this is set, so nothing gets written to the audit log.
+   */
+  warning?: string | null;
   footerText?: ReactNode;
 }
 
@@ -43,6 +50,7 @@ export function DecisionAction({
   isLoading = false,
   error,
   errorTitle = "Something went wrong",
+  warning,
   footerText = "Your decision will be logged in the audit trail. Any edits you made are saved and sent along with your decision.",
 }: DecisionActionProps) {
   return (
@@ -51,6 +59,12 @@ export function DecisionAction({
         <CardTitle>Decision Required</CardTitle>
       </CardHeader>
       <CardContent>
+        {warning && (
+          <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-400">
+            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+            <p>{warning}</p>
+          </div>
+        )}
         {error && (
           <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-500/10 p-3 text-sm text-red-800 dark:text-red-400">
             <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />

@@ -51,6 +51,10 @@ export function ImplementationControl() {
     riskLevel,
     handleAccept,
     handleReject,
+    handleGetAiSuggestion,
+    showAiSuggestion,
+    emptyFieldsWarning,
+    canAccept,
     llmFailure,
   } = useImplementationControl();
 
@@ -89,6 +93,7 @@ export function ImplementationControl() {
           <ImplementationConfidenceCard
             score={confidenceScore}
             riskLevel={riskLevel}
+            onGetAiSuggestion={showAiSuggestion ? handleGetAiSuggestion : undefined}
           />
 
           <ImplementationTextareaCard
@@ -151,10 +156,11 @@ export function ImplementationControl() {
           {/* Decision Required */}
           <DecisionAction
             onAccept={handleAccept}
-            acceptDisabled={decisionMade}
+            acceptDisabled={decisionMade || !canAccept}
             acceptSelected={implementationAccepted}
             onReject={() => setShowRejectDialog(true)}
             rejectDisabled={decisionMade}
+            warning={emptyFieldsWarning}
             footerText="Your decision will be logged in the audit trail"
           />
         </div>

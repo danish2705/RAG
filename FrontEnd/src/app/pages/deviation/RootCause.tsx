@@ -33,6 +33,9 @@ export function RootCause() {
     setShowRejectDialog,
     rejectJustification,
     setRejectJustification,
+    showAiSuggestion,
+    emptyFieldsWarning,
+    canAccept,
     isGeneratingCAPA,
     capaError,
     handleAccept,
@@ -58,7 +61,7 @@ export function RootCause() {
         <div className="space-y-6">
           <RcaConfidenceCard
             score={rcaParsed.confidence_score}
-            onGetAiSuggestion={handleGetAiSuggestion}
+            onGetAiSuggestion={showAiSuggestion ? handleGetAiSuggestion : undefined}
           />
 
           <PrimaryRootCauseCard
@@ -89,11 +92,12 @@ export function RootCause() {
           <DecisionAction
             acceptLoadingLabel="Generating CAPA..."
             onAccept={handleAccept}
-            acceptDisabled={!primaryRootCause.trim()}
+            acceptDisabled={isGeneratingCAPA || !canAccept}
             onReject={() => setShowRejectDialog(true)}
             isLoading={isGeneratingCAPA}
             error={capaError}
             errorTitle="CAPA generation failed"
+            warning={emptyFieldsWarning}
             footerText="Your decision will be logged in the audit trail. Accepting generates CAPA recommendations using whatever is currently in the form above."
           />
         </div>

@@ -62,7 +62,8 @@ type RiskFormAction =
   | { type: "SET_DI_RATIONALE"; value: string; original: string }
   | { type: "SET_OD_LEVEL"; value: RiskLevel; original: RiskLevel }
   | { type: "SET_OD_RATIONALE"; value: string; original: string }
-  | { type: "SET_RANKING_JUSTIFICATION"; value: string };
+  | { type: "SET_RANKING_JUSTIFICATION"; value: string }
+  | { type: "CLEAR" };
 
 const initialRiskFormState: RiskFormState = {
   psLevel: "Low",
@@ -171,6 +172,8 @@ function riskFormReducer(
       };
     case "SET_RANKING_JUSTIFICATION":
       return { ...state, rankingJustification: action.value };
+    case "CLEAR":
+      return initialRiskFormState;
     default:
       return state;
   }
@@ -194,6 +197,14 @@ export function useRiskCriticality() {
   );
   const override = useOverrideDialogState();
   const llmFailure = useLlmFailureRecovery();
+  // Only surfaced after the user rejects the evaluation (and the fields get
+  // cleared) — hidden otherwise.
+  const [showAiSuggestion, setShowAiSuggestion] = useState(false);
+  // Client-side check so an accidental Accept right after Reject clears the
+  // fields doesn't silently save empty data to the audit trail.
+  const [emptyFieldsWarning, setEmptyFieldsWarning] = useState<string | null>(
+    null,
+  );
 
   // Re-hydrate local editable state whenever a *new* risk evaluation lands
   // in the store. A plain useState initializer only runs on first mount —
@@ -480,6 +491,15 @@ export function useRiskCriticality() {
     }
   };
 
+  // Accept stays disabled until every field is filled in — most notably
+  // right after a Reject clears them.
+  const canAccept =
+    form.psRationale.trim() !== "" &&
+    form.regRationale.trim() !== "" &&
+    form.diRationale.trim() !== "" &&
+    form.odRationale.trim() !== "" &&
+    form.rankingJustification.trim() !== "";
+
   const handleAccept = () => {
     // If a value was changed but its rationale wasn't updated to explain
     // why, block Accept and ask for that first — same guardrail that used
@@ -502,6 +522,22 @@ export function useRiskCriticality() {
       override.setShowRationaleWarning(true);
       return;
     }
+
+    // Guard against accepting right after a Reject cleared the fields —
+    // don't silently save empty data to the audit trail.
+    if (
+      form.psRationale.trim() === "" ||
+      form.regRationale.trim() === "" ||
+      form.diRationale.trim() === "" ||
+      form.odRationale.trim() === "" ||
+      form.rankingJustification.trim() === ""
+    ) {
+      setEmptyFieldsWarning(
+        "One or more risk evaluation fields are empty. Please fill them in before accepting.",
+      );
+      return;
+    }
+    setEmptyFieldsWarning(null);
 
     const riskProvenance = buildRiskProvenance();
     if (!riskProvenance) return;
@@ -531,10 +567,21 @@ export function useRiskCriticality() {
   };
 
   const handleReject = () => {
-    if (override.rejectJustification.trim()) {
-      override.setShowRejectDialog(false);
-      navigate("/deviation");
-    }
+    override.setShowRejectDialog(false);
+    // Clear the AI-generated fields — the user rejected the AI's
+    // suggestion, so we don't leave it sitting in the form. They can
+    // either fill this in manually or pull the AI suggestion back in
+    // with the button above.
+    dispatchForm({ type: "CLEAR" });
+    setShowAiSuggestion(true);
+  };
+
+  // Restores the original AI-generated evaluation into the form — used by
+  // the "AI Suggestion" button so a rejected/cleared field can be brought
+  // back.
+  const handleGetAiSuggestion = () => {
+    if (!riskParsed) return;
+    dispatchForm({ type: "HYDRATE", parsed: riskParsed });
   };
 
   const confidenceScore = riskParsed?.confidence_score ?? 0;
@@ -611,8 +658,12 @@ export function useRiskCriticality() {
     isSubmitting: override.isSubmitting,
     submitError: override.submitError,
     confidenceScore,
+    showAiSuggestion,
+    emptyFieldsWarning,
+    canAccept,
     llmFailure,
     handleAccept,
     handleReject,
+    handleGetAiSuggestion,
   };
 }

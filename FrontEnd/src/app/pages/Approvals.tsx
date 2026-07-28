@@ -9,6 +9,12 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { Dialog, DialogContent } from "../components/ui/dialog";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { useApprovals } from "../hooks/useApprovals";
 import { ApprovalsTable } from "../components/approvals/ApprovalsTable";
 import { ApprovalEditModal } from "../components/approvals/ApprovalEditModal";
@@ -80,44 +86,42 @@ export function Approvals() {
           />
         )}
 
-        <div className="mb-6">
-          <h1 className="text-xl font-bold text-foreground">Approvals</h1>
-          <p className="text-sm text-muted-foreground mt-0.5 font-medium">
-            {identity
-              ? `Pending cases — you (${identity}) can approve cases submitted to you`
-              : "Pending cases awaiting approval"}
-          </p>
-        </div>
-
         {/* Filter bar — search + submitted by + submitted to + status */}
-        <div className="flex flex-wrap items-center gap-3 mb-4">
-          <div className="relative flex-1 min-w-[220px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search submitted by, query…"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              className="pl-9"
-            />
-          </div>
+        <Card className="mb-4">
+          <CardHeader>
+            <CardTitle>Filters</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative flex-1 min-w-[220px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search submitted by, query…"
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
 
-          <Select
-            value={submittedToFilter}
-            onValueChange={setSubmittedToFilter}
-          >
-            <SelectTrigger className="w-44">
-              <SelectValue placeholder="Submitted To" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All submitted to</SelectItem>
-              {submittedToOptions.map((name: string) => (
-                <SelectItem key={name} value={name}>
-                  {name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+              <Select
+                value={submittedToFilter}
+                onValueChange={setSubmittedToFilter}
+              >
+                <SelectTrigger className="w-44">
+                  <SelectValue placeholder="Submitted To" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All submitted to</SelectItem>
+                  {submittedToOptions.map((name: string) => (
+                    <SelectItem key={name} value={name}>
+                      {name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
 
         <ApprovalsTable
           loading={loading}

@@ -116,11 +116,13 @@ export function useApprovals() {
     });
   }, [rows, searchText, submittedToFilter]);
 
-  // True when the current user is the approver this case was submitted to.
+  // True when the current user is the approver this case was submitted to,
+  // or when they're an Admin (Admins can approve any pending case).
   const canApprove = useCallback(
     (row: ApprovalRow) =>
-      !!identity && row.submittedTo.toLowerCase() === identity.toLowerCase(),
-    [identity],
+      user?.role === "Admin" ||
+      (!!identity && row.submittedTo.toLowerCase() === identity.toLowerCase()),
+    [identity, user],
   );
 
   const openCase = useCallback((row: ApprovalRow) => {
@@ -158,6 +160,7 @@ export function useApprovals() {
       try {
         const payload: ApprovePayload = {
           approved_by: identity || "Unknown",
+          approver_role: user?.role || "User",
           updates,
         };
         await approveCase(id, caseType, payload);
@@ -173,7 +176,7 @@ export function useApprovals() {
         setIsApproving(false);
       }
     },
-    [identity, closeCase, navigate],
+    [identity, user, closeCase, navigate],
   );
 
   return {

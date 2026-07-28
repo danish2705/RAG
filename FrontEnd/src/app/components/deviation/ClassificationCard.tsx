@@ -27,7 +27,7 @@ interface ClassificationCardProps {
   setEditedRationale: (v: string) => void;
   originalClassification: ClassificationType;
   originalRationale: string[];
-  onGetAiSuggestion: () => void;
+  onGetAiSuggestion?: () => void;
 }
 
 export const ClassificationCard: React.FC<ClassificationCardProps> = ({
@@ -47,10 +47,12 @@ export const ClassificationCard: React.FC<ClassificationCardProps> = ({
           <Sparkles className="h-5 w-5 text-blue-600" />
           AI Classification
         </CardTitle>
-        <Button type="button" variant="outline" size="sm" onClick={onGetAiSuggestion}>
-          <Sparkles className="h-4 w-4 mr-2 text-blue-600" />
-          AI Suggestion
-        </Button>
+        {onGetAiSuggestion && (
+          <Button type="button" variant="outline" size="sm" onClick={onGetAiSuggestion}>
+            <Sparkles className="h-4 w-4 mr-2 text-blue-600" />
+            AI Suggestion
+          </Button>
+        )}
       </CardHeader>
 
       <CardContent className="space-y-6">

@@ -51,7 +51,8 @@ type ImpactFormAction =
   | { type: "SET_VALIDATED_STATE_AFFECTED"; value: boolean; original: boolean }
   | { type: "SET_DATA_VALIDATION_RATIONALE"; value: string; original: string }
   | { type: "SET_RISK_LEVEL"; value: RiskLevel; original: RiskLevel }
-  | { type: "SET_RISK_RATIONALE"; value: string; original: string };
+  | { type: "SET_RISK_RATIONALE"; value: string; original: string }
+  | { type: "CLEAR" };
 
 const initialImpactFormState: ImpactFormState = {
   impactedSystems: [],
@@ -142,6 +143,8 @@ function impactFormReducer(
             ? false
             : state.riskChangedWithoutRationale,
       };
+    case "CLEAR":
+      return initialImpactFormState;
     default:
       return state;
   }
@@ -167,6 +170,14 @@ export function useChangeImpactAssessmentReview() {
   );
   const override = useOverrideDialogState();
   const llmFailure = useLlmFailureRecovery();
+  // Only surfaced after the user rejects the assessment (and the fields get
+  // cleared) — hidden otherwise.
+  const [showAiSuggestion, setShowAiSuggestion] = useState(false);
+  // Client-side check so an accidental Accept right after Reject clears the
+  // fields doesn't silently save empty data to the audit trail.
+  const [emptyFieldsWarning, setEmptyFieldsWarning] = useState<string | null>(
+    null,
+  );
 
   const setImpactedSystems = useCallback(
     (value: string[]) => dispatchForm({ type: "SET_IMPACTED_SYSTEMS", value }),
@@ -385,6 +396,15 @@ export function useChangeImpactAssessmentReview() {
     }
   };
 
+  // Accept stays disabled until every field is filled in — most notably
+  // right after a Reject clears them.
+  const canAccept =
+    form.gxpRationale.trim() !== "" &&
+    form.dataValidationRationale.trim() !== "" &&
+    form.riskRationale.trim() !== "" &&
+    form.impactedSystems.length > 0 &&
+    form.downstreamDependencies.length > 0;
+
   const handleAccept = () => {
     // If a value was changed but its rationale wasn't updated to explain
     // why, block Accept and ask for that first — same guardrail that used
@@ -403,6 +423,22 @@ export function useChangeImpactAssessmentReview() {
       override.setShowRationaleWarning(true);
       return;
     }
+
+    // Guard against accepting right after a Reject cleared the fields —
+    // don't silently save empty data to the audit trail.
+    if (
+      form.gxpRationale.trim() === "" ||
+      form.dataValidationRationale.trim() === "" ||
+      form.riskRationale.trim() === "" ||
+      form.impactedSystems.length === 0 ||
+      form.downstreamDependencies.length === 0
+    ) {
+      setEmptyFieldsWarning(
+        "One or more change impact fields are empty. Please fill them in before accepting.",
+      );
+      return;
+    }
+    setEmptyFieldsWarning(null);
 
     const changeImpactProvenance = buildChangeImpactProvenance();
     const isEdited = [
@@ -429,10 +465,21 @@ export function useChangeImpactAssessmentReview() {
   };
 
   const handleReject = () => {
-    if (override.rejectJustification.trim()) {
-      override.setShowRejectDialog(false);
-      navigate("/deviation");
-    }
+    override.setShowRejectDialog(false);
+    // Clear the AI-generated fields — the user rejected the AI's
+    // suggestion, so we don't leave it sitting in the form. They can
+    // either fill this in manually or pull the AI suggestion back in
+    // with the button above.
+    dispatchForm({ type: "CLEAR" });
+    setShowAiSuggestion(true);
+  };
+
+  // Restores the original AI-generated assessment into the form — used by
+  // the "AI Suggestion" button so a rejected/cleared field can be brought
+  // back.
+  const handleGetAiSuggestion = () => {
+    if (!changeImpactParsed) return;
+    dispatchForm({ type: "HYDRATE", parsed: changeImpactParsed });
   };
 
   const isGxpModified =
@@ -500,6 +547,10 @@ export function useChangeImpactAssessmentReview() {
     submitError: override.submitError,
     handleAccept,
     handleReject,
+    handleGetAiSuggestion,
+    showAiSuggestion,
+    emptyFieldsWarning,
+    canAccept,
     llmFailure,
   };
 }

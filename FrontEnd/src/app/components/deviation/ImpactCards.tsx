@@ -80,9 +80,9 @@ export const ImpactAssessmentCard: React.FC<ImpactAssessmentCardProps> = ({
       <CardContent className="space-y-4">
         <div>
           <label className="text-sm font-medium mb-2 block">Impact Level</label>
-          <Select value={assessment.severity || undefined} onValueChange={(value) => onSeverityChange(index, value)}>
-            <SelectTrigger className={assessment.severity ? getSeverityBadgeClass(assessment.severity) : ""}>
-              <SelectValue placeholder="Select impact level..." />
+          <Select value={assessment.severity} onValueChange={(value) => onSeverityChange(index, value)}>
+            <SelectTrigger className={getSeverityBadgeClass(assessment.severity)}>
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="Critical">🔴 Critical</SelectItem>

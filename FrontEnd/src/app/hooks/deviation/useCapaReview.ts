@@ -20,7 +20,16 @@ type CapaFormAction =
   | { type: "SET_CORRECTIVE_ACTION"; value: string }
   | { type: "SET_PREVENTIVE_ACTION"; value: string }
   | { type: "SET_EFFECTIVENESS_CHECK"; value: string }
-  | { type: "SET_DUE_DATE"; value: string };
+  | { type: "SET_DUE_DATE"; value: string }
+  | { type: "HYDRATE"; value: CapaFormState }
+  | { type: "CLEAR" };
+
+const clearedCapaFormState: CapaFormState = {
+  correctiveAction: "",
+  preventiveAction: "",
+  effectivenessCheck: "",
+  dueDate: "",
+};
 
 function capaFormReducer(
   state: CapaFormState,
@@ -35,6 +44,10 @@ function capaFormReducer(
       return { ...state, effectivenessCheck: action.value };
     case "SET_DUE_DATE":
       return { ...state, dueDate: action.value };
+    case "HYDRATE":
+      return action.value;
+    case "CLEAR":
+      return clearedCapaFormState;
     default:
       return state;
   }
@@ -60,6 +73,14 @@ export function useCapaReview() {
   const [capaAccepted, setCapaAccepted] = useState(false);
   const [correction, setCorrection] = useState("");
   const [showWeakCapaWarning, setShowWeakCapaWarning] = useState(false);
+  // Only surfaced after the user rejects the CAPA (and the fields get
+  // cleared) — hidden otherwise.
+  const [showAiSuggestion, setShowAiSuggestion] = useState(false);
+  // Client-side check so an accidental Accept right after Reject clears the
+  // fields doesn't silently save empty data to the audit trail.
+  const [emptyFieldsWarning, setEmptyFieldsWarning] = useState<string | null>(
+    null,
+  );
 
   // Fields are directly editable at all times — seeded from a previously
   // saved edit (if resuming) or the raw AI output, but freely changeable
@@ -171,37 +192,58 @@ export function useCapaReview() {
   // advances straight to the summary (no extra "Get Summary" button).
   // Whatever is currently in the form — edited or left as the AI suggested
   // it — is what gets approved.
+  // Accept stays disabled until every field is filled in — most notably
+  // right after a Reject clears them.
+  const canAccept =
+    form.correctiveAction.trim() !== "" &&
+    form.preventiveAction.trim() !== "" &&
+    form.effectivenessCheck.trim() !== "" &&
+    form.dueDate.trim() !== "";
+
   const handleAccept = () => {
+    // Guard against accepting right after a Reject cleared the fields —
+    // don't silently save empty data to the audit trail.
+    if (
+      form.correctiveAction.trim() === "" ||
+      form.preventiveAction.trim() === "" ||
+      form.effectivenessCheck.trim() === "" ||
+      form.dueDate.trim() === ""
+    ) {
+      setEmptyFieldsWarning(
+        "One or more CAPA fields are empty. Please fill them in before accepting.",
+      );
+      return;
+    }
+    setEmptyFieldsWarning(null);
+
     setCapaAccepted(true);
     proceed();
   };
 
   const handleReject = () => {
-    if (override.rejectJustification.trim()) {
-      override.setShowRejectDialog(false);
-      override.setRejectJustification("");
-      // Clear the AI-classified fields — the user rejected the AI's
-      // suggestion, so we don't leave it sitting in the form. They can
-      // either fill this in manually or pull the AI suggestion back in
-      // with the button at the top of the page. The Correction field is
-      // user-entered (not AI-classified), so it's left untouched.
-      setCorrectiveAction("");
-      setPreventiveAction("");
-      setEffectivenessCheck("");
-      setDueDate("");
-      setShowWeakCapaWarning(false);
-    }
+    override.setShowRejectDialog(false);
+    // Clear the AI-generated fields — the user rejected the AI's
+    // suggestion, so we don't leave it sitting in the form. They can
+    // either fill this in manually or pull the AI suggestion back in
+    // with the button above.
+    dispatchForm({ type: "CLEAR" });
+    setShowAiSuggestion(true);
   };
 
-  // Restores the original AI suggestion into the form — used by the
-  // "AI Suggestion" button so a rejected/cleared field can be brought back.
+  // Restores the original AI-generated CAPA recommendations into the form —
+  // used by the "AI Suggestion" button so a rejected/cleared field can be
+  // brought back.
   const handleGetAiSuggestion = () => {
     if (!capaParsed) return;
-    setCorrectiveAction((capaParsed.corrective_actions ?? []).join("\n"));
-    setPreventiveAction((capaParsed.preventive_actions ?? []).join("\n"));
-    setEffectivenessCheck(capaParsed.effectiveness_check ?? "");
-    setDueDate(capaParsed.due_date ?? "");
-    setShowWeakCapaWarning(false);
+    dispatchForm({
+      type: "HYDRATE",
+      value: {
+        correctiveAction: (capaParsed.corrective_actions ?? []).join("\n"),
+        preventiveAction: (capaParsed.preventive_actions ?? []).join("\n"),
+        effectivenessCheck: capaParsed.effectiveness_check ?? "",
+        dueDate: capaParsed.due_date ?? "",
+      },
+    });
   };
 
   return {
@@ -227,6 +269,9 @@ export function useCapaReview() {
     setShowRejectDialog: override.setShowRejectDialog,
     rejectJustification: override.rejectJustification,
     setRejectJustification: override.setRejectJustification,
+    showAiSuggestion,
+    emptyFieldsWarning,
+    canAccept,
     proceed,
     handleAccept,
     handleReject,

@@ -76,17 +76,26 @@ export const GeneratingImplementationGuard: React.FC<{
 export const ImplementationConfidenceCard = React.memo<{
   score: number;
   riskLevel: string | null;
-}>(({ score, riskLevel }) => (
+  onGetAiSuggestion?: () => void;
+}>(({ score, riskLevel, onGetAiSuggestion }) => (
   <Card className="shadow-sm">
-    <CardHeader>
-      <CardTitle className="flex items-center gap-2">
-        <Sparkles className="h-5 w-5 text-blue-600" />
-        Overall AI Confidence Score
-      </CardTitle>
-      {riskLevel && (
-        <p className="text-xs text-muted-foreground mt-0.5">
-          ({riskLevel} System Rationale)
-        </p>
+    <CardHeader className="flex flex-row items-center justify-between space-y-0">
+      <div>
+        <CardTitle className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-blue-600" />
+          Overall AI Confidence Score
+        </CardTitle>
+        {riskLevel && (
+          <p className="text-xs text-muted-foreground mt-0.5">
+            ({riskLevel} System Rationale)
+          </p>
+        )}
+      </div>
+      {onGetAiSuggestion && (
+        <Button type="button" variant="outline" size="sm" onClick={onGetAiSuggestion}>
+          <Sparkles className="h-4 w-4 mr-2 text-blue-600" />
+          AI Suggestion
+        </Button>
       )}
     </CardHeader>
     <CardContent>

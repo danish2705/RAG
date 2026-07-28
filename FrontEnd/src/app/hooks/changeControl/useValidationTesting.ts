@@ -55,7 +55,8 @@ type ValidationFormAction =
   | { type: "SET_SCENARIO_TESTING"; value: string }
   | { type: "SET_REGRESSION_SCOPE"; value: string }
   | { type: "SET_UAT_REQUIREMENTS"; value: string }
-  | { type: "SET_TRACEABILITY"; value: string };
+  | { type: "SET_TRACEABILITY"; value: string }
+  | { type: "CLEAR" };
 
 const initialValidationFormState: ValidationFormState = {
   level: "None",
@@ -111,6 +112,8 @@ function validationFormReducer(
       return { ...state, uatRequirements: action.value };
     case "SET_TRACEABILITY":
       return { ...state, traceability: action.value };
+    case "CLEAR":
+      return initialValidationFormState;
     default:
       return state;
   }
@@ -135,6 +138,14 @@ export function useValidationTestingReview() {
   );
   const override = useOverrideDialogState();
   const llmFailure = useLlmFailureRecovery();
+  // Only surfaced after the user rejects the strategy (and the fields get
+  // cleared) — hidden otherwise.
+  const [showAiSuggestion, setShowAiSuggestion] = useState(false);
+  // Client-side check so an accidental Accept right after Reject clears the
+  // fields doesn't silently save empty data to the audit trail.
+  const [emptyFieldsWarning, setEmptyFieldsWarning] = useState<string | null>(
+    null,
+  );
 
   // Re-hydrate local editable state whenever a *new* validation strategy
   // lands in the store (mirrors RiskCriticality.tsx / ImplementationControl.tsx).
@@ -320,6 +331,15 @@ export function useValidationTestingReview() {
     }
   };
 
+  // Accept stays disabled until every field is filled in — most notably
+  // right after a Reject clears them.
+  const canAccept =
+    form.levelRationale.trim() !== "" &&
+    form.scenarioTesting.trim() !== "" &&
+    form.regressionScope.trim() !== "" &&
+    form.uatRequirements.trim() !== "" &&
+    form.traceability.trim() !== "";
+
   const handleAccept = () => {
     // If the validation level was changed but its rationale wasn't updated
     // to explain why, block Accept and ask for that first — same guardrail
@@ -329,6 +349,22 @@ export function useValidationTestingReview() {
       override.setShowRationaleWarning(true);
       return;
     }
+
+    // Guard against accepting right after a Reject cleared the fields —
+    // don't silently save empty data to the audit trail.
+    if (
+      form.levelRationale.trim() === "" ||
+      form.scenarioTesting.trim() === "" ||
+      form.regressionScope.trim() === "" ||
+      form.uatRequirements.trim() === "" ||
+      form.traceability.trim() === ""
+    ) {
+      setEmptyFieldsWarning(
+        "One or more validation & testing fields are empty. Please fill them in before accepting.",
+      );
+      return;
+    }
+    setEmptyFieldsWarning(null);
 
     const validationProvenance = buildValidationProvenance();
     const isEdited = [
@@ -353,10 +389,21 @@ export function useValidationTestingReview() {
   };
 
   const handleReject = () => {
-    if (override.rejectJustification.trim()) {
-      override.setShowRejectDialog(false);
-      navigate("/deviation");
-    }
+    override.setShowRejectDialog(false);
+    // Clear the AI-generated fields — the user rejected the AI's
+    // suggestion, so we don't leave it sitting in the form. They can
+    // either fill this in manually or pull the AI suggestion back in
+    // with the button above.
+    dispatchForm({ type: "CLEAR" });
+    setShowAiSuggestion(true);
+  };
+
+  // Restores the original AI-generated strategy into the form — used by
+  // the "AI Suggestion" button so a rejected/cleared field can be brought
+  // back.
+  const handleGetAiSuggestion = () => {
+    if (!validationParsed) return;
+    dispatchForm({ type: "HYDRATE", parsed: validationParsed });
   };
 
   const isLevelModified =
@@ -396,8 +443,12 @@ export function useValidationTestingReview() {
     setShowRationaleWarning: override.setShowRationaleWarning,
     isSubmitting: override.isSubmitting,
     submitError: override.submitError,
+    showAiSuggestion,
+    emptyFieldsWarning,
+    canAccept,
     llmFailure,
     handleAccept,
     handleReject,
+    handleGetAiSuggestion,
   };
 }

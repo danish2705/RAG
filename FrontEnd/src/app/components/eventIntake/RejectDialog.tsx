@@ -8,36 +8,32 @@ import {
   DialogTitle,
 } from "../ui/dialog";
 import { Button } from "../ui/button";
-import { Label } from "../ui/label";
-import { Textarea } from "../ui/textarea";
 
 export interface RejectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** e.g. "Reject AI Classification" */
   title: string;
-  /** Full dialog description text/copy — wording varies slightly per page. */
-  description: ReactNode;
-  /** e.g. "the AI classification" — used to build the placeholder text. */
+  /** Unused now that the dialog is a plain confirmation — kept so existing callers don't need to change. */
+  description?: ReactNode;
+  /** e.g. "the AI classification" — used to build the confirmation copy. */
   subjectLabel: string;
-  value: string;
-  onChange: (value: string) => void;
+  value?: string;
+  onChange?: (value: string) => void;
   onCancel: () => void;
   onConfirm: () => void;
 }
 
 /**
- * Justification dialog shared by the Reject actions on the AI
- * Recommendation, Impact Assessment, Root Cause, and CAPA pages.
+ * Plain confirmation dialog shared by the Reject actions on the AI
+ * Recommendation, Impact Assessment, Root Cause, and CAPA pages. No reason
+ * is collected — rejecting simply clears the data, so we just confirm.
  */
 export function RejectDialog({
   open,
   onOpenChange,
   title,
-  description,
   subjectLabel,
-  value,
-  onChange,
   onCancel,
   onConfirm,
 }: RejectDialogProps) {
@@ -46,30 +42,20 @@ export function RejectDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+          <DialogDescription>
+            Are you sure you want to reject {subjectLabel}? This will clear
+            the data.
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="rejectJustification">Reason for Rejection *</Label>
-            <Textarea
-              id="rejectJustification"
-              placeholder={`Explain why you are rejecting ${subjectLabel}...`}
-              rows={4}
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-            />
-          </div>
-        </div>
         <DialogFooter>
           <Button variant="outline" onClick={onCancel}>
             Cancel
           </Button>
           <Button
             onClick={onConfirm}
-            disabled={!value.trim()}
             className="bg-red-600 hover:bg-red-700 text-white"
           >
-            Confirm Rejection
+            Continue
           </Button>
         </DialogFooter>
       </DialogContent>

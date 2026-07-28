@@ -38,6 +38,9 @@ export function Capa() {
     setShowRejectDialog,
     rejectJustification,
     setRejectJustification,
+    showAiSuggestion,
+    emptyFieldsWarning,
+    canAccept,
     handleAccept,
     handleReject,
     handleGetAiSuggestion,
@@ -62,7 +65,7 @@ export function Capa() {
         <div className="space-y-6">
           <CapaConfidenceCard
             score={capaParsed.confidence_score}
-            onGetAiSuggestion={handleGetAiSuggestion}
+            onGetAiSuggestion={showAiSuggestion ? handleGetAiSuggestion : undefined}
           />
 
           <CapaCorrectionCard value={correction} onChange={setCorrection} />
@@ -97,10 +100,11 @@ export function Capa() {
 
           <DecisionAction
             onAccept={handleAccept}
-            acceptDisabled={decisionMade}
+            acceptDisabled={decisionMade || !canAccept}
             acceptSelected={capaAccepted}
             onReject={() => setShowRejectDialog(true)}
             rejectDisabled={decisionMade}
+            warning={emptyFieldsWarning}
             footerText="Your decision will be logged in the audit trail"
           />
         </div>

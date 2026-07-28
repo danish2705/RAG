@@ -34,6 +34,7 @@ export function AIRecommendation() {
     assessError,
     handleAccept,
     handleReject,
+    handleGetAiSuggestion,
     llmFailure,
   } = useClassificationReview();
 
@@ -76,11 +77,13 @@ export function AIRecommendation() {
             setEditedRationale={setEditedRationale}
             originalClassification={parsed.classification}
             originalRationale={parsed.rationale ?? []}
+            onGetAiSuggestion={handleGetAiSuggestion}
           />
 
           <DecisionAction
             acceptLoadingLabel="Running Impact Assessment..."
             onAccept={handleAccept}
+            acceptDisabled={isAssessing || !editedClassification}
             onReject={() => setShowRejectDialog(true)}
             isLoading={isAssessing}
             error={assessError}

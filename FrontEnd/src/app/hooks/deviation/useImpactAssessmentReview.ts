@@ -3,8 +3,7 @@ import { useNavigate } from "react-router";
 import { useWorkflowStore } from "../../store/workflowStore";
 import { generateRootCauseAnalysis } from "../../services/deviation/rcaApi";
 import {
-  aiField,
-  markModified,
+  autoField,
   type ImpactAssessmentProvenance,
 } from "../../types/dataProvenance";
 import type {
@@ -38,13 +37,12 @@ export function useImpactAssessmentReview() {
       }))
     : [];
 
-  const [isOverrideEditing, setIsOverrideEditing] = useState(false);
+  // Fields are directly editable at all times — this holds the live form
+  // values, seeded from the AI output but freely changeable without first
+  // entering any separate "override" mode.
   const [assessments, setAssessments] =
     useState<AssessmentItem[]>(initialAssessments);
-  const [overrideConfirmed, setOverrideConfirmed] = useState(false);
 
-  const [showOverrideDialog, setShowOverrideDialog] = useState(false);
-  const [overrideJustification, setOverrideJustification] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectJustification, setRejectJustification] = useState("");
 
@@ -76,9 +74,7 @@ export function useImpactAssessmentReview() {
     });
   };
 
-  const buildImpactProvenance = (
-    confirmed: boolean,
-  ): ImpactAssessmentProvenance => {
+  const buildImpactProvenance = (): ImpactAssessmentProvenance => {
     const keys = [
       "product_impact",
       "patient_impact",
@@ -89,20 +85,11 @@ export function useImpactAssessmentReview() {
     const entries = Object.fromEntries(
       keys.map((key, i) => {
         const a = assessments[i];
-        const modified =
-          confirmed &&
-          (a?.severity !== a?.originalSeverity ||
-            a?.description !== a?.originalDescription);
-
         return [
           key,
           {
-            severity: modified
-              ? markModified(aiField(a.originalSeverity), a.severity)
-              : aiField(a.originalSeverity),
-            rationale: modified
-              ? markModified(aiField(a.originalDescription), a.description)
-              : aiField(a.originalDescription),
+            severity: autoField(a.originalSeverity, a.severity),
+            rationale: autoField(a.originalDescription, a.description),
           },
         ];
       }),
@@ -204,10 +191,28 @@ export function useImpactAssessmentReview() {
   };
 
   const handleAccept = () => {
-    const impactProvenance = buildImpactProvenance(overrideConfirmed);
+    // If a severity was changed but its description wasn't updated to
+    // explain why, block Accept and ask for that first — same guardrail
+    // that used to live in the old "Save Changes" step, just triggered by
+    // Accept directly now that there's no separate override mode.
+    const needsDescription = assessments
+      .filter((a) => a.severityChangedWithoutDescription)
+      .map((a) => a.category);
+    if (needsDescription.length > 0) {
+      setWarningCards(needsDescription);
+      setShowDescriptionWarning(true);
+      return;
+    }
+
+    const impactProvenance = buildImpactProvenance();
+    const isEdited = Object.values(impactProvenance.impact_assessment).some(
+      (item: any) =>
+        item.severity.source === "modified" ||
+        item.rationale.source === "modified",
+    );
     const existingRCA = result!.stages?.rca;
 
-    if (!overrideConfirmed && existingRCA?.parsed) {
+    if (!isEdited && existingRCA?.parsed) {
       navigateToRCA(
         existingRCA,
         impactProvenance,
@@ -217,40 +222,6 @@ export function useImpactAssessmentReview() {
     }
 
     void runRCA(impactProvenance);
-  };
-
-  const handleOverrideClick = () => setIsOverrideEditing(true);
-
-  const handleSaveChanges = () => {
-    const needsDescription = assessments
-      .filter((a) => a.severityChangedWithoutDescription)
-      .map((a) => a.category);
-    if (needsDescription.length > 0) {
-      setWarningCards(needsDescription);
-      setShowDescriptionWarning(true);
-      return;
-    }
-    setShowOverrideDialog(true);
-  };
-
-  const handleCancelOverride = () => {
-    setIsOverrideEditing(false);
-    setAssessments((prev) =>
-      prev.map((a) => ({
-        ...a,
-        severity: a.originalSeverity,
-        description: a.originalDescription,
-        severityChangedWithoutDescription: false,
-      })),
-    );
-  };
-
-  const handleOverrideConfirm = () => {
-    if (!overrideJustification.trim()) return;
-    setShowOverrideDialog(false);
-    setIsOverrideEditing(false);
-    setOverrideConfirmed(true);
-    setOverrideJustification("");
   };
 
   const handleReject = () => {
@@ -267,12 +238,6 @@ export function useImpactAssessmentReview() {
     chatOpen,
     setChatOpen,
     assessments,
-    isOverrideEditing,
-    overrideConfirmed,
-    showOverrideDialog,
-    setShowOverrideDialog,
-    overrideJustification,
-    setOverrideJustification,
     showRejectDialog,
     setShowRejectDialog,
     rejectJustification,
@@ -285,10 +250,6 @@ export function useImpactAssessmentReview() {
     updateSeverity,
     updateDescription,
     handleAccept,
-    handleOverrideClick,
-    handleSaveChanges,
-    handleCancelOverride,
-    handleOverrideConfirm,
     handleReject,
     llmFailure,
   };

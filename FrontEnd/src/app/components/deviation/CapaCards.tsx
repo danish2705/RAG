@@ -83,24 +83,12 @@ interface CapaActionCardProps {
   placeholder: string;
   value: string;
   originalValue: string;
-  isOverrideEditing: boolean;
-  overrideConfirmed: boolean;
   onChange: (v: string) => void;
   showWarning?: boolean;
 }
 
 export const CapaActionCard = React.memo<CapaActionCardProps>(
-  ({
-    title,
-    label,
-    placeholder,
-    value,
-    originalValue,
-    isOverrideEditing,
-    overrideConfirmed,
-    onChange,
-    showWarning,
-  }) => (
+  ({ title, label, placeholder, value, originalValue, onChange, showWarning }) => (
     <>
       <Card>
         <CardHeader>
@@ -112,21 +100,13 @@ export const CapaActionCard = React.memo<CapaActionCardProps>(
           <div className="space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
               <Label>{label}</Label>
-              {!isOverrideEditing && (
-                <ModifiedStatus
-                  enabled={overrideConfirmed}
-                  original={originalValue}
-                  current={value}
-                />
-              )}
+              <ModifiedStatus original={originalValue} current={value} />
             </div>
             <Textarea
               placeholder={placeholder}
               rows={5}
               value={value}
               onChange={(e) => onChange(e.target.value)}
-              readOnly={!isOverrideEditing}
-              className={!isOverrideEditing ? "bg-muted cursor-default" : ""}
             />
           </div>
         </CardContent>
@@ -148,23 +128,12 @@ interface CapaEffectivenessCardProps {
   originalCheck: string;
   dateValue: string;
   originalDate: string;
-  isOverrideEditing: boolean;
-  overrideConfirmed: boolean;
   onCheckChange: (v: string) => void;
   onDateChange: (v: string) => void;
 }
 
 export const CapaEffectivenessCard = React.memo<CapaEffectivenessCardProps>(
-  ({
-    checkValue,
-    originalCheck,
-    dateValue,
-    originalDate,
-    isOverrideEditing,
-    overrideConfirmed,
-    onCheckChange,
-    onDateChange,
-  }) => (
+  ({ checkValue, originalCheck, dateValue, originalDate, onCheckChange, onDateChange }) => (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
@@ -176,39 +145,23 @@ export const CapaEffectivenessCard = React.memo<CapaEffectivenessCardProps>(
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Label>Effectiveness Check</Label>
-            {!isOverrideEditing && (
-              <ModifiedStatus
-                enabled={overrideConfirmed}
-                original={originalCheck}
-                current={checkValue}
-              />
-            )}
+            <ModifiedStatus original={originalCheck} current={checkValue} />
           </div>
           <Textarea
             rows={3}
             value={checkValue}
             onChange={(e) => onCheckChange(e.target.value)}
-            readOnly={!isOverrideEditing}
-            className={!isOverrideEditing ? "bg-muted cursor-default" : ""}
           />
         </div>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Label>Due Date</Label>
-            {!isOverrideEditing && (
-              <ModifiedStatus
-                enabled={overrideConfirmed}
-                original={originalDate}
-                current={dateValue}
-              />
-            )}
+            <ModifiedStatus original={originalDate} current={dateValue} />
           </div>
           <Textarea
             rows={1}
             value={dateValue}
             onChange={(e) => onDateChange(e.target.value)}
-            readOnly={!isOverrideEditing}
-            className={!isOverrideEditing ? "bg-muted cursor-default" : ""}
           />
         </div>
       </CardContent>

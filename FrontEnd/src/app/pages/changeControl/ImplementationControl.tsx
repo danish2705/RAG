@@ -1,7 +1,5 @@
 import {
   DecisionAction,
-  OverrideDialog,
-  OverrideBar,
   RejectDialog,
   StepProgressBar,
 } from "../../components/eventIntake";
@@ -33,8 +31,6 @@ export function ImplementationControl() {
     implementationParsed,
     isGenerating,
     generateError,
-    isOverrideEditing,
-    overrideConfirmed,
     implementationAccepted,
     requiredActions,
     setRequiredActions,
@@ -46,10 +42,6 @@ export function ImplementationControl() {
     setImplementationPlan,
     rollbackPlan,
     setRollbackPlan,
-    showOverrideDialog,
-    setShowOverrideDialog,
-    overrideJustification,
-    setOverrideJustification,
     showRejectDialog,
     setShowRejectDialog,
     rejectJustification,
@@ -58,10 +50,6 @@ export function ImplementationControl() {
     confidenceScore,
     riskLevel,
     handleAccept,
-    handleOverrideClick,
-    handleSaveChanges,
-    handleCancelOverride,
-    handleOverrideConfirm,
     handleReject,
     llmFailure,
   } = useImplementationControl();
@@ -97,13 +85,6 @@ export function ImplementationControl() {
           implementationAccepted={implementationAccepted}
         />
 
-        <OverrideBar
-          isOverrideEditing={isOverrideEditing}
-          overrideConfirmed={overrideConfirmed}
-          onCancelOverride={handleCancelOverride}
-          cancelDisabled={implementationAccepted}
-        />
-
         <div className="space-y-6">
           <ImplementationConfidenceCard
             score={confidenceScore}
@@ -118,8 +99,6 @@ export function ImplementationControl() {
             rows={4}
             value={requiredActions}
             original={implementationParsed.required_actions.join("\n")}
-            isOverrideEditing={isOverrideEditing}
-            overrideConfirmed={overrideConfirmed}
             onChange={setRequiredActions}
           />
 
@@ -131,8 +110,6 @@ export function ImplementationControl() {
             rows={3}
             value={sopWiUpdates}
             original={implementationParsed.sop_wi_updates.join("\n")}
-            isOverrideEditing={isOverrideEditing}
-            overrideConfirmed={overrideConfirmed}
             onChange={setSopWiUpdates}
           />
 
@@ -144,8 +121,6 @@ export function ImplementationControl() {
             rows={3}
             value={approvalRouting}
             original={implementationParsed.approval_routing.join("\n")}
-            isOverrideEditing={isOverrideEditing}
-            overrideConfirmed={overrideConfirmed}
             onChange={setApprovalRouting}
           />
 
@@ -157,8 +132,6 @@ export function ImplementationControl() {
             rows={4}
             value={implementationPlan}
             original={implementationParsed.implementation_plan}
-            isOverrideEditing={isOverrideEditing}
-            overrideConfirmed={overrideConfirmed}
             onChange={setImplementationPlan}
           />
 
@@ -172,42 +145,19 @@ export function ImplementationControl() {
             rows={4}
             value={rollbackPlan}
             original={implementationParsed.rollback_contingency_plan}
-            isOverrideEditing={isOverrideEditing}
-            overrideConfirmed={overrideConfirmed}
             onChange={setRollbackPlan}
           />
 
           {/* Decision Required */}
           <DecisionAction
-            acceptLabel="Accept Implementation Plan"
             onAccept={handleAccept}
             acceptDisabled={decisionMade}
             acceptSelected={implementationAccepted}
-            isOverrideEditing={isOverrideEditing}
-            overrideLabel="Override Implementation Plan"
-            onOverrideClick={handleOverrideClick}
-            onSaveChanges={handleSaveChanges}
-            overrideDisabled={decisionMade}
-            overrideSelected={overrideConfirmed}
-            saveChangesDisabled={implementationAccepted}
-            rejectLabel="Reject Implementation Plan"
             onReject={() => setShowRejectDialog(true)}
             rejectDisabled={decisionMade}
             footerText="Your decision will be logged in the audit trail"
           />
         </div>
-
-        {/* Override Dialog */}
-        <OverrideDialog
-          open={showOverrideDialog}
-          onOpenChange={setShowOverrideDialog}
-          title="Override Implementation Plan"
-          subjectLabel="the implementation & control actions"
-          value={overrideJustification}
-          onChange={setOverrideJustification}
-          onCancel={() => setShowOverrideDialog(false)}
-          onConfirm={handleOverrideConfirm}
-        />
 
         {/* Reject Dialog */}
         <RejectDialog

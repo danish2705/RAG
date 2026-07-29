@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
-import { Sparkles, Database, Download, X } from "lucide-react";
+import { Sparkles, Database, Download, X, CloudUpload } from "lucide-react";
 import type { DeviationCase } from "../../types/Records";
 import { PARAMETER_LABELS } from "../../mocks/mockImpactAssessment";
 import {
@@ -31,11 +31,11 @@ export function DeviationViewModal({
 
   const impactEntries = imp
     ? Object.entries(imp.impact_assessment).map(([key, val]) => ({
-        key,
-        category: PARAMETER_LABELS[key] ?? key,
-        severity: val.severity,
-        description: val.rationale,
-      }))
+      key,
+      category: PARAMETER_LABELS[key] ?? key,
+      severity: val.severity,
+      description: val.rationale,
+    }))
     : [];
 
   const handleDownloadSummary = () => {
@@ -43,6 +43,9 @@ export function DeviationViewModal({
       `QMS_Summary_${record.id}.txt`,
       buildFullSummaryText({ ...record, case_type: "Deviation" }),
     );
+  };
+  const handleUploadToVeeva = () => {
+    window.open("https://login.veevavault.com/", "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -56,7 +59,7 @@ export function DeviationViewModal({
             </div>
             <div className="min-w-0">
               <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2 truncate">
-                <span className="truncate">Case #{record.id} — Full Summary</span>
+                <span className="truncate">Case #{record.id}</span>
               </DialogTitle>
               <p className="text-xs text-muted-foreground mt-0.5 truncate">
                 Saved by{" "}
@@ -69,29 +72,16 @@ export function DeviationViewModal({
             </div>
           </div>
 
-          {/* Right-Aligned Sticky Action Buttons with increased gap-4 and margins */}
-          <div className="flex items-center gap-4 shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownloadSummary}
-              className="bg-background hover:bg-muted font-medium text-xs h-9 px-3.5 border-border shadow-sm flex items-center gap-1.5 mr-1"
-            >
-              <Download className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-              <span>Download Summary</span>
-            </Button>
-
-            {/* Extreme Right Close Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors shrink-0 flex items-center justify-center"
-              aria-label="Close modal"
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
+          {/* Extreme Right Close Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors shrink-0 flex items-center justify-center"
+            aria-label="Close modal"
+          >
+            <X className="h-5 w-5" />
+          </Button>
         </div>
 
         {/* Scrollable Modal Content */}
@@ -261,11 +251,10 @@ export function DeviationViewModal({
                 </CardHeader>
                 <CardContent>
                   <span
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                      capa.capa_required
-                        ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                        : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
-                    }`}
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${capa.capa_required
+                      ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                      : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
+                      }`}
                   >
                     {capa.capa_required ? "Yes" : "No"}
                   </span>
@@ -324,13 +313,92 @@ export function DeviationViewModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-3 bg-muted/40 border-t border-border flex justify-end shrink-0">
+        <div className="px-6 py-4 border-t bg-muted/30 flex items-center justify-between shrink-0">
+          {/* Left Side */}
           <Button
+            variant="outline"
             onClick={onClose}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-6"
+            className="
+    h-9
+    px-5
+    rounded-md
+    border-red-200
+    bg-red-50
+    text-red-700
+    text-xs
+    font-medium
+    hover:bg-red-100
+    hover:border-red-300
+    hover:text-red-800
+    shadow-sm
+    transition-all
+    duration-200
+  "
           >
-            Done
+            Close
           </Button>
+
+          {/* Right Side */}
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadSummary}
+              className="
+    h-9
+    px-5
+    rounded-md
+    border
+    border-slate-300
+    bg-slate-50
+    text-slate-700
+    text-xs
+    font-medium
+    shadow-sm
+    hover:bg-slate-100
+    hover:border-slate-400
+    hover:text-slate-900
+    hover:shadow-md
+    transition-all
+    duration-200
+    flex
+    items-center
+    gap-1.5
+  "
+            >
+              <Download className="h-4 w-4 text-sky-600" />
+              <span>Download Summary</span>
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={handleUploadToVeeva}
+              className="
+    h-9
+    px-5
+    rounded-md
+    bg-white
+    text-[#D38A00]
+    text-xs
+    font-medium
+    border
+    border-[#E7B447]
+    shadow-sm
+    hover:bg-[#FFF9EE]
+    hover:border-[#D89A12]
+    hover:text-[#B87400]
+    hover:shadow-md
+    transition-all
+    duration-200
+    flex
+    items-center
+    gap-1.5
+  "
+            >
+              <CloudUpload className="h-4 w-4" />
+              <span>Upload to Veeva</span>
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

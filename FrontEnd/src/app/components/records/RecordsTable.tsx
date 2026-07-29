@@ -14,8 +14,7 @@ import {
   ArrowUpDown,
   Loader2,
   AlertCircle,
-  CheckCircle2,
-  Clock,
+  RotateCcw,
 } from "lucide-react";
 import {
   Tooltip,
@@ -25,6 +24,7 @@ import {
 } from "../ui/tooltip";
 import { formatTimestamp } from "../../utils/timezone";
 import { getQueryPreview, extractDescription } from "../../utils/queryPreview";
+import { ApprovalStatusBadge } from "../approvals/ApprovalEditModal";
 
 interface RecordsTableProps {
   loading: boolean;
@@ -34,6 +34,9 @@ interface RecordsTableProps {
   onSort?: (field: string) => void;
   onSelectCase: (record: any) => void;
   onDeleteCase?: (record: any) => void;
+  /** True when the current user may resubmit this (rejected) record. */
+  canResubmit?: (record: any) => boolean;
+  onResubmit?: (record: any) => void;
 }
 
 function toTitleCase(value: string): string {
@@ -58,6 +61,8 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
   onSort,
   onSelectCase,
   onDeleteCase,
+  canResubmit,
+  onResubmit,
 }) => {
   const getBadgeColor = (type: string) => {
     if (type === "Deviation")
@@ -201,22 +206,35 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                     })}
                   </TableCell>
 
-                  {/* Approval status badge */}
+                  {/* Approval status badge — full lifecycle: Submitted (pending)
+                      -> In Review -> Approved, or Rejected (with reason on hover). */}
                   <TableCell className="py-3 px-4 text-center">
-                    {record.approvalStatus === "approved" ? (
-                      <Badge className="bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800 text-xs px-2.5 py-0.5 font-medium shadow-none">
-                        <CheckCircle2 className="h-3 w-3 mr-1" /> Approved
-                      </Badge>
+                    {record.approvalStatus === "rejected" &&
+                    record.rejectionReason ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-block cursor-default">
+                            <ApprovalStatusBadge status="rejected" />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="bottom"
+                          className="max-w-xs whitespace-pre-wrap text-xs"
+                        >
+                          {record.rejectedBy ? `${record.rejectedBy}: ` : ""}
+                          {record.rejectionReason}
+                        </TooltipContent>
+                      </Tooltip>
                     ) : (
-                      <Badge className="bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800 text-xs px-2.5 py-0.5 font-medium shadow-none">
-                        <Clock className="h-3 w-3 mr-1" /> Pending
-                      </Badge>
+                      <ApprovalStatusBadge
+                        status={record.approvalStatus || "pending"}
+                      />
                     )}
                   </TableCell>
 
                   {/* Actions Column */}
                   <TableCell className="py-3 px-4 text-center">
-                    <div className="flex items-center justify-center">
+                    <div className="flex items-center justify-center gap-1">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -226,6 +244,24 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                       >
                         <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                       </Button>
+                      {canResubmit?.(record) && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => onResubmit?.(record)}
+                              className="h-8 w-8 rounded-full hover:bg-amber-50 hover:text-amber-700 dark:hover:bg-amber-950/50 dark:hover:text-amber-400 transition-colors"
+                              aria-label="Edit and resubmit for approval"
+                            >
+                              <RotateCcw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="text-xs">
+                            Edit &amp; resubmit for approval
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

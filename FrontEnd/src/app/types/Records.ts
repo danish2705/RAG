@@ -38,14 +38,23 @@ export interface CAPAResult {
   confidence_score: number;
 }
 
+/** Full approval lifecycle: submitted (pending) -> in review -> approved,
+ *  or rejected -> (edited & resubmitted) -> back to pending. */
+export type ApprovalStatus = "pending" | "in_review" | "rejected" | "approved";
+
 export interface DeviationCase {
   id: number;
   query: string;
   saved_by: string;
   /** Approver name, captured on the Summary submit popup. */
   submitted_to: string | null;
-  /** 'pending' on save, 'approved' once the approver approves. */
-  approval_status: "pending" | "approved";
+  approval_status: ApprovalStatus;
+  /** Populated once the approver rejects the case. */
+  rejection_reason?: string | null;
+  rejected_by?: string | null;
+  rejected_at?: string | null;
+  approved_by?: string | null;
+  approved_at?: string | null;
   classification: ClassificationParsed | null;
   impact_assessment: ImpactAssessmentParsed | null;
   rca: RCAResult | null;
@@ -116,8 +125,13 @@ export interface ChangeControlCase {
   saved_by: string;
   /** Approver name, captured on the Summary submit popup. */
   submitted_to: string | null;
-  /** 'pending' on save, 'approved' once the approver approves. */
-  approval_status: "pending" | "approved";
+  approval_status: ApprovalStatus;
+  /** Populated once the approver rejects the case. */
+  rejection_reason?: string | null;
+  rejected_by?: string | null;
+  rejected_at?: string | null;
+  approved_by?: string | null;
+  approved_at?: string | null;
   classification: ClassificationParsed | null;
   change_impact_assessment: ChangeImpactAssessmentParsed | null;
   risk_criticality: RiskCriticalityParsed | null;

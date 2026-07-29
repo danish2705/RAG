@@ -63,3 +63,68 @@ export const approveCase = async (
     },
   );
 };
+
+export interface RejectPayload {
+  rejected_by: string;
+  approver_role: string;
+  reason?: string;
+}
+
+/** Send the case back to the submitter with a reason instead of approving it. */
+export const rejectCase = async (
+  id: string,
+  caseType: "Deviation" | "Change Control",
+  payload: RejectPayload,
+) => {
+  return apiFetch(
+    `/api/records/${encodeURIComponent(id)}/reject?case_type=${encodeURIComponent(caseType)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
+};
+
+/** Best-effort ping to mark a pending case as "in review" once the approver
+ *  opens it — purely for workflow-status visibility. */
+export const startReview = async (
+  id: string,
+  caseType: "Deviation" | "Change Control",
+) => {
+  return apiFetch(
+    `/api/records/${encodeURIComponent(id)}/start-review?case_type=${encodeURIComponent(caseType)}`,
+    { method: "PATCH" },
+  );
+};
+
+export interface ResubmitPayload {
+  resubmitted_by: string;
+  approver_role: string;
+  /** Optional: re-target a different approver on resubmit. */
+  submitted_to?: string;
+  updates: Record<string, unknown>;
+}
+
+/** The original submitter edits a rejected case and sends it back for
+ *  approval — flips approval_status back to 'pending'. */
+export const resubmitCase = async (
+  id: string,
+  caseType: "Deviation" | "Change Control",
+  payload: ResubmitPayload,
+) => {
+  return apiFetch(
+    `/api/records/${encodeURIComponent(id)}/resubmit?case_type=${encodeURIComponent(caseType)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
+};
+
+/** Names that can be picked in the "Submit for Approval" dropdown. */
+export const fetchApprovers = async (): Promise<string[]> => {
+  const result = await apiFetch<{ data: string[] }>("/api/approvers");
+  return result.data ?? [];
+};

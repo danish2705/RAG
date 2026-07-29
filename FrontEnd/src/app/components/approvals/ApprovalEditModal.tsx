@@ -4,6 +4,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { Label } from "../ui/label";
+import { Badge } from "../ui/badge";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 import {
   Select,
@@ -20,9 +21,55 @@ import {
   CheckCircle2,
   Loader2,
   ShieldCheck,
+  XCircle,
+  RotateCcw,
+  Clock,
+  Eye,
 } from "lucide-react";
-import type { AnyCase } from "../../types/Records";
+import type { AnyCase, ApprovalStatus } from "../../types/Records";
 import { formatTimestamp } from "../../utils/timezone";
+
+/** Small status pill shared by the modal header and the tables. */
+export function ApprovalStatusBadge({ status }: { status: ApprovalStatus }) {
+  const config: Record<
+    ApprovalStatus,
+    { label: string; className: string; icon: React.ReactNode }
+  > = {
+    pending: {
+      label: "Submitted",
+      className:
+        "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800",
+      icon: <Clock className="h-3 w-3 mr-1" />,
+    },
+    in_review: {
+      label: "In Review",
+      className:
+        "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
+      icon: <Eye className="h-3 w-3 mr-1" />,
+    },
+    rejected: {
+      label: "Rejected",
+      className:
+        "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800",
+      icon: <XCircle className="h-3 w-3 mr-1" />,
+    },
+    approved: {
+      label: "Approved",
+      className:
+        "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800",
+      icon: <CheckCircle2 className="h-3 w-3 mr-1" />,
+    },
+  };
+  const c = config[status] ?? config.pending;
+  return (
+    <Badge
+      className={`text-xs px-2.5 py-0.5 font-medium shadow-none ${c.className}`}
+    >
+      {c.icon}
+      {c.label}
+    </Badge>
+  );
+}
 
 /* ------------------------------------------------------------------ *
  * Small immutable path setter — updates a deep value without mutating
@@ -189,18 +236,38 @@ const RISK = ["Low", "Moderate", "High"];
 export function ApprovalEditModal({
   record,
   readOnly = false,
+  mode = "approve",
   isApproving = false,
   approveError = null,
+  isRejecting = false,
+  rejectError = null,
   onClose,
   onApprove,
+  onReject,
+  onResubmit,
 }: {
   record: AnyCase;
   /** Approved cases open read-only (no edits, no Approve button). */
   readOnly?: boolean;
+  /** "approve": approver's review screen (Approve/Reject).
+   *  "resubmit": submitter editing a rejected case to send it back. */
+  mode?: "approve" | "resubmit";
   isApproving?: boolean;
   approveError?: string | null;
+  isRejecting?: boolean;
+  rejectError?: string | null;
   onClose: () => void;
-  onApprove: (
+  onApprove?: (
+    id: string,
+    caseType: "Deviation" | "Change Control",
+    updates: Record<string, unknown>,
+  ) => void;
+  onReject?: (
+    id: string,
+    caseType: "Deviation" | "Change Control",
+    reason: string,
+  ) => void;
+  onResubmit?: (
     id: string,
     caseType: "Deviation" | "Change Control",
     updates: Record<string, unknown>,
@@ -209,13 +276,16 @@ export function ApprovalEditModal({
   // Deep-clone once into local editable state.
   const initial = useMemo(() => JSON.parse(JSON.stringify(record)), [record]);
   const [data, setData] = useState<any>(initial);
+  const [showRejectBox, setShowRejectBox] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectValidationError, setRejectValidationError] = useState("");
 
   const update = (path: (string | number)[], value: any) =>
     setData((prev: any) => setPath(prev, path, value));
 
   const isDeviation = record.case_type === "Deviation";
 
-  const handleApprove = () => {
+  const buildUpdates = (): Record<string, unknown> => {
     const updates: Record<string, unknown> = { query: data.query };
     if (isDeviation) {
       updates.classification = data.classification;
@@ -230,7 +300,23 @@ export function ApprovalEditModal({
       updates.implementation_control = data.implementation_control;
       updates.final_summary = data.final_summary;
     }
-    onApprove(String(record.id), record.case_type, updates);
+    return updates;
+  };
+
+  const handleApprove = () => {
+    onApprove?.(String(record.id), record.case_type, buildUpdates());
+  };
+
+  const handleReject = () => {
+    if (!rejectReason.trim()) {
+      setRejectValidationError("Please explain what needs to be corrected.");
+      return;
+    }
+    onReject?.(String(record.id), record.case_type, rejectReason.trim());
+  };
+
+  const handleResubmit = () => {
+    onResubmit?.(String(record.id), record.case_type, buildUpdates());
   };
 
   return (
@@ -246,8 +332,15 @@ export function ApprovalEditModal({
               <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2 truncate">
                 <span className="truncate">
                   Case #{record.id} —{" "}
-                  {readOnly ? "Approved Summary" : "Review & Approve"}
+                  {readOnly
+                    ? "Approved Summary"
+                    : mode === "resubmit"
+                      ? "Edit & Resubmit"
+                      : "Review & Approve"}
                 </span>
+                <ApprovalStatusBadge
+                  status={(record.approval_status as any) || "pending"}
+                />
               </DialogTitle>
               <p className="text-xs text-muted-foreground mt-0.5 truncate">
                 Submitted by{" "}
@@ -276,6 +369,26 @@ export function ApprovalEditModal({
 
         {/* Scrollable editable body */}
         <div className="p-6 overflow-y-auto space-y-6 flex-1">
+          {/* Rejection banner — shown whenever this case carries a rejection
+              reason (either being resubmitted, or an approver re-opening it
+              for transparency). */}
+          {record.approval_status === "rejected" && record.rejection_reason && (
+            <div className="rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50/60 dark:bg-red-950/20 px-4 py-3 flex gap-3">
+              <XCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-red-700 dark:text-red-400">
+                  Rejected by {record.rejected_by || "the approver"}
+                  {record.rejected_at
+                    ? ` · ${formatTimestamp(record.rejected_at)}`
+                    : ""}
+                </p>
+                <p className="text-sm text-red-700/90 dark:text-red-400/90 mt-1 whitespace-pre-wrap">
+                  {record.rejection_reason}
+                </p>
+              </div>
+            </div>
+          )}
+
           <SectionCard title="Original Query">
             <EditableText
               label="Query"
@@ -321,20 +434,45 @@ export function ApprovalEditModal({
           )}
         </div>
 
-        {/* Footer with Approve */}
+        {/* Inline reject reason box */}
+        {!readOnly && mode === "approve" && showRejectBox && (
+          <div className="px-6 py-4 bg-red-50/60 dark:bg-red-950/20 border-t border-red-200 dark:border-red-900/50 shrink-0 space-y-2">
+            <Label className="text-sm font-medium text-red-700 dark:text-red-400">
+              Reason for rejection — what needs to be corrected?
+            </Label>
+            <Textarea
+              value={rejectReason}
+              onChange={(e) => {
+                setRejectReason(e.target.value);
+                if (rejectValidationError) setRejectValidationError("");
+              }}
+              placeholder="e.g. RCA is missing supporting evidence — please add lab records before resubmitting."
+              className="min-h-[72px] text-sm bg-white dark:bg-background"
+            />
+            {rejectValidationError && (
+              <p className="text-xs text-red-600">{rejectValidationError}</p>
+            )}
+          </div>
+        )}
+
+        {/* Footer */}
         <div className="px-6 py-3 bg-muted/40 border-t border-border flex items-center justify-between shrink-0">
           <p
             className={
-              approveError
+              approveError || rejectError
                 ? "text-xs text-red-600 font-medium"
                 : "text-xs text-muted-foreground"
             }
           >
             {approveError
               ? approveError
-              : readOnly
-                ? "This case has already been approved."
-                : "Edits are saved when you approve."}
+              : rejectError
+                ? rejectError
+                : readOnly
+                  ? "This case has already been approved."
+                  : mode === "resubmit"
+                    ? "Make your corrections, then resubmit for approval."
+                    : "Edits are saved when you approve or reject."}
           </p>
           <div className="flex items-center gap-3">
             <Button
@@ -344,22 +482,71 @@ export function ApprovalEditModal({
             >
               {readOnly ? "Close" : "Cancel"}
             </Button>
-            {!readOnly && (
+
+            {!readOnly && mode === "resubmit" && (
               <Button
-                onClick={handleApprove}
+                onClick={handleResubmit}
                 disabled={isApproving}
-                className="bg-green-600 hover:bg-green-700 text-white text-xs px-6 gap-1.5 disabled:opacity-50"
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-6 gap-1.5 disabled:opacity-50"
               >
                 {isApproving ? (
                   <>
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Approving…
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />{" "}
+                    Resubmitting…
                   </>
                 ) : (
                   <>
-                    <ShieldCheck className="h-3.5 w-3.5" /> Save &amp; Approve
+                    <RotateCcw className="h-3.5 w-3.5" /> Resubmit for Approval
                   </>
                 )}
               </Button>
+            )}
+
+            {!readOnly && mode === "approve" && (
+              <>
+                {showRejectBox ? (
+                  <Button
+                    onClick={handleReject}
+                    disabled={isRejecting}
+                    className="bg-red-600 hover:bg-red-700 text-white text-xs px-6 gap-1.5 disabled:opacity-50"
+                  >
+                    {isRejecting ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />{" "}
+                        Rejecting…
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-3.5 w-3.5" /> Confirm Rejection
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowRejectBox(true)}
+                    disabled={isApproving || isRejecting}
+                    className="text-xs px-4 gap-1.5 border-red-200 text-red-700 hover:bg-red-50 hover:text-red-700 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/20"
+                  >
+                    <XCircle className="h-3.5 w-3.5" /> Reject
+                  </Button>
+                )}
+                <Button
+                  onClick={handleApprove}
+                  disabled={isApproving || isRejecting}
+                  className="bg-green-600 hover:bg-green-700 text-white text-xs px-6 gap-1.5 disabled:opacity-50"
+                >
+                  {isApproving ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Approving…
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="h-3.5 w-3.5" /> Save &amp; Approve
+                    </>
+                  )}
+                </Button>
+              </>
             )}
           </div>
         </div>

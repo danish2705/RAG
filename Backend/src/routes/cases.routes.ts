@@ -38,6 +38,30 @@ router.get("/records/:id", asyncHandler(casesController.getCaseDetail));
 // approver's edits and sets approval_status = 'approved'.
 router.patch("/records/:id/approve", asyncHandler(casesController.approveCase));
 
+// Reject a record (by id + ?case_type=Deviation|Change Control). Body:
+// { rejected_by: string, approver_role: string, reason?: string }. Sends the
+// case back to the submitter for corrections instead of approving it.
+router.patch("/records/:id/reject", asyncHandler(casesController.rejectCase));
+
+// Mark a pending record as being actively reviewed (by id + ?case_type=...).
+// Fired when the assigned approver opens the case — workflow visibility only.
+router.patch(
+  "/records/:id/start-review",
+  asyncHandler(casesController.startReview),
+);
+
+// Resubmit a rejected record (by id + ?case_type=Deviation|Change Control).
+// Body: { resubmitted_by, approver_role, submitted_to?, updates }. Only the
+// original submitter or an Admin may resubmit; flips back to 'pending'.
+router.patch(
+  "/records/:id/resubmit",
+  asyncHandler(casesController.resubmitCase),
+);
+
+// List of names that can be picked as an approver in the "Submit for
+// Approval" dropdown.
+router.get("/approvers", asyncHandler(casesController.listApprovers));
+
 // Hard-delete a record (by id + ?case_type=Deviation|Change Control), body:
 // { deleted_by: string, reason?: string }. The full row is snapshotted into
 // the audit log before it's removed.

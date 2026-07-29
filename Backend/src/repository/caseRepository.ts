@@ -69,6 +69,11 @@ export interface CombinedCaseRow {
   saved_by: unknown;
   submitted_to: unknown;
   approval_status: unknown;
+  rejection_reason: unknown;
+  rejected_by: unknown;
+  rejected_at: unknown;
+  approved_by: unknown;
+  approved_at: unknown;
   classification: unknown;
   status: unknown;
   created_at: string;
@@ -159,13 +164,17 @@ export async function getCombinedCases(
   const offsetIdx = limitIdx + 1;
 
   const dataResult = await pool.query(
-    `SELECT id, query, saved_by, submitted_to, approval_status, classification, status, created_at, 'Deviation' AS case_type
+    `SELECT id, query, saved_by, submitted_to, approval_status,
+            rejection_reason, rejected_by, rejected_at, approved_by, approved_at,
+            classification, status, created_at, 'Deviation' AS case_type
      FROM deviation_cases
      ${dataWhereA}
 
      UNION ALL
 
-     SELECT id, query, saved_by, submitted_to, approval_status, classification, status, created_at, 'Change Control' AS case_type
+     SELECT id, query, saved_by, submitted_to, approval_status,
+            rejection_reason, rejected_by, rejected_at, approved_by, approved_at,
+            classification, status, created_at, 'Change Control' AS case_type
      FROM change_control_cases
      ${dataWhereB}
 
@@ -230,8 +239,9 @@ export async function getDeviationCaseById(
   id: string,
 ): Promise<unknown | null> {
   const result = await pool.query(
-    `SELECT id, query, saved_by, submitted_to, approval_status, classification,
-            impact_assessment, rca, capa, status, halted_at, created_at
+    `SELECT id, query, saved_by, submitted_to, approval_status,
+            rejection_reason, rejected_by, rejected_at, approved_by, approved_at,
+            classification, impact_assessment, rca, capa, status, halted_at, created_at
      FROM deviation_cases
      WHERE id = $1`,
     [id],
@@ -243,8 +253,9 @@ export async function getChangeControlCaseById(
   id: string,
 ): Promise<unknown | null> {
   const result = await pool.query(
-    `SELECT id, query, saved_by, submitted_to, approval_status, classification,
-            change_impact_assessment, risk_criticality, validation_testing,
+    `SELECT id, query, saved_by, submitted_to, approval_status,
+            rejection_reason, rejected_by, rejected_at, approved_by, approved_at,
+            classification, change_impact_assessment, risk_criticality, validation_testing,
             implementation_control, final_summary, status, halted_at, created_at
      FROM change_control_cases
      WHERE id = $1`,
@@ -552,6 +563,7 @@ export interface ApproveDeviationInput {
 export async function approveDeviationCase(
   id: string,
   updates: ApproveDeviationInput,
+  approvedBy: string,
 ): Promise<Record<string, unknown> | null> {
   const result = await pool.query(
     `UPDATE deviation_cases
@@ -560,7 +572,12 @@ export async function approveDeviationCase(
             impact_assessment = COALESCE($4::jsonb, impact_assessment),
             rca               = COALESCE($5::jsonb, rca),
             capa              = COALESCE($6::jsonb, capa),
-            approval_status   = 'approved'
+            approval_status   = 'approved',
+            approved_by       = $7,
+            approved_at       = now(),
+            rejection_reason  = NULL,
+            rejected_by       = NULL,
+            rejected_at       = NULL
       WHERE id = $1
       RETURNING *`,
     [
@@ -574,6 +591,85 @@ export async function approveDeviationCase(
         : null,
       updates.rca !== undefined ? JSON.stringify(updates.rca) : null,
       updates.capa !== undefined ? JSON.stringify(updates.capa) : null,
+      approvedBy,
+    ],
+  );
+  return result.rows[0] ?? null;
+}
+
+// Reject: sends the case back to the submitter with a reason, instead of
+// silently approving. approval_status flips to 'rejected'; the submitter
+// can then edit and resubmit (see resubmitDeviationCase below).
+export async function rejectDeviationCase(
+  id: string,
+  rejectedBy: string,
+  reason: string | null,
+): Promise<Record<string, unknown> | null> {
+  const result = await pool.query(
+    `UPDATE deviation_cases
+        SET approval_status  = 'rejected',
+            rejected_by      = $2,
+            rejected_at      = now(),
+            rejection_reason = $3
+      WHERE id = $1
+      RETURNING *`,
+    [id, rejectedBy, reason],
+  );
+  return result.rows[0] ?? null;
+}
+
+// Marks a pending case as "in review" the moment the assigned approver
+// opens it — purely cosmetic/status-tracking, never overwrites a case
+// that's already been rejected/approved.
+export async function startReviewDeviationCase(
+  id: string,
+): Promise<Record<string, unknown> | null> {
+  const result = await pool.query(
+    `UPDATE deviation_cases
+        SET approval_status    = 'in_review',
+            review_started_at  = now()
+      WHERE id = $1 AND approval_status = 'pending'
+      RETURNING *`,
+    [id],
+  );
+  return result.rows[0] ?? null;
+}
+
+// Resubmit after rejection: the submitter edits the case and sends it back
+// for approval. Clears the rejection trail and flips back to 'pending'.
+// Optionally re-targets a (possibly different) approver.
+export async function resubmitDeviationCase(
+  id: string,
+  updates: ApproveDeviationInput,
+  submittedTo?: string | null,
+): Promise<Record<string, unknown> | null> {
+  const result = await pool.query(
+    `UPDATE deviation_cases
+        SET query             = COALESCE($2, query),
+            classification    = COALESCE($3::jsonb, classification),
+            impact_assessment = COALESCE($4::jsonb, impact_assessment),
+            rca               = COALESCE($5::jsonb, rca),
+            capa              = COALESCE($6::jsonb, capa),
+            submitted_to      = COALESCE($7, submitted_to),
+            approval_status   = 'pending',
+            rejection_reason  = NULL,
+            rejected_by       = NULL,
+            rejected_at       = NULL,
+            review_started_at = NULL
+      WHERE id = $1
+      RETURNING *`,
+    [
+      id,
+      updates.query ?? null,
+      updates.classification !== undefined
+        ? JSON.stringify(updates.classification)
+        : null,
+      updates.impact_assessment !== undefined
+        ? JSON.stringify(updates.impact_assessment)
+        : null,
+      updates.rca !== undefined ? JSON.stringify(updates.rca) : null,
+      updates.capa !== undefined ? JSON.stringify(updates.capa) : null,
+      submittedTo ?? null,
     ],
   );
   return result.rows[0] ?? null;
@@ -592,6 +688,7 @@ export interface ApproveChangeControlInput {
 export async function approveChangeControlCase(
   id: string,
   updates: ApproveChangeControlInput,
+  approvedBy: string,
 ): Promise<Record<string, unknown> | null> {
   const result = await pool.query(
     `UPDATE change_control_cases
@@ -602,7 +699,12 @@ export async function approveChangeControlCase(
             validation_testing        = COALESCE($6::jsonb, validation_testing),
             implementation_control    = COALESCE($7::jsonb, implementation_control),
             final_summary             = COALESCE($8::jsonb, final_summary),
-            approval_status           = 'approved'
+            approval_status           = 'approved',
+            approved_by               = $9,
+            approved_at               = now(),
+            rejection_reason          = NULL,
+            rejected_by               = NULL,
+            rejected_at               = NULL
       WHERE id = $1
       RETURNING *`,
     [
@@ -626,7 +728,112 @@ export async function approveChangeControlCase(
       updates.final_summary !== undefined
         ? JSON.stringify(updates.final_summary)
         : null,
+      approvedBy,
     ],
   );
   return result.rows[0] ?? null;
+}
+
+export async function rejectChangeControlCase(
+  id: string,
+  rejectedBy: string,
+  reason: string | null,
+): Promise<Record<string, unknown> | null> {
+  const result = await pool.query(
+    `UPDATE change_control_cases
+        SET approval_status  = 'rejected',
+            rejected_by      = $2,
+            rejected_at      = now(),
+            rejection_reason = $3
+      WHERE id = $1
+      RETURNING *`,
+    [id, rejectedBy, reason],
+  );
+  return result.rows[0] ?? null;
+}
+
+export async function startReviewChangeControlCase(
+  id: string,
+): Promise<Record<string, unknown> | null> {
+  const result = await pool.query(
+    `UPDATE change_control_cases
+        SET approval_status    = 'in_review',
+            review_started_at  = now()
+      WHERE id = $1 AND approval_status = 'pending'
+      RETURNING *`,
+    [id],
+  );
+  return result.rows[0] ?? null;
+}
+
+export async function resubmitChangeControlCase(
+  id: string,
+  updates: ApproveChangeControlInput,
+  submittedTo?: string | null,
+): Promise<Record<string, unknown> | null> {
+  const result = await pool.query(
+    `UPDATE change_control_cases
+        SET query                     = COALESCE($2, query),
+            classification            = COALESCE($3::jsonb, classification),
+            change_impact_assessment  = COALESCE($4::jsonb, change_impact_assessment),
+            risk_criticality          = COALESCE($5::jsonb, risk_criticality),
+            validation_testing        = COALESCE($6::jsonb, validation_testing),
+            implementation_control    = COALESCE($7::jsonb, implementation_control),
+            final_summary             = COALESCE($8::jsonb, final_summary),
+            submitted_to              = COALESCE($9, submitted_to),
+            approval_status           = 'pending',
+            rejection_reason          = NULL,
+            rejected_by               = NULL,
+            rejected_at               = NULL,
+            review_started_at         = NULL
+      WHERE id = $1
+      RETURNING *`,
+    [
+      id,
+      updates.query ?? null,
+      updates.classification !== undefined
+        ? JSON.stringify(updates.classification)
+        : null,
+      updates.change_impact_assessment !== undefined
+        ? JSON.stringify(updates.change_impact_assessment)
+        : null,
+      updates.risk_criticality !== undefined
+        ? JSON.stringify(updates.risk_criticality)
+        : null,
+      updates.validation_testing !== undefined
+        ? JSON.stringify(updates.validation_testing)
+        : null,
+      updates.implementation_control !== undefined
+        ? JSON.stringify(updates.implementation_control)
+        : null,
+      updates.final_summary !== undefined
+        ? JSON.stringify(updates.final_summary)
+        : null,
+      submittedTo ?? null,
+    ],
+  );
+  return result.rows[0] ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Approvers directory — this project has no dedicated users table, so the
+// best available "who can be an approver" list is the set of distinct names
+// people have actually used to save or been submitted cases under (i.e.
+// the display names collected at login). Combined across both case tables.
+// ---------------------------------------------------------------------------
+export async function getApproverCandidates(): Promise<string[]> {
+  const result = await pool.query(
+    `SELECT DISTINCT name FROM (
+       SELECT saved_by AS name FROM deviation_cases
+       UNION
+       SELECT submitted_to AS name FROM deviation_cases
+       UNION
+       SELECT saved_by AS name FROM change_control_cases
+       UNION
+       SELECT submitted_to AS name FROM change_control_cases
+     ) AS names
+     WHERE name IS NOT NULL AND btrim(name) <> ''
+     ORDER BY name ASC`,
+  );
+  return result.rows.map((r) => r.name as string);
 }

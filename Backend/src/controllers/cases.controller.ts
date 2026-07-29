@@ -11,6 +11,13 @@ import {
   deleteChangeControlCase,
   approveDeviationCase,
   approveChangeControlCase,
+  rejectDeviationCase,
+  rejectChangeControlCase,
+  startReviewDeviationCase,
+  startReviewChangeControlCase,
+  resubmitDeviationCase,
+  resubmitChangeControlCase,
+  getApproverCandidates,
   getSimilarQueryCandidates,
   type ListCasesParams,
 } from "../repository/caseRepository.js";
@@ -230,8 +237,8 @@ export async function approveCase(req: Request, res: Response): Promise<void> {
   }
 
   const updatedRow = isChangeControl
-    ? await approveChangeControlCase(id, body.updates ?? {})
-    : await approveDeviationCase(id, body.updates ?? {});
+    ? await approveChangeControlCase(id, body.updates ?? {}, approvedBy)
+    : await approveDeviationCase(id, body.updates ?? {}, approvedBy);
 
   if (!updatedRow) {
     res.status(404).json({
@@ -255,6 +262,198 @@ export async function approveCase(req: Request, res: Response): Promise<void> {
   });
 
   res.json({ success: true, id, approval_status: "approved" });
+}
+
+// REJECT ONE CASE (by id + case_type): sends the case back to the submitter
+// with a reason instead of approving it. Same authorization rule as approve
+// — only the assigned approver (or an Admin) may reject.
+// Body: { rejected_by: string, approver_role: string, reason?: string }.
+export async function rejectCase(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const caseType = req.query.case_type;
+  const body = req.body ?? {};
+
+  const rejectedBy =
+    typeof body.rejected_by === "string" && body.rejected_by.trim()
+      ? body.rejected_by.trim()
+      : "Unknown";
+  const approverRole =
+    typeof body.approver_role === "string" ? body.approver_role.trim() : "";
+  const reason =
+    typeof body.reason === "string" && body.reason.trim()
+      ? body.reason.trim()
+      : null;
+
+  const isChangeControl = caseType === "Change Control";
+
+  const existing = (
+    isChangeControl
+      ? await getChangeControlCaseById(id)
+      : await getDeviationCaseById(id)
+  ) as Record<string, unknown> | null;
+
+  if (!existing) {
+    res.status(404).json({
+      error: isChangeControl
+        ? "Change control case not found"
+        : "Deviation case not found",
+    });
+    return;
+  }
+
+  const submittedTo =
+    typeof existing.submitted_to === "string" ? existing.submitted_to : "";
+  const isAssignedApprover =
+    !!submittedTo && rejectedBy.toLowerCase() === submittedTo.toLowerCase();
+
+  if (approverRole !== "Admin" && !isAssignedApprover) {
+    res.status(403).json({
+      error: "Only the assigned approver or an Admin can reject this case.",
+    });
+    return;
+  }
+
+  const updatedRow = isChangeControl
+    ? await rejectChangeControlCase(id, rejectedBy, reason)
+    : await rejectDeviationCase(id, rejectedBy, reason);
+
+  if (!updatedRow) {
+    res.status(404).json({
+      error: isChangeControl
+        ? "Change control case not found"
+        : "Deviation case not found",
+    });
+    return;
+  }
+
+  await recordAuditEntry({
+    entity_type: isChangeControl ? "Change Control" : "Deviation",
+    entity_id: id,
+    action: "status_changed",
+    source: "human",
+    performed_by: rejectedBy,
+    field_name: "approval_status",
+    new_value: "rejected",
+    record_snapshot: updatedRow,
+    reason: reason || "Case rejected — sent back to submitter for corrections",
+  });
+
+  res.json({ success: true, id, approval_status: "rejected" });
+}
+
+// START REVIEW (by id + case_type): flips a 'pending' case to 'in_review'
+// the moment the assigned approver opens it, purely for workflow visibility.
+// No-op (still succeeds) if the case has already moved past 'pending'.
+export async function startReview(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const { id } = req.params;
+  const caseType = req.query.case_type;
+  const isChangeControl = caseType === "Change Control";
+
+  const updatedRow = isChangeControl
+    ? await startReviewChangeControlCase(id)
+    : await startReviewDeviationCase(id);
+
+  // If nothing was updated, either the id doesn't exist or the case is no
+  // longer 'pending' — either way this is a best-effort status ping, not
+  // something worth failing the request over.
+  res.json({
+    success: true,
+    id,
+    approval_status: updatedRow?.approval_status ?? null,
+  });
+}
+
+// RESUBMIT (by id + case_type): the original submitter edits a rejected
+// case and sends it back to an approver. Only the original submitter or an
+// Admin may do this. Body: { resubmitted_by, approver_role, submitted_to?,
+// updates }.
+export async function resubmitCase(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const { id } = req.params;
+  const caseType = req.query.case_type;
+  const body = req.body ?? {};
+
+  const resubmittedBy =
+    typeof body.resubmitted_by === "string" && body.resubmitted_by.trim()
+      ? body.resubmitted_by.trim()
+      : "Unknown";
+  const approverRole =
+    typeof body.approver_role === "string" ? body.approver_role.trim() : "";
+  const submittedTo =
+    typeof body.submitted_to === "string" && body.submitted_to.trim()
+      ? body.submitted_to.trim()
+      : undefined;
+
+  const isChangeControl = caseType === "Change Control";
+
+  const existing = (
+    isChangeControl
+      ? await getChangeControlCaseById(id)
+      : await getDeviationCaseById(id)
+  ) as Record<string, unknown> | null;
+
+  if (!existing) {
+    res.status(404).json({
+      error: isChangeControl
+        ? "Change control case not found"
+        : "Deviation case not found",
+    });
+    return;
+  }
+
+  const savedBy = typeof existing.saved_by === "string" ? existing.saved_by : "";
+  const isOriginalSubmitter =
+    !!savedBy && resubmittedBy.toLowerCase() === savedBy.toLowerCase();
+
+  if (approverRole !== "Admin" && !isOriginalSubmitter) {
+    res.status(403).json({
+      error: "Only the original submitter or an Admin can resubmit this case.",
+    });
+    return;
+  }
+
+  const updatedRow = isChangeControl
+    ? await resubmitChangeControlCase(id, body.updates ?? {}, submittedTo)
+    : await resubmitDeviationCase(id, body.updates ?? {}, submittedTo);
+
+  if (!updatedRow) {
+    res.status(404).json({
+      error: isChangeControl
+        ? "Change control case not found"
+        : "Deviation case not found",
+    });
+    return;
+  }
+
+  await recordAuditEntry({
+    entity_type: isChangeControl ? "Change Control" : "Deviation",
+    entity_id: id,
+    action: "status_changed",
+    source: "human",
+    performed_by: resubmittedBy,
+    field_name: "approval_status",
+    new_value: "pending",
+    record_snapshot: updatedRow,
+    reason: "Resubmitted after rejection",
+  });
+
+  res.json({ success: true, id, approval_status: "pending" });
+}
+
+// GET /api/approvers — the pool of names that can be picked in the
+// "Submit for Approval" dropdown. There's no dedicated users table, so this
+// is derived from the display names already seen on saved/submitted cases.
+export async function listApprovers(
+  _req: Request,
+  res: Response,
+): Promise<void> {
+  const approvers = await getApproverCandidates();
+  res.json({ data: approvers });
 }
 
 // DELETE ONE CASE (by id + case_type): hard-deletes the row from the DB.

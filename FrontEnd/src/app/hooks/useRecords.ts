@@ -2,17 +2,21 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router";
 import { apiFetch } from "../utils/api";
 import { fetchRecords, fetchCaseDetail } from "../services/recordsApi";
+import { resubmitCase, type ResubmitPayload } from "../services/approvalsApi";
 import { useAuth } from "../context/AuthContext";
-import type { AnyCase } from "../types/Records";
+import type { AnyCase, ApprovalStatus } from "../types/Records";
 
 interface RecordRow {
   uiId: string;
   id: string;
   submittedBy: string;
+  submittedTo: string;
   query: string;
   classification: "Deviation" | "Change Control";
   savedOn: string;
-  approvalStatus: "pending" | "approved";
+  approvalStatus: ApprovalStatus;
+  rejectionReason: string | null;
+  rejectedBy: string | null;
   raw: AnyCase;
 }
 
@@ -21,11 +25,14 @@ function toRecordRow(row: AnyCase): RecordRow {
     uiId: `#${String(row.id).slice(0, 8)}`,
     id: String(row.id),
     submittedBy: row.saved_by || "N/A",
+    submittedTo: (row as any).submitted_to || "N/A",
     query: row.query || "",
     classification: row.case_type,
     savedOn: row.created_at,
     approvalStatus:
-      ((row as any).approval_status as "pending" | "approved") || "pending",
+      ((row as any).approval_status as ApprovalStatus) || "pending",
+    rejectionReason: (row as any).rejection_reason ?? null,
+    rejectedBy: (row as any).rejected_by ?? null,
     raw: row,
   };
 }
@@ -49,6 +56,19 @@ export function useRecords() {
   const [detailError, setDetailError] = useState<string | null>(null);
   const [caseToDelete, setCaseToDelete] = useState<any | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
+
+  // Resubmit flow: a rejected case (owned by the current user) gets reopened
+  // for edits, then sent back to the approver.
+  const [resubmitTarget, setResubmitTargetRaw] = useState<RecordRow | null>(
+    null,
+  );
+  const [resubmitDetail, setResubmitDetail] = useState<AnyCase | null>(null);
+  const [resubmitDetailLoading, setResubmitDetailLoading] = useState(false);
+  const [resubmitDetailError, setResubmitDetailError] = useState<
+    string | null
+  >(null);
+  const [isResubmitting, setIsResubmitting] = useState(false);
+  const [resubmitError, setResubmitError] = useState<string | null>(null);
 
   // Arriving from the "Similar query" prompt's Explore button passes the
   // matching case's text via ?q=... — use it to pre-fill the search filter
@@ -197,6 +217,70 @@ export function useRecords() {
       .finally(() => setDetailLoading(false));
   }, []);
 
+  // A case can only be resubmitted by the person who originally submitted
+  // it (or an Admin), and only while it's sitting in 'rejected' status.
+  const canResubmit = useCallback(
+    (row: RecordRow) =>
+      row.approvalStatus === "rejected" &&
+      (role === "admin" ||
+        (!!identity && row.submittedBy.toLowerCase() === identity)),
+    [role, identity],
+  );
+
+  const openResubmit = useCallback((row: RecordRow) => {
+    setResubmitTargetRaw(row);
+    setResubmitDetail(null);
+    setResubmitDetailError(null);
+    setResubmitError(null);
+    setResubmitDetailLoading(true);
+    fetchCaseDetail(row.id, row.classification)
+      .then(setResubmitDetail)
+      .catch((err) =>
+        setResubmitDetailError(
+          err instanceof Error ? err.message : "Failed to load case detail.",
+        ),
+      )
+      .finally(() => setResubmitDetailLoading(false));
+  }, []);
+
+  const closeResubmit = useCallback(() => {
+    setResubmitTargetRaw(null);
+    setResubmitDetail(null);
+    setResubmitDetailError(null);
+    setResubmitError(null);
+  }, []);
+
+  const submitResubmission = useCallback(
+    async (
+      id: string,
+      caseType: "Deviation" | "Change Control",
+      updates: Record<string, unknown>,
+    ) => {
+      setIsResubmitting(true);
+      setResubmitError(null);
+      try {
+        const displayName = user?.displayName || user?.username || "Unknown";
+        const payload: ResubmitPayload = {
+          resubmitted_by: displayName,
+          approver_role: user?.role || "User",
+          updates,
+        };
+        await resubmitCase(id, caseType, payload);
+        closeResubmit();
+        await loadRecords();
+      } catch (err) {
+        setResubmitError(
+          err instanceof Error
+            ? err.message
+            : "Could not resubmit the case. Please try again.",
+        );
+      } finally {
+        setIsResubmitting(false);
+      }
+    },
+    [user, closeResubmit, loadRecords],
+  );
+
   return {
     cases: ownRecordsOnly,
     loading,
@@ -218,5 +302,15 @@ export function useRecords() {
     filteredCases,
     handleDeleteRecord,
     refetch: loadRecords,
+    canResubmit,
+    resubmitTarget,
+    resubmitDetail,
+    resubmitDetailLoading,
+    resubmitDetailError,
+    isResubmitting,
+    resubmitError,
+    openResubmit,
+    closeResubmit,
+    submitResubmission,
   };
 }

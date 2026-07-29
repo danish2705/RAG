@@ -36,10 +36,13 @@ export function Approvals() {
     detailError,
     isApproving,
     approveError,
+    isRejecting,
+    rejectError,
     canApprove,
     openCase,
     closeCase,
     submitApproval,
+    submitRejection,
   } = useApprovals();
 
   const selectedRow = rows.find((r) => r.id === selectedId);
@@ -81,8 +84,11 @@ export function Approvals() {
             readOnly={readOnly}
             isApproving={isApproving}
             approveError={approveError}
+            isRejecting={isRejecting}
+            rejectError={rejectError}
             onClose={closeCase}
             onApprove={submitApproval}
+            onReject={submitRejection}
           />
         )}
 

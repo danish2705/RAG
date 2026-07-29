@@ -9,6 +9,7 @@ import { ChangeControlViewModal } from "../components/records/ChangeControlViewM
 import { DeleteRecordModal } from "../components/records/DeleteRecordModal";
 import { RecordsFilterBar } from "../components/records/RecordsFilterBar";
 import { RecordsTable } from "../components/records/RecordsTable";
+import { ApprovalEditModal } from "../components/approvals/ApprovalEditModal";
 
 export function Records() {
   const navigate = useNavigate();
@@ -32,6 +33,16 @@ export function Records() {
     setClassificationFilter,
     filteredCases,
     handleDeleteRecord,
+    canResubmit,
+    resubmitTarget,
+    resubmitDetail,
+    resubmitDetailLoading,
+    resubmitDetailError,
+    isResubmitting,
+    resubmitError,
+    openResubmit,
+    closeResubmit,
+    submitResubmission,
   } = useRecords();
 
   return (
@@ -87,6 +98,44 @@ export function Records() {
           />
         )}
 
+        {/* Resubmit flow: reopen a rejected case for edits, then send it
+            back to the approver. */}
+        {resubmitTarget && (resubmitDetailLoading || resubmitDetailError) && (
+          <Dialog open onOpenChange={closeResubmit}>
+            <DialogContent className="max-w-md">
+              {resubmitDetailLoading ? (
+                <div className="flex flex-col items-center justify-center py-10 gap-2">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Loading case details…
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-10 gap-2 text-red-600">
+                  <AlertCircle className="h-8 w-8" />
+                  <p className="text-sm font-semibold">
+                    Failed to load case details
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {resubmitDetailError}
+                  </p>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {resubmitDetail && (
+          <ApprovalEditModal
+            record={resubmitDetail}
+            mode="resubmit"
+            isApproving={isResubmitting}
+            approveError={resubmitError}
+            onClose={closeResubmit}
+            onResubmit={submitResubmission}
+          />
+        )}
+
         {/* Two-Step Delete Confirmation Modal */}
         <DeleteRecordModal
           open={!!caseToDelete}
@@ -127,6 +176,8 @@ export function Records() {
           onSort={handleSort}
           onSelectCase={setSelectedCase}
           onDeleteCase={setCaseToDelete}
+          canResubmit={canResubmit}
+          onResubmit={openResubmit}
         />
       </div>
 

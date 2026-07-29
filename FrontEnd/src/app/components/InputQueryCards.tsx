@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { Upload, X, AlertCircle } from "lucide-react";
+import { Upload, X, AlertCircle, CalendarDays } from "lucide-react";
 import {
   siteOptions,
   eventTypeOptions,
@@ -40,59 +40,140 @@ export function BasicInformationCard({
   updateField: (field: keyof FormState, value: string) => void;
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Basic Information</CardTitle>
-      </CardHeader>
+    <Card className="rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200">      <CardHeader className="border-b bg-slate-50/60 dark:bg-slate-900/40 px-6 py-5">
+      <CardTitle className="text-[15px] font-semibold tracking-tight">
+        Basic Information
+      </CardTitle>
+
+      <p className="text-sm text-muted-foreground mt-1">
+        Enter the essential details about the quality event.
+      </p>
+    </CardHeader>
 
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="site">
-              Site <span className="text-red-500">*</span>
+            <Label
+              htmlFor="site"
+              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Site
+              <span className="ml-1 text-red-500">*</span>
             </Label>
+
             <Select
               value={formData.site}
               onValueChange={(value) => updateField("site", value)}
             >
-              <SelectTrigger id="site" aria-invalid={!!errors.site}>
+              <SelectTrigger
+                id="site"
+                aria-invalid={!!errors.site}
+                className="
+        h-10
+        rounded-lg
+        border-slate-200
+        bg-white
+        text-sm
+        transition-all
+        duration-200
+        focus:ring-2
+        focus:ring-blue-500/10
+        focus:border-blue-500
+        dark:border-slate-700
+        dark:bg-slate-900
+      "
+              >
                 <SelectValue placeholder="Select site" />
               </SelectTrigger>
-              <SelectContent>
+
+              <SelectContent
+                className="
+        w-[--radix-select-trigger-width]
+        rounded-lg
+        border
+        border-slate-200
+        bg-white
+        p-1
+        shadow-lg
+        dark:border-slate-700
+        dark:bg-slate-900
+      "
+              >
                 {siteOptions.map((option) => (
-                  <SelectItem key={option} value={option}>
+                  <SelectItem
+                    key={option}
+                    value={option}
+                    className="
+            rounded-md
+            text-sm
+            cursor-pointer
+            focus:bg-blue-50
+            focus:text-blue-700
+            dark:focus:bg-blue-950/30
+            dark:focus:text-blue-300
+          "
+                  >
                     {option}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+
             {errors.site && (
-              <p className="text-xs text-red-500">{errors.site}</p>
+              <p className="mt-1 text-xs font-medium text-red-600">
+                {errors.site}
+              </p>
             )}
           </div>
 
+
           <div className="space-y-2">
-            <Label htmlFor="datetime">
-              Date/Time Detected <span className="text-red-500">*</span>
+            <Label
+              htmlFor="datetime"
+              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Date/Time Detected
+              <span className="ml-1 text-red-500">*</span>
             </Label>
-            <Input
-              id="datetime"
-              type="datetime-local"
-              value={formData.dateTimeDetected}
-              onChange={(e) => updateField("dateTimeDetected", e.target.value)}
-              aria-invalid={!!errors.dateTimeDetected}
-            />
+
+            <div className="relative">
+              <Input
+                id="datetime"
+                type="datetime-local"
+                value={formData.dateTimeDetected}
+                onChange={(e) => updateField("dateTimeDetected", e.target.value)}
+                aria-invalid={!!errors.dateTimeDetected}
+                className="
+  h-10
+  rounded-lg
+  border-slate-200
+  bg-white
+  pr-3
+  text-sm
+  shadow-sm
+  focus-visible:border-blue-500
+  focus-visible:ring-2
+  focus-visible:ring-blue-500/10
+"
+              />
+            </div>
+
             {errors.dateTimeDetected && (
-              <p className="text-xs text-red-500">
+              <p className="mt-1 text-xs font-medium text-red-600">
                 {errors.dateTimeDetected}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="sourceSystem">
-              Source System <span className="text-red-500">*</span>
+            <Label
+              htmlFor="sourceSystem"
+              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Source System
+              <span className="ml-1 text-red-500">*</span>
             </Label>
+
             <Select
               value={formData.sourceSystem}
               onValueChange={(value) => updateField("sourceSystem", value)}
@@ -100,43 +181,135 @@ export function BasicInformationCard({
               <SelectTrigger
                 id="sourceSystem"
                 aria-invalid={!!errors.sourceSystem}
+                className="
+        h-10
+        rounded-lg
+        border-slate-200
+        bg-white
+        text-sm
+        transition-all
+        duration-200
+        focus:ring-2
+        focus:ring-blue-500/10
+        focus:border-blue-500
+        dark:border-slate-700
+        dark:bg-slate-900
+      "
               >
                 <SelectValue placeholder="Select source system" />
               </SelectTrigger>
-              <SelectContent>
+
+              <SelectContent
+                className="
+        w-[--radix-select-trigger-width]
+        rounded-lg
+        border
+        border-slate-200
+        bg-white
+        p-1
+        shadow-lg
+        dark:border-slate-700
+        dark:bg-slate-900
+      "
+              >
                 {sourceSystemOptions.map((option) => (
-                  <SelectItem key={option} value={option}>
+                  <SelectItem
+                    key={option}
+                    value={option}
+                    className="
+            rounded-md
+            text-sm
+            cursor-pointer
+            focus:bg-blue-50
+            focus:text-blue-700
+            dark:focus:bg-blue-950/30
+            dark:focus:text-blue-300
+          "
+                  >
                     {option}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+
             {errors.sourceSystem && (
-              <p className="text-xs text-red-500">{errors.sourceSystem}</p>
+              <p className="mt-1 text-xs font-medium text-red-600">
+                {errors.sourceSystem}
+              </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="eventType">
-              Event Type <span className="text-red-500">*</span>
+            <Label
+              htmlFor="eventType"
+              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Event Type
+              <span className="ml-1 text-red-500">*</span>
             </Label>
+
             <Select
               value={formData.eventType}
               onValueChange={(value) => updateField("eventType", value)}
             >
-              <SelectTrigger id="eventType" aria-invalid={!!errors.eventType}>
+              <SelectTrigger
+                id="eventType"
+                aria-invalid={!!errors.eventType}
+                className="
+        h-10
+        rounded-lg
+        border-slate-200
+        bg-white
+        text-sm
+        transition-all
+        duration-200
+        focus:ring-2
+        focus:ring-blue-500/10
+        focus:border-blue-500
+        dark:border-slate-700
+        dark:bg-slate-900
+      "
+              >
                 <SelectValue placeholder="Select event type" />
               </SelectTrigger>
-              <SelectContent>
+
+              <SelectContent
+                className="
+        w-[--radix-select-trigger-width]
+        rounded-lg
+        border
+        border-slate-200
+        bg-white
+        p-1
+        shadow-lg
+        dark:border-slate-700
+        dark:bg-slate-900
+      "
+              >
                 {eventTypeOptions.map((option) => (
-                  <SelectItem key={option} value={option}>
+                  <SelectItem
+                    key={option}
+                    value={option}
+                    className="
+            rounded-md
+            text-sm
+            cursor-pointer
+            focus:bg-blue-50
+            focus:text-blue-700
+            dark:focus:bg-blue-950/30
+            dark:focus:text-blue-300
+          "
+                  >
                     {option}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+
             {errors.eventType && (
-              <p className="text-xs text-red-500">{errors.eventType}</p>
+              <p className="mt-1 text-xs font-medium text-red-600">
+                {errors.eventType}
+              </p>
             )}
           </div>
         </div>
@@ -155,16 +328,27 @@ export function DescriptionCard({
   updateField: (field: keyof FormState, value: string) => void;
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Description</CardTitle>
+    <Card className="rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/30 px-6 py-5">
+        <CardTitle className="text-[15px] font-semibold">
+          Description
+        </CardTitle>
+
+        <p className="mt-1 text-sm text-muted-foreground">
+          Explain the event clearly, including the affected process, equipment, or material.
+        </p>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5 px-4 py-0">
         <div className="space-y-2">
-          <Label htmlFor="description">
-            Detailed Description <span className="text-red-500">*</span>
+          <Label
+            htmlFor="description"
+            className="text-sm font-medium text-slate-700 dark:text-slate-300"
+          >
+            Detailed Description
+            <span className="ml-1 text-red-500">*</span>
           </Label>
+
           <Textarea
             id="description"
             rows={6}
@@ -172,30 +356,92 @@ export function DescriptionCard({
             value={formData.description}
             onChange={(e) => updateField("description", e.target.value)}
             aria-invalid={!!errors.description}
+            className="
+      min-h-[100px]
+      resize-y
+      rounded-lg
+      border-slate-200
+      bg-white
+      px-3
+      py-2.5
+      text-sm
+      leading-6
+      placeholder:text-slate-400
+      transition-all
+      duration-200
+      focus-visible:border-blue-500
+      focus-visible:ring-2
+      focus-visible:ring-blue-500/10
+      dark:border-slate-700
+      dark:bg-slate-900
+      dark:placeholder:text-slate-500
+    "
           />
+
           {errors.description && (
-            <p className="text-xs text-red-500">{errors.description}</p>
+            <p className="mt-1 text-xs font-medium text-red-600">
+              {errors.description}
+            </p>
           )}
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="batch">Impacted Batch/Lot</Label>
+            <Label
+              htmlFor="batch"
+              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Impacted Batch/Lot
+            </Label>
+
             <Input
               id="batch"
               placeholder="e.g., LOT-2024-0412"
               value={formData.batch}
               onChange={(e) => updateField("batch", e.target.value)}
+              className="
+        h-10
+        rounded-lg
+        border-slate-200
+        bg-white
+        text-sm
+        transition-all
+        duration-200
+        focus-visible:border-blue-500
+        focus-visible:ring-2
+        focus-visible:ring-blue-500/10
+        dark:border-slate-700
+        dark:bg-slate-900
+      "
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="system">Impacted System</Label>
+            <Label
+              htmlFor="system"
+              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Impacted System
+            </Label>
+
             <Input
               id="system"
               placeholder="e.g., Cold Storage Unit 3"
               value={formData.system}
               onChange={(e) => updateField("system", e.target.value)}
+              className="
+        h-10
+        rounded-lg
+        border-slate-200
+        bg-white
+        text-sm
+        transition-all
+        duration-200
+        focus-visible:border-blue-500
+        focus-visible:ring-2
+        focus-visible:ring-blue-500/10
+        dark:border-slate-700
+        dark:bg-slate-900
+      "
             />
           </div>
         </div>
@@ -212,19 +458,46 @@ export function ImmediateActionsCard({
   onChange: (value: string) => void;
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Immediate Actions Taken</CardTitle>
+    <Card className="rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/30 px-6 py-5">
+        <CardTitle className="text-[15px] font-semibold">
+          Immediate Actions Taken
+        </CardTitle>
+
+        <p className="mt-1 text-sm text-muted-foreground">
+          Record any immediate containment or corrective actions already performed.
+        </p>
       </CardHeader>
-      <CardContent>
+
+      <CardContent className="px-5 py-0">
         <div className="space-y-2">
           <Label htmlFor="immediateActions">Actions Taken</Label>
           <Textarea
             id="immediateActions"
-            rows={4}
+            rows={8}
             placeholder="Describe any immediate containment or corrective actions..."
             value={value}
             onChange={(e) => onChange(e.target.value)}
+            className="
+    min-h-[100px]
+    resize-y
+    rounded-lg
+    border-slate-200
+    bg-white
+    px-3
+    py-2.5
+    text-sm
+    leading-6
+    placeholder:text-slate-400
+    transition-all
+    duration-200
+    focus-visible:border-blue-500
+    focus-visible:ring-2
+    focus-visible:ring-blue-500/10
+    dark:border-slate-700
+    dark:bg-slate-900
+    dark:placeholder:text-slate-500
+  "
           />
         </div>
       </CardContent>
@@ -250,12 +523,18 @@ export function AttachmentsCard({
   onRemove: (index: number) => void;
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Attachments</CardTitle>
+    <Card className="rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/30 px-6 py-5">
+        <CardTitle className="text-[15px] font-semibold">
+          Attachments
+        </CardTitle>
+
+        <p className="mt-1 text-sm text-muted-foreground">
+          Upload supporting documents, images, or reports related to this event.
+        </p>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="px-4 py-0">
         <div className="space-y-4">
           <input
             ref={fileInputRef}
@@ -270,8 +549,23 @@ export function AttachmentsCard({
             onClick={() => fileInputRef.current?.click()}
             onDrop={onDrop}
             onDragOver={onDragOver}
-            className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-muted-foreground transition-colors cursor-pointer"
-          >
+            className="
+rounded-xl
+border-2
+border-dashed
+border-slate-300
+dark:border-slate-700
+bg-slate-50/60
+dark:bg-slate-900/20
+p-10
+text-center
+cursor-pointer
+transition-all
+duration-200
+hover:border-blue-400
+hover:bg-blue-50/50
+dark:hover:bg-blue-950/20
+"          >
             <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
             <p className="text-sm text-muted-foreground mb-1">
               <span className="text-blue-500 font-medium">
@@ -305,8 +599,20 @@ export function AttachmentsCard({
               {attachments.map((file, index) => (
                 <div
                   key={`${file.name}-${index}`}
-                  className="flex items-center justify-between p-3 border border-border rounded-lg bg-muted/50"
-                >
+                  className="
+flex
+items-center
+justify-between
+rounded-lg
+border
+border-slate-200
+dark:border-slate-700
+bg-white
+dark:bg-slate-900/40
+px-4
+py-3
+shadow-sm
+"                >
                   <div>
                     <p className="text-sm font-medium text-foreground">
                       {file.name}

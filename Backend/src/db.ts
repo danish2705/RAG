@@ -30,4 +30,44 @@ export async function runMigrations(): Promise<void> {
   await pool.query(
     `ALTER TABLE change_control_cases ${APPROVAL_WORKFLOW_COLUMNS}`,
   );
+
+  // The audit_log.action column has a CHECK constraint written against the
+  // original, smaller set of action values. The approval workflow adds new
+  // distinct actions (review_started/approved/rejected/resubmitted), so the
+  // constraint needs widening or every insert with a new action value fails
+  // with "violates check constraint audit_log_action_check".
+  //
+  // Rather than guess the constraint's name (it may not match Postgres'
+  // default naming if it was created/renamed manually), look it up from the
+  // catalogs — any CHECK constraint on audit_log whose definition mentions
+  // the action column — and drop every match before adding the widened one.
+  const { rows: staleConstraints } = await pool.query<{ conname: string }>(
+    `SELECT c.conname
+       FROM pg_constraint c
+       JOIN pg_class t ON t.oid = c.conrelid
+      WHERE t.relname = 'audit_log'
+        AND c.contype = 'c'
+        AND pg_get_constraintdef(c.oid) ILIKE '%action%'`,
+  );
+  for (const { conname } of staleConstraints) {
+    await pool.query(
+      `ALTER TABLE audit_log DROP CONSTRAINT "${conname}"`,
+    );
+  }
+  await pool.query(
+    `ALTER TABLE audit_log ADD CONSTRAINT audit_log_action_check CHECK (
+      action IN (
+        'created',
+        'field_edited',
+        'deleted',
+        'ai_suggestion',
+        'status_changed',
+        'llm_unavailable',
+        'review_started',
+        'approved',
+        'rejected',
+        'resubmitted'
+      )
+    )`,
+  );
 }

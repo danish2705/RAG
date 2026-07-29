@@ -4,7 +4,12 @@ export type AuditAction =
   | "field_edited"
   | "deleted"
   | "ai_suggestion"
-  | "status_changed";
+  | "status_changed"
+  // Approval workflow lifecycle — each transition logged distinctly.
+  | "review_started"
+  | "approved"
+  | "rejected"
+  | "resubmitted";
 export type AuditSource = "ai" | "human" | "system";
 
 /** Raw shape returned by GET /api/audit (one row per audit_log record). */

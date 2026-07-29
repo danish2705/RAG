@@ -87,14 +87,19 @@ export const rejectCase = async (
 };
 
 /** Best-effort ping to mark a pending case as "in review" once the approver
- *  opens it — purely for workflow-status visibility. */
+ *  opens it — purely for workflow-status visibility (and audit trail). */
 export const startReview = async (
   id: string,
   caseType: "Deviation" | "Change Control",
+  reviewedBy: string,
 ) => {
   return apiFetch(
     `/api/records/${encodeURIComponent(id)}/start-review?case_type=${encodeURIComponent(caseType)}`,
-    { method: "PATCH" },
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reviewed_by: reviewedBy }),
+    },
   );
 };
 

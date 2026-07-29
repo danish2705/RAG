@@ -252,10 +252,11 @@ export async function approveCase(req: Request, res: Response): Promise<void> {
   await recordAuditEntry({
     entity_type: isChangeControl ? "Change Control" : "Deviation",
     entity_id: id,
-    action: "status_changed",
+    action: "approved",
     source: "human",
     performed_by: approvedBy,
     field_name: "approval_status",
+    old_value: existing.approval_status ?? "pending",
     new_value: "approved",
     record_snapshot: updatedRow,
     reason: "Case approved",
@@ -329,10 +330,11 @@ export async function rejectCase(req: Request, res: Response): Promise<void> {
   await recordAuditEntry({
     entity_type: isChangeControl ? "Change Control" : "Deviation",
     entity_id: id,
-    action: "status_changed",
+    action: "rejected",
     source: "human",
     performed_by: rejectedBy,
     field_name: "approval_status",
+    old_value: existing.approval_status ?? "pending",
     new_value: "rejected",
     record_snapshot: updatedRow,
     reason: reason || "Case rejected — sent back to submitter for corrections",
@@ -352,9 +354,32 @@ export async function startReview(
   const caseType = req.query.case_type;
   const isChangeControl = caseType === "Change Control";
 
+  const reviewedBy =
+    typeof req.body?.reviewed_by === "string" && req.body.reviewed_by.trim()
+      ? req.body.reviewed_by.trim()
+      : "Unknown";
+
   const updatedRow = isChangeControl
     ? await startReviewChangeControlCase(id)
     : await startReviewDeviationCase(id);
+
+  // Only log when the case actually flipped to 'in_review' — if it was
+  // already past 'pending' (or doesn't exist), this was a no-op and isn't
+  // worth an audit entry.
+  if (updatedRow) {
+    await recordAuditEntry({
+      entity_type: isChangeControl ? "Change Control" : "Deviation",
+      entity_id: id,
+      action: "review_started",
+      source: "human",
+      performed_by: reviewedBy,
+      field_name: "approval_status",
+      old_value: "pending",
+      new_value: "in_review",
+      record_snapshot: updatedRow,
+      reason: "Approver opened the case for review",
+    });
+  }
 
   // If nothing was updated, either the id doesn't exist or the case is no
   // longer 'pending' — either way this is a best-effort status ping, not
@@ -433,10 +458,11 @@ export async function resubmitCase(
   await recordAuditEntry({
     entity_type: isChangeControl ? "Change Control" : "Deviation",
     entity_id: id,
-    action: "status_changed",
+    action: "resubmitted",
     source: "human",
     performed_by: resubmittedBy,
     field_name: "approval_status",
+    old_value: "rejected",
     new_value: "pending",
     record_snapshot: updatedRow,
     reason: "Resubmitted after rejection",

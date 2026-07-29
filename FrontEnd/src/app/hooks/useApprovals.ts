@@ -156,7 +156,7 @@ export function useApprovals() {
       // Best-effort: mark the case "in review" now that the approver has
       // opened it, purely for lifecycle visibility. Ignored if it fails.
       if (row.approvalStatus === "pending" && canApprove(row)) {
-        startReview(row.id, row.classification)
+        startReview(row.id, row.classification, identity || "Unknown")
           .then(() => {
             setRows((prev) =>
               prev.map((r) =>
@@ -167,7 +167,7 @@ export function useApprovals() {
           .catch(() => {});
       }
     },
-    [canApprove],
+    [canApprove, identity],
   );
 
   const closeCase = useCallback(() => {

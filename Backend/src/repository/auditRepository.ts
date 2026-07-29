@@ -7,6 +7,13 @@ export type AuditAction =
   | "deleted"
   | "ai_suggestion"
   | "status_changed"
+  // Approval workflow — each lifecycle transition gets its own distinct
+  // action so the Audit Trail can show/filter them clearly instead of a
+  // generic "status changed" bucket.
+  | "review_started"
+  | "approved"
+  | "rejected"
+  | "resubmitted"
   // Recorded whenever the LLM is unreachable/erroring mid-pipeline and the
   // user's in-progress query gets saved to llm_retry_queue instead of lost.
   | "llm_unavailable";

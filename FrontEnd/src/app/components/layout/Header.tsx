@@ -105,7 +105,7 @@ const PAGE_META: Record<string, PageMetaEntry> = {
   "/pending-ai-reviews": {
     title: "Pending AI Reviews",
     subtitle:
-      "Queries saved when the AI service was unavailable, so nothing gets lost. Retry them once the service is back up, and mark each one Pending or Not Executed as you work through the list.",
+      "Retry AI requests that were saved while the AI service was unavailable",
   },
   "/reports": {
     title: "Reports",
@@ -119,6 +119,10 @@ const PAGE_META: Record<string, PageMetaEntry> = {
     title: "Profile",
     subtitle: "Your account details and permissions",
     back: "/",
+  },
+  "/approvals": {
+    title: "Approvals",
+    subtitle: "Review and approve pending requests",
   },
 };
 

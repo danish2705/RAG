@@ -11,6 +11,10 @@ import {
   Lock,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import {
+  PanelLeftClose,
+  PanelRightOpen,
+} from "lucide-react";
 
 const navigation = [
   {
@@ -82,10 +86,6 @@ export function Sidebar() {
   const isDark = useDarkMode();
   const { user } = useAuth();
   const role = user?.role?.toLowerCase();
-
-  // Every item stays in the list for every role; items the current role
-  // can't access are rendered disabled (dimmed, unclickable) instead of
-  // being removed from the sidebar.
   const navigationWithAccess = useMemo(() => {
     return navigation.map((item) => ({
       ...item,
@@ -110,13 +110,13 @@ export function Sidebar() {
   return (
     <aside
       style={{
-        width: collapsed ? "5rem" : "16rem",
+        width: collapsed ? "4.5rem" : "16rem",
         transition: "width 300ms",
         backgroundColor: bg,
         color: textMain,
         borderRight: `1px solid ${border}`,
       }}
-      className="flex flex-col shrink-0"
+      className="flex flex-col shrink-0 bg-slate-50 dark:bg-slate-950 shadow-sm"
     >
       {/* Header / toggle */}
       <div
@@ -145,8 +145,8 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4">
-        <ul className="space-y-1">
+      <nav className="flex-1 px-3 py-5">
+        <ul className="space-y-2">
           {navigationWithAccess.map((item) => {
             if (item.disabled) {
               // Disabled: visible, but not a link — no navigation, no hover feedback.
@@ -158,8 +158,8 @@ export function Sidebar() {
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      borderRadius: "0.5rem",
-                      padding: collapsed ? "0.75rem 0.5rem" : "0.625rem 1rem",
+                      borderRadius: "0.75rem",
+                      padding: collapsed ? "0.6rem 0.45rem" : "0.45rem 0.875rem",
                       justifyContent: collapsed ? "center" : undefined,
                       gap: collapsed ? undefined : "0.75rem",
                       color: textDisabled,
@@ -220,19 +220,36 @@ export function Sidebar() {
                 <NavLink
                   to={item.href}
                   end={item.href === "/"}
-                  style={({ isActive }) => ({
-                    display: "flex",
-                    alignItems: "center",
-                    borderRadius: "0.5rem",
-                    transition: "background-color 150ms, color 150ms",
-                    textDecoration: "none",
-                    padding: collapsed ? "0.75rem 0.5rem" : "0.625rem 1rem",
-                    justifyContent: collapsed ? "center" : undefined,
-                    gap: collapsed ? undefined : "0.75rem",
-                    backgroundColor: isActive ? "#2563eb" : "transparent",
-                    color: isActive ? "#ffffff" : textMuted,
-                    fontWeight: isActive ? 600 : 400,
-                  })}
+            style={({ isActive }) => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: collapsed ? "center" : undefined,
+  gap: collapsed ? undefined : "0.75rem",
+
+  padding: collapsed ? "0.7rem 0.55rem" : "0.7rem 1rem",
+
+  borderRadius: "12px",
+
+  textDecoration: "none",
+
+  transition: "all .25s ease",
+
+  backgroundColor: isActive ? "#2563EB" : "transparent",
+
+  color: isActive ? "#ffffff" : textMuted,
+
+  fontWeight: isActive ? 600 : 500,
+
+  boxShadow: isActive
+    ? "0 8px 20px rgba(37,99,235,.30)"
+    : "none",
+
+  transform: isActive ? "translateX(4px)" : "translateX(0)",
+
+  border: isActive
+    ? "1px solid rgba(255,255,255,.15)"
+    : "1px solid transparent",
+})}
                   onMouseEnter={(e) => {
                     const el = e.currentTarget;
                     const isActive =
@@ -263,18 +280,21 @@ export function Sidebar() {
                     }}
                   />
                   {!collapsed && (
-                    <span
-                      className="whitespace-nowrap"
-                      style={{
-                        display: "inline-block",
-                        transform:
-                          hoveredItem === item.name ? "scale(1.1)" : "scale(1)",
-                        transformOrigin: "left center",
-                        transition: "transform 150ms ease",
-                      }}
-                    >
-                      {item.name}
-                    </span>
+                   <span
+  className="whitespace-nowrap"
+  style={{
+    display: "inline-block",
+    fontSize: "14px",
+    fontWeight: 500,
+    fontFamily: "Inter, 'Segoe UI', sans-serif",
+    letterSpacing: "0.2px",
+    transform:
+      hoveredItem === item.name ? "scale(1.05)" : "scale(1)",
+    transition: "all .2s ease",
+  }}
+>
+  {item.name}
+</span>
                   )}
                 </NavLink>
 
@@ -314,6 +334,7 @@ export function Sidebar() {
               </li>
             );
           })}
+          
         </ul>
       </nav>
     </aside>

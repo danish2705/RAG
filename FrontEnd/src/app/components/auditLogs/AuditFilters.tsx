@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Search } from "lucide-react";
 import { Input } from "../ui/input";
 import {
   Select,
@@ -31,54 +31,135 @@ export function AuditFilters({
   onSearchChange,
 }: AuditFiltersProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Filters</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <Input
-              type="date"
-              placeholder="Start Date"
-              value={startDate}
-              onChange={(e) => onStartDateChange(e.target.value)}
-            />
-          </div>
-          <div>
-            <Input
-              type="date"
-              placeholder="End Date"
-              value={endDate}
-              onChange={(e) => onEndDateChange(e.target.value)}
-            />
-          </div>
-          <div>
-            <Select
-              value={sourceFilter}
-              onValueChange={(val) =>
-                onSourceFilterChange(val as AuditSource | "all")
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="User Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="human">Human Only</SelectItem>
-                <SelectItem value="system">System Only</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Input
-              placeholder="Search actions..."
-              value={search}
-              onChange={(e) => onSearchChange(e.target.value)}
-            />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="mb-5 flex flex-wrap items-center gap-3">
+
+      {/* Search */}
+      <div className="relative flex-1 min-w-[320px]">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+        <Input
+          placeholder="Search activity..."
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="
+            h-10
+            pl-10
+            rounded-lg
+            border-slate-200
+            bg-white
+            text-sm
+            shadow-sm
+            placeholder:text-slate-400
+            transition-all
+            duration-200
+            focus-visible:border-blue-500
+            focus-visible:ring-2
+            focus-visible:ring-blue-500/10
+          "
+        />
+      </div>
+
+      {/* User Type */}
+      <Select
+        value={sourceFilter}
+        onValueChange={(value) =>
+          onSourceFilterChange(value as AuditSource | "all")
+        }
+      >
+        <SelectTrigger
+          className="
+            !h-10
+            w-[180px]
+            rounded-lg
+            border-slate-200
+            bg-white
+            px-3
+            text-sm
+            shadow-sm
+            transition-all
+            duration-200
+            focus:ring-2
+            focus:ring-blue-500/10
+            focus:border-blue-500
+          "
+        >
+          <SelectValue placeholder="User Type" />
+        </SelectTrigger>
+
+        <SelectContent
+          className="
+            rounded-lg
+            border
+            border-slate-200
+            bg-white
+            p-1
+            shadow-xl
+          "
+        >
+          <SelectItem
+            value="all"
+            className="rounded-md text-sm focus:bg-blue-50 focus:text-blue-700"
+          >
+            All Users
+          </SelectItem>
+
+          <SelectItem
+            value="human"
+            className="rounded-md text-sm focus:bg-blue-50 focus:text-blue-700"
+          >
+            Human Only
+          </SelectItem>
+
+          <SelectItem
+            value="system"
+            className="rounded-md text-sm focus:bg-blue-50 focus:text-blue-700"
+          >
+            System Only
+          </SelectItem>
+        </SelectContent>
+      </Select>
+
+      {/* Start Date */}
+      <Input
+        type="date"
+        value={startDate}
+        onChange={(e) => onStartDateChange(e.target.value)}
+        className="
+          h-10
+          w-[150px]
+          rounded-lg
+          border-slate-200
+          bg-white
+          text-sm
+          shadow-sm
+          transition-all
+          duration-200
+          focus-visible:border-blue-500
+          focus-visible:ring-2
+          focus-visible:ring-blue-500/10
+        "
+      />
+
+      {/* End Date */}
+      <Input
+        type="date"
+        value={endDate}
+        onChange={(e) => onEndDateChange(e.target.value)}
+        className="
+          h-10
+          w-[150px]
+          rounded-lg
+          border-slate-200
+          bg-white
+          text-sm
+          shadow-sm
+          transition-all
+          duration-200
+          focus-visible:border-blue-500
+          focus-visible:ring-2
+          focus-visible:ring-blue-500/10
+        "
+      />
+    </div>
   );
 }

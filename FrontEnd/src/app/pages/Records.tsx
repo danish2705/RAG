@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, PenSquare } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Dialog, DialogContent } from "../components/ui/dialog";
 import { AIAssistant } from "../components/chat/AiAssistant";
@@ -48,9 +48,8 @@ export function Records() {
   return (
     <div className="relative h-full w-full">
       <div
-        className={`h-full p-6 overflow-y-auto transition-[margin] duration-200 ${
-          chatOpen ? "mr-80" : ""
-        }`}
+        className={`h-full p-6 overflow-y-auto transition-[margin] duration-200 ${chatOpen ? "mr-80" : ""
+          }`}
       >
         {/* Case Details View Modal — full pipeline detail, fetched on demand */}
         {selectedCase && (detailLoading || detailError) && (
@@ -144,22 +143,7 @@ export function Records() {
           onConfirmDelete={handleDeleteRecord}
         />
 
-        <div className="mb-6 flex items-center gap-3">
-          <div>
-            <p className="text-sm text-muted-foreground mt-0.5 font-medium">
-              {filteredCases.length} case{filteredCases.length === 1 ? "" : "s"}{" "}
-              found
-            </p>
-          </div>
-          <Button
-            size="sm"
-            className="ml-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium shadow-sm border-0"
-            onClick={() => navigate("/deviation")}
-          >
-            + New Case
-          </Button>
-        </div>
-
+        
         <RecordsFilterBar
           submittedByFilter={submittedByFilter}
           onSubmittedByFilterChange={setSubmittedByFilter}

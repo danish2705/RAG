@@ -91,7 +91,7 @@ export function DeviationViewModal({
               <CardTitle className="text-base">Original Query</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground leading-relaxed bg-muted/50 rounded-md p-3">
+              <p className="text-sm text-muted-foreground leading-relaxed bg-white dark:bg-background border border-border rounded-md p-3">
                 {record.query}
               </p>
             </CardContent>
@@ -195,7 +195,7 @@ export function DeviationViewModal({
                     <p className="text-sm font-medium text-foreground">
                       Underlying Root Cause
                     </p>
-                    <p className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
+                    <p className="text-sm text-muted-foreground bg-white dark:bg-background border border-border rounded-md p-3">
                       {rca.primary_root_cause}
                     </p>
                   </div>
@@ -203,7 +203,7 @@ export function DeviationViewModal({
                     <p className="text-sm font-medium text-foreground">
                       Immediate Cause
                     </p>
-                    <p className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
+                    <p className="text-sm text-muted-foreground bg-white dark:bg-background border border-border rounded-md p-3">
                       {rca.immediate_cause}
                     </p>
                   </div>
@@ -223,7 +223,7 @@ export function DeviationViewModal({
                     <p className="text-sm font-medium text-foreground">
                       Impact Summary
                     </p>
-                    <p className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
+                    <p className="text-sm text-muted-foreground bg-white dark:bg-background border border-border rounded-md p-3">
                       {rca.impact_summary}
                     </p>
                   </div>
@@ -294,7 +294,7 @@ export function DeviationViewModal({
                     <p className="text-sm font-medium text-foreground">
                       Effectiveness Check
                     </p>
-                    <p className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
+                    <p className="text-sm text-muted-foreground bg-white dark:bg-background border border-border rounded-md p-3">
                       {capa.effectiveness_check}
                     </p>
                   </div>
@@ -302,7 +302,7 @@ export function DeviationViewModal({
                     <p className="text-sm font-medium text-foreground">
                       Due Date
                     </p>
-                    <p className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
+                    <p className="text-sm text-muted-foreground bg-white dark:bg-background border border-border rounded-md p-3">
                       {capa.due_date}
                     </p>
                   </div>

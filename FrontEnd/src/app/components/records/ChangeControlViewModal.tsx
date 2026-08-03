@@ -88,7 +88,7 @@ export function ChangeControlViewModal({
               <CardTitle className="text-base">Original Query</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground leading-relaxed bg-muted/50 rounded-md p-3">
+              <p className="text-sm text-muted-foreground leading-relaxed bg-white dark:bg-background border border-border rounded-md p-3">
                 {record.query}
               </p>
             </CardContent>
@@ -317,7 +317,7 @@ export function ChangeControlViewModal({
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground leading-relaxed bg-muted/50 rounded-md p-3">
+                  <p className="text-sm text-muted-foreground leading-relaxed bg-white dark:bg-background border border-border rounded-md p-3">
                     {risk.risk_ranking_justification}
                   </p>
                 </CardContent>
@@ -455,7 +455,7 @@ export function ChangeControlViewModal({
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground leading-relaxed bg-muted/50 rounded-md p-3">
+                  <p className="text-sm text-muted-foreground leading-relaxed bg-white dark:bg-background border border-border rounded-md p-3">
                     {implementation.implementation_plan}
                   </p>
                 </CardContent>
@@ -470,7 +470,7 @@ export function ChangeControlViewModal({
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground leading-relaxed bg-muted/50 rounded-md p-3">
+                  <p className="text-sm text-muted-foreground leading-relaxed bg-white dark:bg-background border border-border rounded-md p-3">
                     {implementation.rollback_contingency_plan}
                   </p>
                 </CardContent>
@@ -485,11 +485,11 @@ export function ChangeControlViewModal({
               </CardHeader>
               <CardContent>
                 {typeof record.final_summary === "string" ? (
-                  <p className="text-sm text-muted-foreground leading-relaxed bg-muted/50 rounded-md p-3 whitespace-pre-wrap">
+                  <p className="text-sm text-muted-foreground leading-relaxed bg-white dark:bg-background border border-border rounded-md p-3 whitespace-pre-wrap">
                     {record.final_summary}
                   </p>
                 ) : (
-                  <pre className="text-sm text-muted-foreground leading-relaxed bg-muted/50 rounded-md p-3 whitespace-pre-wrap font-mono overflow-x-auto">
+                  <pre className="text-sm text-muted-foreground leading-relaxed bg-white dark:bg-background border border-border rounded-md p-3 whitespace-pre-wrap font-mono overflow-x-auto">
                     {JSON.stringify(record.final_summary, null, 2)}
                   </pre>
                 )}

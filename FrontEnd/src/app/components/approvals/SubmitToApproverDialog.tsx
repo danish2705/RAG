@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { UserCheck, Loader2, AlertCircle } from "lucide-react";
+import { UserCheck, Loader2, AlertCircle, CalendarClock } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Calendar } from "../ui/calendar";
 import { fetchApprovers } from "../../services/approvalsApi";
 
 /**
@@ -31,6 +33,41 @@ import { fetchApprovers } from "../../services/approvalsApi";
  * environment with no cases yet), we fall back to a plain text field so the
  * user is never blocked from submitting.
  */
+
+/** Formats a Date as YYYY-MM-DD (local time, no timezone shift). */
+function toDateKey(d: Date): string {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/** Parses a YYYY-MM-DD string back into a local Date (avoids UTC shift). */
+function fromDateKey(key: string): Date | undefined {
+  if (!key) return undefined;
+  const [yyyy, mm, dd] = key.split("-").map(Number);
+  if (!yyyy || !mm || !dd) return undefined;
+  return new Date(yyyy, mm - 1, dd);
+}
+
+/** Formats YYYY-MM-DD as a friendly display string, e.g. "10 Aug 2026". */
+function formatDisplayDate(key: string): string {
+  const date = fromDateKey(key);
+  if (!date) return "Pick a date";
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+/** Returns today + 7 days, formatted as YYYY-MM-DD. */
+function getDefaultDueDate(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 7);
+  return toDateKey(d);
+}
+
 export function SubmitToApproverDialog({
   open,
   onOpenChange,
@@ -40,8 +77,8 @@ export function SubmitToApproverDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Called with the selected approver name. */
-  onConfirm: (submittedTo: string) => void;
+  /** Called with the selected approver name and the (editable) due date. */
+  onConfirm: (submittedTo: string, dueDate: string) => void;
   /** The logged-in user's name (the "submitted by"), used to block self-approval. */
   submittedBy?: string;
   isSubmitting?: boolean;
@@ -51,6 +88,8 @@ export function SubmitToApproverDialog({
   const [loadError, setLoadError] = useState(false);
   const [selected, setSelected] = useState("");
   const [manualName, setManualName] = useState("");
+  const [dueDate, setDueDate] = useState(getDefaultDueDate());
+  const [dueDateOpen, setDueDateOpen] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -58,6 +97,8 @@ export function SubmitToApproverDialog({
     setSelected("");
     setManualName("");
     setError("");
+    // Auto-fill the due date to one week from today; user can still edit it.
+    setDueDate(getDefaultDueDate());
     setLoadingApprovers(true);
     setLoadError(false);
     fetchApprovers()
@@ -91,7 +132,11 @@ export function SubmitToApproverDialog({
       setError("You can't submit a case to yourself for approval.");
       return;
     }
-    onConfirm(trimmed);
+    if (!dueDate) {
+      setError("Please select a due date.");
+      return;
+    }
+    onConfirm(trimmed, dueDate);
   };
 
   return (
@@ -166,6 +211,44 @@ export function SubmitToApproverDialog({
                 Approvers are drawn from people already active in the system.
               </p>
             )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="submit-due-date" className="flex items-center gap-2">
+              <CalendarClock className="h-5 w-5 shrink-0 text-blue-600" />
+              <span>Due Date</span>
+            </Label>
+
+            <Popover open={dueDateOpen} onOpenChange={setDueDateOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  id="submit-due-date"
+                  type="button"
+                  variant="outline"
+                  className="w-full justify-start font-normal"
+                >
+                  <CalendarClock className="h-4 w-4 mr-2 text-muted-foreground" />
+                  {formatDisplayDate(dueDate)}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={fromDateKey(dueDate)}
+                  onSelect={(date) => {
+                    if (!date) return;
+                    setDueDate(toDateKey(date));
+                    if (error) setError("");
+                    setDueDateOpen(false);
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+
+            <p className="text-xs text-muted-foreground">
+              Defaults to one week from today — feel free to adjust it.
+            </p>
           </div>
         </div>
 

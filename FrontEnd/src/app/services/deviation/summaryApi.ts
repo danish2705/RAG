@@ -11,6 +11,8 @@ export interface SaveDeviationPayload {
   saved_by: string;
   /** Approver name captured on the Summary submit popup (first letter capitalised). */
   submitted_to: string;
+  /** Due date captured on the Summary submit popup, auto-filled to +7 days but editable. */
+  due_date: string;
   provenance: any;
 }
 

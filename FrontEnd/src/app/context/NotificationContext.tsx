@@ -1,14 +1,32 @@
-import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
-import { AlertTriangle, Clock, FileCheck, ShieldAlert, X, Bell, ExternalLink } from "lucide-react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  ReactNode,
+} from "react";
+import { AlertTriangle, Clock, FileCheck, ShieldAlert, X, Bell } from "lucide-react";
 import { useAuth } from "./AuthContext";
+import {
+  fetchNotifications,
+  markNotificationRead as apiMarkNotificationRead,
+  markAllNotificationsRead as apiMarkAllNotificationsRead,
+  type NotificationRow,
+} from "../services/notificationsApi";
+
+export type QMSNotificationType = "critical" | "warning" | "info" | "success";
 
 export interface QMSNotification {
   id: string;
   title: string;
   message: string;
   time: string;
-  type: "critical" | "warning" | "info" | "success";
+  type: QMSNotificationType;
   read: boolean;
+  /** Present when this notification is about a case with a due date. */
+  dueDate: string | null;
 }
 
 interface ToastAlert {
@@ -16,7 +34,7 @@ interface ToastAlert {
   title: string;
   message: string;
   time: string;
-  type: "critical" | "warning" | "info" | "success" | "welcome";
+  type: QMSNotificationType | "welcome";
 }
 
 interface NotificationContextType {
@@ -24,127 +42,124 @@ interface NotificationContextType {
   unreadCount: number;
   markAllAsRead: () => void;
   markAsRead: (id: string) => void;
-  triggerNewNotification: (title: string, message: string, type: "critical" | "warning" | "info" | "success") => void;
+  /** Ephemeral, local-only toast — not persisted server-side. Real,
+   *  cross-user notifications (e.g. "case submitted to you") come from the
+   *  backend via the poller below instead. */
+  triggerNewNotification: (
+    title: string,
+    message: string,
+    type: QMSNotificationType,
+  ) => void;
 }
 
-const INITIAL_NOTIFICATIONS: QMSNotification[] = [
-  {
-    id: "notif-1",
-    title: "Critical Deviation Triggered",
-    message: "DEV-2026-089 (Cold Storage B). AI confidence dropped below 70%. Human review required.",
-    time: "10 mins ago",
-    type: "critical",
-    read: false,
-  },
-  {
-    id: "notif-2",
-    title: "CAPA Due Date Approaching",
-    message: "CAPA-2026-042 effectiveness check is due in 48 hours. QA sign-off pending.",
-    time: "1 hour ago",
-    type: "warning",
-    read: false,
-  },
-  {
-    id: "notif-3",
-    title: "Impact Assessment Completed",
-    message: "CC-2026-015 evaluated by AI with Minor severity across all risk parameters.",
-    time: "3 hours ago",
-    type: "info",
-    read: false,
-  },
-  {
-    id: "notif-4",
-    title: "Audit Trail Exported",
-    message: "Global QMS activity logs for Q2 were successfully archived to secure storage.",
-    time: "Yesterday",
-    type: "success",
-    read: true,
-  },
-];
+// How often to poll the backend for new notifications while the tab is open.
+// There's no websocket/push in this app, so this is the mechanism by which an
+// approver "sees" a case that was just submitted to them.
+const POLL_INTERVAL_MS = 20000;
+
+function formatRelativeTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const diffMin = Math.round((Date.now() - date.getTime()) / 60000);
+  if (diffMin < 1) return "Just now";
+  if (diffMin < 60) return `${diffMin} min${diffMin === 1 ? "" : "s"} ago`;
+  const diffHr = Math.round(diffMin / 60);
+  if (diffHr < 24) return `${diffHr} hour${diffHr === 1 ? "" : "s"} ago`;
+  const diffDay = Math.round(diffHr / 24);
+  if (diffDay === 1) return "Yesterday";
+  return `${diffDay} days ago`;
+}
+
+function toQMSNotification(row: NotificationRow): QMSNotification {
+  return {
+    id: String(row.id),
+    title: row.title,
+    message: row.message,
+    time: formatRelativeTime(row.created_at),
+    type: row.type,
+    read: row.is_read,
+    dueDate: row.due_date,
+  };
+}
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [notifications, setNotifications] = useState<QMSNotification[]>(INITIAL_NOTIFICATIONS);
+  const { isAuthenticated, user } = useAuth();
+  // Same identity rule the rest of the app uses for submitted_to/saved_by,
+  // so notifications addressed to this display name actually match.
+  const identity = (user?.displayName || user?.username || "").trim();
+
+  const [notifications, setNotifications] = useState<QMSNotification[]>([]);
   const [activeToasts, setActiveToasts] = useState<ToastAlert[]>([]);
+  const seenIdsRef = useRef<Set<string>>(new Set());
+  const hasLoadedOnceRef = useRef(false);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const { isAuthenticated, user } = useAuth();
-  const hasShownWelcomeThisSessionRef = useRef(false);
+  const refresh = useCallback(async () => {
+    if (!identity) return;
+    try {
+      const { data } = await fetchNotifications(identity);
+      const mapped = data.map(toQMSNotification);
 
-  // 1. Trigger the welcome pop-up only once the post-login "what's your
-  // name" popup has actually been completed — not the instant login
-  // succeeds. isAuthenticated flips true right when the login button is
-  // clicked, but the user hasn't finished onboarding until they've entered
-  // their name and hit Continue, which is what actually sets
-  // user.displayName. So this waits for displayName specifically, not just
-  // isAuthenticated.
-  //
-  // NOTE: this assumes the name popup's "Continue" button calls
-  // setDisplayName(...) from AuthContext, based on that function's name. If
-  // the popup actually sets a different flag (e.g. a standalone
-  // "onboardingComplete" boolean instead of displayName), swap the
-  // condition below to match — I don't have that popup's component in
-  // front of me to confirm which it is.
+      // Pop a toast for anything new (and still unread) since the last
+      // refresh. Skipped on the very first load so we don't toast every
+      // historical notification at once when the app opens.
+      if (hasLoadedOnceRef.current) {
+        const fresh = mapped.filter(
+          (n) => !seenIdsRef.current.has(n.id) && !n.read,
+        );
+        if (fresh.length) {
+          setActiveToasts((prev) => [
+            ...prev,
+            ...fresh.map((n) => ({
+              id: n.id,
+              title: n.title,
+              message: n.message,
+              time: "Just now",
+              type: n.type,
+            })),
+          ]);
+        }
+      }
+      mapped.forEach((n) => seenIdsRef.current.add(n.id));
+      hasLoadedOnceRef.current = true;
+
+      setNotifications(mapped);
+    } catch {
+      // Best-effort — leave whatever was already loaded in place rather than
+      // clearing the list on a transient network error.
+    }
+  }, [identity]);
+
   useEffect(() => {
-    if (!isAuthenticated || !user?.displayName) {
-      // Not logged in, or logged in but still sitting at the name popup —
-      // reset so the toast is ready to fire once onboarding actually finishes.
-      hasShownWelcomeThisSessionRef.current = false;
+    if (!isAuthenticated || !identity) {
+      setNotifications([]);
+      seenIdsRef.current = new Set();
+      hasLoadedOnceRef.current = false;
       return;
     }
 
-    if (hasShownWelcomeThisSessionRef.current) return;
-    hasShownWelcomeThisSessionRef.current = true;
+    refresh();
+    const interval = setInterval(refresh, POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, identity, refresh]);
 
-    const unread = INITIAL_NOTIFICATIONS.filter((n) => !n.read).length;
-    if (unread > 0) {
-      const welcomeToast: ToastAlert = {
-        id: "welcome-popup",
-        title: "Unread QMS Notifications",
-        message: `You have ${unread} unread quality alerts waiting for your review in the notification center.`,
-        time: "Just now",
-        type: "welcome",
-      };
-
-      // Slight delay for smooth entrance after the name popup closes
-      const timer = setTimeout(() => {
-        setActiveToasts((prev) => [...prev, welcomeToast]);
-      }, 1000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [isAuthenticated, user?.displayName]);
-
-  // 2. Function to add new live notification (updates list, count badge, AND pops up bottom-right toast)
+  // Ephemeral, local-only alert — pops a toast immediately without waiting
+  // for the next poll. Not persisted, not visible to any other user/session.
   const triggerNewNotification = (
     title: string,
     message: string,
-    type: "critical" | "warning" | "info" | "success"
+    type: QMSNotificationType,
   ) => {
-    const newId = `notif-${Date.now()}`;
-    const newNotif: QMSNotification = {
-      id: newId,
-      title,
-      message,
-      time: "Just now",
-      type,
-      read: false,
-    };
-
-    // Push to top of notifications list -> immediately increments top badge count!
-    setNotifications((prev) => [newNotif, ...prev]);
-
-    // Trigger bottom-right content toast
     const newToast: ToastAlert = {
-      id: newId,
+      id: `local-${Date.now()}`,
       title,
       message,
       time: "Just now",
       type,
     };
-
     setActiveToasts((prev) => [...prev, newToast]);
   };
 
@@ -164,10 +179,14 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
   const markAllAsRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    if (identity) apiMarkAllNotificationsRead(identity).catch(() => {});
   };
 
   const markAsRead = (id: string) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+    );
+    if (identity) apiMarkNotificationRead(id, identity).catch(() => {});
   };
 
   const getIcon = (type: string) => {

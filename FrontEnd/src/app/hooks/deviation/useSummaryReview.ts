@@ -49,7 +49,7 @@ export function useSummaryReview() {
   // Step 2 — the dialog confirmed with a validated (capitalised) approver
   // name; now actually persist the record with submitted_to set and
   // approval_status defaulting to 'pending' server-side.
-  const handleConfirmSubmit = async (submittedTo: string) => {
+  const handleConfirmSubmit = async (submittedTo: string, dueDate: string) => {
     if (!user?.username) {
       setSaveError("You must be logged in to save a record.");
       return;
@@ -69,6 +69,7 @@ export function useSummaryReview() {
         halted_at: result!.haltedAt,
         saved_by: user.displayName || user.username,
         submitted_to: submittedTo,
+        due_date: dueDate,
         provenance: provenance ?? null,
       });
 

@@ -1,13 +1,8 @@
 import {
-  Bell,
   User,
   ArrowLeft,
   Sun,
   Moon,
-  AlertTriangle,
-  CheckCircle,
-  FileText,
-  ShieldAlert,
   ChevronDown,
   LogOut,
   UserCircle2,
@@ -22,11 +17,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { Badge } from "../ui/badge";
 import { useLocation, useNavigate } from "react-router";
 import type { Location } from "react-router";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
+import { NotificationDropdown } from "./NotificationDropdown";
 
 type PageMetaEntry = { title: string; subtitle: string; back?: string };
 
@@ -126,65 +121,6 @@ const PAGE_META: Record<string, PageMetaEntry> = {
   },
 };
 
-// Realistic domain-specific QMS notifications
-const QMS_NOTIFICATIONS = [
-  {
-    id: "notif-1",
-    domain: "Deviation",
-    title: "Critical Deviation Triggered",
-    message: "DEV-2026-089 (Cold Storage B). AI confidence dropped below 70%. Human review required.",
-    time: "10 mins ago",
-    unread: true,
-    icon: AlertTriangle,
-    iconColor: "text-red-500",
-    border: "border-l-red-500",
-  },
-  {
-    id: "notif-2",
-    domain: "CAPA",
-    title: "CAPA Due Date Approaching",
-    message: "CAPA-2026-042 effectiveness check is due in 48 hours. QA sign-off pending.",
-    time: "1 hour ago",
-    unread: true,
-    icon: CheckCircle,
-    iconColor: "text-yellow-500",
-    border: "border-l-yellow-500",
-  },
-  {
-    id: "notif-3",
-    domain: "Change Control",
-    title: "Impact Assessment Completed",
-    message: "CC-2026-015 evaluated by AI with Minor severity across all risk parameters.",
-    time: "3 hours ago",
-    unread: true,
-    icon: FileText,
-    iconColor: "text-blue-500",
-    border: "border-l-blue-500",
-  },
-  {
-    id: "notif-4",
-    domain: "System",
-    title: "Audit Trail Exported",
-    message: "Global QMS activity logs for Q2 were successfully archived by system admin.",
-    time: "Yesterday",
-    unread: false,
-    icon: ShieldAlert,
-    iconColor: "text-purple-500",
-    border: "border-l-purple-500",
-  },
-  {
-    id: "notif-5",
-    domain: "Deviation",
-    title: "Root Cause Overridden",
-    message: "DEV-2026-071 root cause analysis was manually overridden. Audit log updated.",
-    time: "2 days ago",
-    unread: false,
-    icon: AlertTriangle,
-    iconColor: "text-orange-500",
-    border: "border-l-orange-500",
-  },
-];
-
 export function Header() {
   const location = useLocation() as Location<unknown>;
   const navigate = useNavigate();
@@ -210,8 +146,6 @@ export function Header() {
     if (!meta?.back) return;
     navigate(meta.back, { state: location.state });
   };
-
-  const unreadCount = QMS_NOTIFICATIONS.filter((n) => n.unread).length;
 
   return (
     <>
@@ -248,73 +182,9 @@ export function Header() {
 
         {/* Right: bell + user dropdowns */}
         <div className="flex items-center gap-3">
-          {/* 1. Notifications Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-6 w-6 text-muted-foreground hover:text-foreground transition-colors" />                {unreadCount > 0 && (
-                  <Badge
-                    className="
-                  absolute -top-0.5 -right-0.5
-                  h-4 w-4
-                  p-0
-                  rounded-full
-                  flex items-center justify-center
-                  bg-red-600 text-white
-                  text-[9px] font-bold
-                  leading-none
-                  border-0
-                "
-                  >
-                    {unreadCount}
-                  </Badge>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80 sm:w-96 p-0 overflow-hidden shadow-lg">
-              <div className="flex items-center justify-between px-4 py-3 bg-muted/50 border-b border-border">
-                <span className="font-semibold text-sm text-foreground">QMS Notifications</span>
-                <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 text-xs">
-                  {unreadCount} new
-                </Badge>
-              </div>
-              <div className="max-h-80 overflow-y-auto divide-y divide-border/60">
-                {QMS_NOTIFICATIONS.map((notif) => {
-                  const IconComponent = notif.icon;
-                  return (
-                    <DropdownMenuItem
-                      key={notif.id}
-                      className={`flex items-start gap-3 p-3.5 cursor-pointer rounded-none border-l-4 ${notif.border} ${notif.unread ? "bg-blue-50/40 dark:bg-blue-950/10 font-medium" : ""
-                        }`}
-                    >
-                      <IconComponent className={`h-4 w-4 mt-0.5 shrink-0 ${notif.iconColor}`} />
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <p className={`text-xs ${notif.unread ? "text-foreground font-bold" : "text-muted-foreground"}`}>
-                            {notif.title}
-                          </p>
-                          <span className="text-[10px] text-muted-foreground shrink-0 ml-2">
-                            {notif.time}
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-                          {notif.message}
-                        </p>
-                      </div>
-                      {notif.unread && (
-                        <span className="h-2 w-2 rounded-full bg-blue-600 shrink-0 mt-1" />
-                      )}
-                    </DropdownMenuItem>
-                  );
-                })}
-              </div>
-              <div className="p-2 bg-muted/30 border-t border-border text-center">
-                <span className="text-[11px] text-muted-foreground">
-                  Showing real-time domain events from global audit logs
-                </span>
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* 1. Notifications Dropdown — backed by the real /api/notifications
+               feed (case submissions, due dates), not mock data. */}
+          <NotificationDropdown />
           <div className="mx-0 h-8 w-px bg-border" />
 
           {/* 2. User Profile Dropdown */}

@@ -74,6 +74,7 @@ export interface CombinedCaseRow {
   rejected_at: unknown;
   approved_by: unknown;
   approved_at: unknown;
+  due_date: unknown;
   classification: unknown;
   status: unknown;
   created_at: string;
@@ -166,7 +167,7 @@ export async function getCombinedCases(
   const dataResult = await pool.query(
     `SELECT id, query, saved_by, submitted_to, approval_status,
             rejection_reason, rejected_by, rejected_at, approved_by, approved_at,
-            classification, status, created_at, 'Deviation' AS case_type
+            due_date, classification, status, created_at, 'Deviation' AS case_type
      FROM deviation_cases
      ${dataWhereA}
 
@@ -174,7 +175,7 @@ export async function getCombinedCases(
 
      SELECT id, query, saved_by, submitted_to, approval_status,
             rejection_reason, rejected_by, rejected_at, approved_by, approved_at,
-            classification, status, created_at, 'Change Control' AS case_type
+            due_date, classification, status, created_at, 'Change Control' AS case_type
      FROM change_control_cases
      ${dataWhereB}
 
@@ -241,7 +242,7 @@ export async function getDeviationCaseById(
   const result = await pool.query(
     `SELECT id, query, saved_by, submitted_to, approval_status,
             rejection_reason, rejected_by, rejected_at, approved_by, approved_at,
-            classification, impact_assessment, rca, capa, status, halted_at, created_at
+            due_date, classification, impact_assessment, rca, capa, status, halted_at, created_at
      FROM deviation_cases
      WHERE id = $1`,
     [id],
@@ -255,7 +256,7 @@ export async function getChangeControlCaseById(
   const result = await pool.query(
     `SELECT id, query, saved_by, submitted_to, approval_status,
             rejection_reason, rejected_by, rejected_at, approved_by, approved_at,
-            classification, change_impact_assessment, risk_criticality, validation_testing,
+            due_date, classification, change_impact_assessment, risk_criticality, validation_testing,
             implementation_control, final_summary, status, halted_at, created_at
      FROM change_control_cases
      WHERE id = $1`,
@@ -278,6 +279,7 @@ export interface SaveDeviationCaseInput {
   halted_at: unknown;
   saved_by: unknown;
   submitted_to?: unknown; // approver name captured on the Summary submit popup
+  due_date?: unknown; // ISO date string; defaults to +7 days client-side, editable
 }
 
 export async function saveDeviationCase(
@@ -292,8 +294,8 @@ export async function saveDeviationCase(
   const result = await pool.query(
     `INSERT INTO deviation_cases
       (query, classification, impact_assessment, rca, capa, status, halted_at,
-       saved_by, submitted_to, approval_status, metadata)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending', $10)
+       saved_by, submitted_to, due_date, approval_status, metadata)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending', $11)
      RETURNING id`,
     [
       data.query,
@@ -305,6 +307,7 @@ export async function saveDeviationCase(
       data.halted_at,
       data.saved_by,
       data.submitted_to ?? null,
+      data.due_date ?? null,
       JSON.stringify(metadata),
     ],
   );
@@ -356,7 +359,7 @@ export async function getDeviationCases(
   const dataResult = await pool.query(
     `SELECT
        id, query, saved_by, classification, impact_assessment,
-       rca, capa, status, halted_at, created_at
+       rca, capa, status, halted_at, due_date, created_at
      FROM deviation_cases
      ${whereSql}
      ORDER BY ${sortColumn} ${sortDir}
@@ -393,7 +396,7 @@ export async function getAllDeviationCases(): Promise<unknown[]> {
   const result = await pool.query(
     `SELECT
        id, query, saved_by, classification, impact_assessment,
-       rca, capa, status, halted_at, created_at
+       rca, capa, status, halted_at, due_date, created_at
      FROM deviation_cases
      ORDER BY created_at DESC`,
   );
@@ -416,6 +419,7 @@ export interface SaveChangeControlCaseInput {
   halted_at: unknown;
   saved_by: unknown;
   submitted_to?: unknown; // approver name captured on the Summary submit popup
+  due_date?: unknown; // ISO date string; defaults to +7 days client-side, editable
 }
 
 export async function saveChangeControlCase(
@@ -429,8 +433,8 @@ export async function saveChangeControlCase(
     `INSERT INTO change_control_cases
       (query, classification, change_impact_assessment, risk_criticality,
        validation_testing, implementation_control, final_summary,
-       status, halted_at, saved_by, submitted_to, approval_status, metadata)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending', $12)
+       status, halted_at, saved_by, submitted_to, due_date, approval_status, metadata)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'pending', $13)
      RETURNING id`,
     [
       data.query,
@@ -444,6 +448,7 @@ export async function saveChangeControlCase(
       data.halted_at,
       data.saved_by,
       data.submitted_to ?? null,
+      data.due_date ?? null,
       JSON.stringify(metadata),
     ],
   );
@@ -497,7 +502,7 @@ export async function getChangeControlCases(
     `SELECT
        id, query, saved_by, classification, change_impact_assessment,
        risk_criticality, validation_testing, implementation_control,
-       final_summary, status, halted_at, created_at
+       final_summary, status, halted_at, due_date, created_at
      FROM change_control_cases
      ${whereSql}
      ORDER BY ${sortColumn} ${sortDir}
@@ -534,7 +539,7 @@ export async function getAllChangeControlCases(): Promise<unknown[]> {
     `SELECT
        id, query, saved_by, classification, change_impact_assessment,
        risk_criticality, validation_testing, implementation_control,
-       final_summary, status, halted_at, created_at
+       final_summary, status, halted_at, due_date, created_at
      FROM change_control_cases
      ORDER BY created_at DESC`,
   );

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { UserCheck, Loader2, AlertCircle } from "lucide-react";
+import { UserCheck, Loader2, AlertCircle, CalendarIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -17,7 +17,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { Calendar } from "../ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { fetchApprovers } from "../../services/approvalsApi";
+import { getDefaultDueDate, toDateKey, formatDueDate } from "../../utils/dueDate";
 
 /**
  * Shown at the very end of the Summary page (both Deviation and Change
@@ -40,8 +43,8 @@ export function SubmitToApproverDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Called with the selected approver name. */
-  onConfirm: (submittedTo: string) => void;
+  /** Called with the selected approver name and the chosen due date ("YYYY-MM-DD"). */
+  onConfirm: (submittedTo: string, dueDate: string) => void;
   /** The logged-in user's name (the "submitted by"), used to block self-approval. */
   submittedBy?: string;
   isSubmitting?: boolean;
@@ -52,12 +55,17 @@ export function SubmitToApproverDialog({
   const [selected, setSelected] = useState("");
   const [manualName, setManualName] = useState("");
   const [error, setError] = useState("");
+  const [dueDate, setDueDate] = useState<Date>(() => getDefaultDueDate());
+  const [dueDateOpen, setDueDateOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setSelected("");
     setManualName("");
     setError("");
+    // Default due date is always one week out from the moment the dialog is
+    // opened; the user can still pick a different date below.
+    setDueDate(getDefaultDueDate());
     setLoadingApprovers(true);
     setLoadError(false);
     fetchApprovers()
@@ -91,7 +99,11 @@ export function SubmitToApproverDialog({
       setError("You can't submit a case to yourself for approval.");
       return;
     }
-    onConfirm(trimmed);
+    if (!dueDate) {
+      setError("Please choose a due date.");
+      return;
+    }
+    onConfirm(trimmed, toDateKey(dueDate));
   };
 
   return (
@@ -166,6 +178,38 @@ export function SubmitToApproverDialog({
                 Approvers are drawn from people already active in the system.
               </p>
             )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Due Date</Label>
+            <Popover open={dueDateOpen} onOpenChange={setDueDateOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2 font-normal text-foreground"
+                >
+                  <CalendarIcon className="h-4 w-4 text-blue-600" />
+                  {formatDueDate(dueDate)}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dueDate}
+                  defaultMonth={dueDate}
+                  onSelect={(date) => {
+                    if (date) setDueDate(date);
+                    setDueDateOpen(false);
+                    if (error) setError("");
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            <p className="text-xs text-muted-foreground">
+              Defaults to one week from today — pick a different date if this
+              case needs a faster or slower turnaround.
+            </p>
           </div>
         </div>
 

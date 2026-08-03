@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Bell, Check, AlertTriangle, Clock, FileCheck, ShieldAlert } from "lucide-react";
+import { Bell, Check, AlertTriangle, Clock, FileCheck, ShieldAlert, CalendarClock } from "lucide-react";
 import { useNotifications } from "../../context/NotificationContext";
+import { formatDueLabel } from "../../utils/dueDate";
 
 export const NotificationDropdown: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -93,6 +94,12 @@ export const NotificationDropdown: React.FC = () => {
                       <p className="text-xs text-muted-foreground leading-snug line-clamp-2 font-normal">
                         {notif.message}
                       </p>
+                      {notif.dueDate ? (
+                        <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 rounded-full px-2 py-0.5">
+                          <CalendarClock className="h-3 w-3" />
+                          {formatDueLabel(notif.dueDate)}
+                        </span>
+                      ) : null}
                     </div>
                     {!notif.read && (
                       <span className="h-2 w-2 rounded-full bg-blue-600 shrink-0 mt-1.5" />

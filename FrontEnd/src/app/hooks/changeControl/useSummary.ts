@@ -50,7 +50,7 @@ export function useSummary() {
   };
 
   // Step 2 — dialog confirmed with a validated (capitalised) approver name.
-  const handleConfirmSubmit = async (submittedTo: string) => {
+  const handleConfirmSubmit = async (submittedTo: string, dueDate: string) => {
     if (!user?.username) {
       setSaveError("You must be logged in to save a record.");
       return;
@@ -81,6 +81,7 @@ export function useSummary() {
         halted_at: result.haltedAt,
         saved_by: user.displayName || user.username,
         submitted_to: submittedTo,
+        due_date: dueDate,
         provenance: provenance ?? null,
       });
 

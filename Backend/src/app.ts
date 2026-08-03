@@ -9,6 +9,7 @@ import authRoutes from "./routes/auth.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import auditRoutes from "./routes/audit.routes.js";
 import llmRetryRoutes from "./routes/llmRetry.routes.js";
+import notificationsRoutes from "./routes/notifications.routes.js";
 
 export const app = express();
 
@@ -22,6 +23,7 @@ app.use("/api", casesRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/audit", auditRoutes);
 app.use("/api/llm-retry-queue", llmRetryRoutes);
+app.use("/api", notificationsRoutes);
 
 app.get("/healthz", (_req, res) => {
   res.json({ status: "ok", ready: getReady() });

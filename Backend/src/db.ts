@@ -22,7 +22,8 @@ const APPROVAL_WORKFLOW_COLUMNS = `
   ADD COLUMN IF NOT EXISTS rejected_at TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS approved_by TEXT,
   ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ,
-  ADD COLUMN IF NOT EXISTS review_started_at TIMESTAMPTZ
+  ADD COLUMN IF NOT EXISTS review_started_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS due_date TIMESTAMPTZ
 `;
 
 export async function runMigrations(): Promise<void> {
@@ -30,6 +31,30 @@ export async function runMigrations(): Promise<void> {
   await pool.query(
     `ALTER TABLE change_control_cases ${APPROVAL_WORKFLOW_COLUMNS}`,
   );
+
+  // Notifications — surfaces approver-facing alerts (currently: "a case was
+  // submitted to you, due <when>") server-side so they persist per recipient
+  // instead of living only in the submitter's own browser tab. Keyed on the
+  // recipient's plain display-name string, same as submitted_to/saved_by
+  // elsewhere in this schema, since there's no real users table to FK against.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id SERIAL PRIMARY KEY,
+      recipient TEXT NOT NULL,
+      title TEXT NOT NULL,
+      message TEXT NOT NULL,
+      type TEXT NOT NULL DEFAULT 'info',
+      entity_type TEXT,
+      entity_id TEXT,
+      due_date TIMESTAMPTZ,
+      is_read BOOLEAN NOT NULL DEFAULT false,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS notifications_recipient_idx
+      ON notifications (LOWER(recipient), created_at DESC)
+  `);
 
   // The audit_log.action column has a CHECK constraint written against the
   // original, smaller set of action values. The approval workflow adds new

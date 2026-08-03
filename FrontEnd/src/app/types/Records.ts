@@ -55,6 +55,9 @@ export interface DeviationCase {
   rejected_at?: string | null;
   approved_by?: string | null;
   approved_at?: string | null;
+  /** "YYYY-MM-DD" (or full ISO timestamp) — defaults to one week from
+   *  submission, editable on the Submit-for-Approval popup. */
+  due_date?: string | null;
   classification: ClassificationParsed | null;
   impact_assessment: ImpactAssessmentParsed | null;
   rca: RCAResult | null;
@@ -132,6 +135,9 @@ export interface ChangeControlCase {
   rejected_at?: string | null;
   approved_by?: string | null;
   approved_at?: string | null;
+  /** "YYYY-MM-DD" (or full ISO timestamp) — defaults to one week from
+   *  submission, editable on the Submit-for-Approval popup. */
+  due_date?: string | null;
   classification: ClassificationParsed | null;
   change_impact_assessment: ChangeImpactAssessmentParsed | null;
   risk_criticality: RiskCriticalityParsed | null;

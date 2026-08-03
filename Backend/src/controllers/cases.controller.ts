@@ -25,8 +25,98 @@ import {
   recordAuditEntries,
   recordAuditEntry,
 } from "../repository/auditRepository.js";
+import { createNotification } from "../repository/notificationRepository.js";
 import { buildAuditEntriesForSave } from "../utils/provenanceDiff.js";
 import { textSimilarity } from "../utils/textSimilarity.js";
+import { formatDueLabel } from "../utils/dueDate.js";
+
+// Fire-and-forget a "submitted for approval" notification to whoever the
+// case was sent to. Best-effort: a notification failure should never fail
+// the underlying save/resubmit request.
+async function notifyApprover(params: {
+  submittedTo: unknown;
+  entityType: "Deviation" | "Change Control";
+  entityId: string;
+  dueDate: unknown;
+  submittedBy: unknown;
+  /** True when this is a corrected case being sent back after a rejection,
+   *  rather than the first time it's been submitted. */
+  isResubmission?: boolean;
+}): Promise<void> {
+  const recipient =
+    typeof params.submittedTo === "string" ? params.submittedTo.trim() : "";
+  if (!recipient) return;
+
+  const dueLabel = formatDueLabel(params.dueDate);
+  const submittedBy =
+    typeof params.submittedBy === "string" && params.submittedBy.trim()
+      ? params.submittedBy.trim()
+      : "Someone";
+  const verb = params.isResubmission ? "resubmitted" : "submitted";
+
+  try {
+    await createNotification({
+      recipient,
+      title: params.isResubmission
+        ? `${params.entityType} case resubmitted for approval`
+        : `New ${params.entityType} case submitted for approval`,
+      message: dueLabel
+        ? `${submittedBy} ${verb} a ${params.entityType} case for your approval — ${dueLabel}.`
+        : `${submittedBy} ${verb} a ${params.entityType} case for your approval.`,
+      type: "info",
+      entity_type: params.entityType,
+      entity_id: params.entityId,
+      due_date: params.dueDate ?? null,
+    });
+  } catch (err) {
+    console.error("Failed to create approver notification:", err);
+  }
+}
+
+// Fire-and-forget the mirror-image notification: tell the original
+// submitter what happened once their case is approved or rejected. Reject
+// messages fold the approver's reason in directly, since that's the closest
+// thing this app has to a "comment" on the case.
+async function notifySubmitter(params: {
+  savedBy: unknown;
+  entityType: "Deviation" | "Change Control";
+  entityId: string;
+  action: "approved" | "rejected";
+  actor: unknown;
+  reason?: string | null;
+}): Promise<void> {
+  const recipient =
+    typeof params.savedBy === "string" ? params.savedBy.trim() : "";
+  if (!recipient) return;
+
+  const actor =
+    typeof params.actor === "string" && params.actor.trim()
+      ? params.actor.trim()
+      : "Someone";
+
+  const isApproved = params.action === "approved";
+  const title = isApproved
+    ? `${params.entityType} case approved`
+    : `${params.entityType} case rejected`;
+  const message = isApproved
+    ? `${actor} approved your ${params.entityType} case.`
+    : params.reason
+      ? `${actor} rejected your ${params.entityType} case: "${params.reason}"`
+      : `${actor} rejected your ${params.entityType} case.`;
+
+  try {
+    await createNotification({
+      recipient,
+      title,
+      message,
+      type: isApproved ? "success" : "warning",
+      entity_type: params.entityType,
+      entity_id: params.entityId,
+    });
+  } catch (err) {
+    console.error("Failed to create submitter notification:", err);
+  }
+}
 
 function parseListParams(req: Request): ListCasesParams {
   const q = req.query;
@@ -64,6 +154,14 @@ export async function saveCase(req: Request, res: Response): Promise<void> {
   });
   await recordAuditEntries(auditEntries);
 
+  await notifyApprover({
+    submittedTo: body.submitted_to,
+    entityType: "Deviation",
+    entityId: String(id),
+    dueDate: body.due_date,
+    submittedBy: body.saved_by,
+  });
+
   res.json({ id });
 }
 
@@ -89,6 +187,14 @@ export async function saveChangeControlCaseHandler(
     provenance: body.provenance,
   });
   await recordAuditEntries(auditEntries);
+
+  await notifyApprover({
+    submittedTo: body.submitted_to,
+    entityType: "Change Control",
+    entityId: String(id),
+    dueDate: body.due_date,
+    submittedBy: body.saved_by,
+  });
 
   res.json({ id });
 }
@@ -262,6 +368,14 @@ export async function approveCase(req: Request, res: Response): Promise<void> {
     reason: "Case approved",
   });
 
+  await notifySubmitter({
+    savedBy: existing.saved_by,
+    entityType: isChangeControl ? "Change Control" : "Deviation",
+    entityId: id,
+    action: "approved",
+    actor: approvedBy,
+  });
+
   res.json({ success: true, id, approval_status: "approved" });
 }
 
@@ -338,6 +452,15 @@ export async function rejectCase(req: Request, res: Response): Promise<void> {
     new_value: "rejected",
     record_snapshot: updatedRow,
     reason: reason || "Case rejected — sent back to submitter for corrections",
+  });
+
+  await notifySubmitter({
+    savedBy: existing.saved_by,
+    entityType: isChangeControl ? "Change Control" : "Deviation",
+    entityId: id,
+    action: "rejected",
+    actor: rejectedBy,
+    reason,
   });
 
   res.json({ success: true, id, approval_status: "rejected" });
@@ -466,6 +589,15 @@ export async function resubmitCase(
     new_value: "pending",
     record_snapshot: updatedRow,
     reason: "Resubmitted after rejection",
+  });
+
+  await notifyApprover({
+    submittedTo: updatedRow.submitted_to,
+    entityType: isChangeControl ? "Change Control" : "Deviation",
+    entityId: id,
+    dueDate: updatedRow.due_date,
+    submittedBy: resubmittedBy,
+    isResubmission: true,
   });
 
   res.json({ success: true, id, approval_status: "pending" });

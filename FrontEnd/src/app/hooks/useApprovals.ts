@@ -19,6 +19,7 @@ interface ApprovalRow {
   query: string;
   classification: "Deviation" | "Change Control";
   savedOn: string;
+  dueDate: string | null;
   approvalStatus: ApprovalStatus;
   rejectionReason: string | null;
   rejectedBy: string | null;
@@ -35,6 +36,7 @@ function toApprovalRow(row: any): ApprovalRow {
     query: row.query || "",
     classification: row.case_type,
     savedOn: row.created_at,
+    dueDate: row.due_date ?? null,
     approvalStatus: (row.approval_status as ApprovalStatus) || "pending",
     rejectionReason: row.rejection_reason ?? null,
     rejectedBy: row.rejected_by ?? null,

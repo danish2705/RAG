@@ -16,6 +16,7 @@ import {
   TooltipTrigger,
 } from "../ui/tooltip";
 import { formatTimestamp } from "../../utils/timezone";
+import { formatDueDate } from "../../utils/dueDate";
 import { getQueryPreview, extractDescription } from "../../utils/queryPreview";
 import { ApprovalStatusBadge } from "./ApprovalEditModal";
 
@@ -71,6 +72,7 @@ export const ApprovalsTable: React.FC<ApprovalsTableProps> = ({
               <TableHead className="w-40 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Submitted By</TableHead>
               <TableHead className="w-40 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Submitted To</TableHead>
               <TableHead className="w-52 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Timestamp</TableHead>
+              <TableHead className="w-36 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Due Date</TableHead>
               <TableHead className="w-32 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Status</TableHead>
               <TableHead className="w-48 py-3 px-4 text-center text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Action
@@ -81,7 +83,7 @@ export const ApprovalsTable: React.FC<ApprovalsTableProps> = ({
             {rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={8}
                   className="h-32 text-center text-muted-foreground text-sm"
                 >
                   No pending cases for approval.
@@ -126,6 +128,9 @@ export const ApprovalsTable: React.FC<ApprovalsTableProps> = ({
                     </TableCell>
                     <TableCell className="py-3 px-4 text-xs font-mono text-gray-900 dark:text-white whitespace-nowrap text-center">
                       {formatTimestamp(row.savedOn, { dateStyle: "numeric" })}
+                    </TableCell>
+                    <TableCell className="py-3 px-4 text-xs font-mono text-gray-900 dark:text-white whitespace-nowrap text-center">
+                      {formatDueDate(row.dueDate)}
                     </TableCell>
 
                     <TableCell className="py-3 px-4 text-center">

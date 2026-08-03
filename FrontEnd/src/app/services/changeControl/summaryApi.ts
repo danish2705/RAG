@@ -13,6 +13,8 @@ export interface SaveChangeControlPayload {
   saved_by: string;
   /** Approver name captured on the Summary submit popup (first letter capitalised). */
   submitted_to: string;
+  /** "YYYY-MM-DD" — defaults to one week from submission, editable on the popup. */
+  due_date: string;
   provenance: any;
 }
 

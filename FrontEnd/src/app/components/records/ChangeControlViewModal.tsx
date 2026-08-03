@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
-import { CloudUpload, Database, Download, X } from "lucide-react";
+import { CloudUpload, Database, X } from "lucide-react";
 import type { ChangeControlCase } from "../../types/Records";
 import { CHANGE_IMPACT_FIELD_LABELS } from "../../mocks/mockImpactAssessment";
 import { VALIDATION_TESTING_FIELD_LABELS } from "../../mocks/mockValidationTesting";
@@ -18,8 +18,7 @@ import {
 import {
   BulletList,
   ConfidenceBar,
-  buildFullSummaryText,
-  downloadTextFile,
+  DownloadSummaryMenu,
 } from "./RecordsShared";
 import { formatTimestamp } from "../../utils/timezone";
 
@@ -36,14 +35,12 @@ export function ChangeControlViewModal({
   const validation = record.validation_testing;
   const implementation = record.implementation_control;
 
-  const handleDownloadSummary = () => {
-    downloadTextFile(
-      `QMS_Summary_${record.id}.txt`,
-      buildFullSummaryText({ ...record, case_type: "Change Control" }),
-    );
-  };
   const handleUploadToVeeva = () => {
-    window.open("https://login.veevavault.com/", "_blank", "noopener,noreferrer");
+    window.open(
+      "https://login.veevavault.com/",
+      "_blank",
+      "noopener,noreferrer",
+    );
   };
   return (
     <Dialog open onOpenChange={onClose}>
@@ -526,35 +523,11 @@ export function ChangeControlViewModal({
 
           {/* Right Side */}
           <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownloadSummary}
-              className="
-    h-9
-    px-5
-    rounded-md
-    border
-    border-slate-300
-    bg-slate-50
-    text-slate-700
-    text-xs
-    font-medium
-    shadow-sm
-    hover:bg-slate-100
-    hover:border-slate-400
-    hover:text-slate-900
-    hover:shadow-md
-    transition-all
-    duration-200
-    flex
-    items-center
-    gap-1.5
-  "
-            >
-              <Download className="h-4 w-4 text-sky-600" />
-              <span>Download Summary</span>
-            </Button>
+            <DownloadSummaryMenu
+              record={{ ...record, case_type: "Change Control" }}
+              caseType="Change Control"
+              fileBaseName={`QMS_Summary_${record.id}`}
+            />
 
             <Button
               size="sm"

@@ -2,16 +2,9 @@ import React from "react";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import {
-  Download,
-  X,
-  FileText,
-  User,
-  Calendar,
-  Tag,
-  ShieldCheck,
-} from "lucide-react";
+import { X, FileText, User, Calendar, Tag, ShieldCheck } from "lucide-react";
 import { formatTimestamp } from "../../utils/timezone";
+import { DownloadSummaryMenu } from "./RecordsShared";
 
 interface CaseViewModalProps {
   record: any | null;
@@ -23,39 +16,6 @@ export const CaseViewModal: React.FC<CaseViewModalProps> = ({
   onClose,
 }) => {
   if (!record) return null;
-
-  // Helper to generate and download a text summary report
-  const handleDownloadSummary = () => {
-    const reportContent = [
-      `====================================================`,
-      `           QUALITY MANAGEMENT SYSTEM REPORT          `,
-      `====================================================`,
-      `Record ID:       ${record.uiId || record.id || "N/A"}`,
-      `Submitted By:    ${record.submittedBy || record.user || "N/A"}`,
-      `Classification:  ${record.classification || "N/A"}`,
-      `Saved Timestamp: ${formatTimestamp(record.savedOn || record.timestamp)}`,
-      `----------------------------------------------------`,
-      `EVENT QUERY / DESCRIPTION:`,
-      `${record.query || record.description || "No description provided."}`,
-      `----------------------------------------------------`,
-      `AI RATIONALE / SUMMARY:`,
-      `${Array.isArray(record.rationale) ? record.rationale.join("\n") : record.rationale || record.summary || "N/A"}`,
-      `====================================================`,
-      `Report Generated: ${formatTimestamp(new Date())}`,
-    ].join("\n");
-
-    const blob = new Blob([reportContent], {
-      type: "text/plain;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `QMS_Summary_${record.uiId || "Record"}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
 
   const getBadgeColor = (type: string) => {
     if (type === "Deviation")
@@ -69,7 +29,6 @@ export const CaseViewModal: React.FC<CaseViewModalProps> = ({
     <Dialog open={!!record} onOpenChange={(open) => !open && onClose()}>
       {/* Modal Container */}
       <DialogContent className="!max-w-none sm:!max-w-none w-[70vw] max-h-[90vh] p-0 overflow-hidden flex flex-col bg-card shadow-2xl rounded-xl">
-        
         {/* Sticky Fixed Header with z-50 to ensure it always stays on top during scroll */}
         <div className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 bg-card/95 backdrop-blur-md border-b border-border shrink-0 shadow-sm">
           <div className="flex items-center gap-3 min-w-0 pr-4">
@@ -78,7 +37,9 @@ export const CaseViewModal: React.FC<CaseViewModalProps> = ({
             </div>
             <div className="min-w-0">
               <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2 truncate">
-                <span className="truncate">{record.uiId || record.id || "Case Record Details"}</span>
+                <span className="truncate">
+                  {record.uiId || record.id || "Case Record Details"}
+                </span>
                 <Badge
                   className={`text-xs font-semibold px-2 py-0.5 shrink-0 ${getBadgeColor(record.classification)}`}
                 >
@@ -93,15 +54,12 @@ export const CaseViewModal: React.FC<CaseViewModalProps> = ({
 
           {/* Right-Aligned Sticky Action Buttons with increased gap-4 and margins */}
           <div className="flex items-center gap-4 shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownloadSummary}
-              className="bg-background hover:bg-muted font-medium text-xs h-9 px-3.5 border-border shadow-sm flex items-center gap-1.5 mr-1"
-            >
-              <Download className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-              <span>Download Summary</span>
-            </Button>
+            <DownloadSummaryMenu
+              record={record}
+              caseType={record.classification || "Quality Event"}
+              fileBaseName={`QMS_Summary_${record.uiId || record.id || "Record"}`}
+              className="bg-background hover:bg-muted font-medium text-xs h-9 px-3.5 border border-border shadow-sm flex items-center gap-1.5 mr-1"
+            />
 
             {/* Extreme Right Close Button */}
             <Button

@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
-import { Sparkles, Database, Download, X, CloudUpload } from "lucide-react";
+import { Sparkles, Database, X, CloudUpload } from "lucide-react";
 import type { DeviationCase } from "../../types/Records";
 import { PARAMETER_LABELS } from "../../mocks/mockImpactAssessment";
 import {
@@ -12,8 +12,7 @@ import {
 import {
   BulletList,
   ConfidenceBar,
-  buildFullSummaryText,
-  downloadTextFile,
+  DownloadSummaryMenu,
 } from "./RecordsShared";
 import { formatTimestamp } from "../../utils/timezone";
 
@@ -31,21 +30,19 @@ export function DeviationViewModal({
 
   const impactEntries = imp
     ? Object.entries(imp.impact_assessment).map(([key, val]) => ({
-      key,
-      category: PARAMETER_LABELS[key] ?? key,
-      severity: val.severity,
-      description: val.rationale,
-    }))
+        key,
+        category: PARAMETER_LABELS[key] ?? key,
+        severity: val.severity,
+        description: val.rationale,
+      }))
     : [];
 
-  const handleDownloadSummary = () => {
-    downloadTextFile(
-      `QMS_Summary_${record.id}.txt`,
-      buildFullSummaryText({ ...record, case_type: "Deviation" }),
-    );
-  };
   const handleUploadToVeeva = () => {
-    window.open("https://login.veevavault.com/", "_blank", "noopener,noreferrer");
+    window.open(
+      "https://login.veevavault.com/",
+      "_blank",
+      "noopener,noreferrer",
+    );
   };
 
   return (
@@ -251,10 +248,11 @@ export function DeviationViewModal({
                 </CardHeader>
                 <CardContent>
                   <span
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${capa.capa_required
-                      ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                      : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
-                      }`}
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                      capa.capa_required
+                        ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                        : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
+                    }`}
                   >
                     {capa.capa_required ? "Yes" : "No"}
                   </span>
@@ -340,35 +338,11 @@ export function DeviationViewModal({
 
           {/* Right Side */}
           <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownloadSummary}
-              className="
-    h-9
-    px-5
-    rounded-md
-    border
-    border-slate-300
-    bg-slate-50
-    text-slate-700
-    text-xs
-    font-medium
-    shadow-sm
-    hover:bg-slate-100
-    hover:border-slate-400
-    hover:text-slate-900
-    hover:shadow-md
-    transition-all
-    duration-200
-    flex
-    items-center
-    gap-1.5
-  "
-            >
-              <Download className="h-4 w-4 text-sky-600" />
-              <span>Download Summary</span>
-            </Button>
+            <DownloadSummaryMenu
+              record={{ ...record, case_type: "Deviation" }}
+              caseType="Deviation"
+              fileBaseName={`QMS_Summary_${record.id}`}
+            />
 
             <Button
               size="sm"

@@ -111,17 +111,17 @@ export function Settings() {
       )}
 
       <div
-        className={`h-full p-6 space-y-6 overflow-y-auto transition-[margin] duration-200 ${
+        className={`h-full overflow-y-auto p-6 transition-[margin] duration-200 ${
           chatOpen ? "mr-80" : ""
         }`}
       >
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {/* AI Configuration */}
-          <Card>
-            <CardHeader>
+          <Card className="rounded-2xl border border-border bg-background shadow-sm hover:shadow-md transition-all">
+            <CardHeader className="pb-3">
               <CardTitle>AI Configuration</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-5">
               <div className="flex items-center justify-between">
                 <div>
                   <Label htmlFor="aiEnabled" className="text-base">
@@ -163,13 +163,140 @@ export function Settings() {
                   value={settings.confidenceThreshold}
                   onValueChange={setSelect("confidenceThreshold")}
                 >
-                  <SelectTrigger id="confidenceThreshold">
-                    <SelectValue />
+                  <SelectTrigger
+                    id="confidenceThreshold"
+                    className="
+    h-11
+    rounded-xl
+    border
+    border-slate-200
+    bg-white
+    px-4
+    text-sm
+    font-medium
+    text-slate-700
+
+    shadow-sm
+    transition-all
+    duration-200
+
+    hover:border-blue-300
+    hover:bg-slate-50
+
+    focus:ring-2
+    focus:ring-blue-500/15
+    focus:border-blue-500
+
+    dark:border-slate-700
+    dark:bg-slate-900
+    dark:text-slate-200
+    dark:hover:border-blue-500
+    dark:hover:bg-slate-800
+  "
+                  >
+                    <SelectValue className="text-slate-700 dark:text-slate-200" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="70">70%</SelectItem>
-                    <SelectItem value="80">80%</SelectItem>
-                    <SelectItem value="90">90%</SelectItem>
+                  <SelectContent
+                    className="
+    rounded-xl
+    border
+    border-slate-200
+    bg-white
+    p-2
+
+    shadow-xl
+
+    dark:border-slate-700
+    dark:bg-slate-900
+  "
+                  >
+                    <SelectItem
+                      value="70"
+                      className="
+    rounded-lg
+    px-3
+    py-2
+
+    text-sm
+    font-medium
+
+    cursor-pointer
+
+    transition-all
+
+    hover:bg-blue-50
+    hover:text-blue-700
+
+    focus:bg-blue-50
+    focus:text-blue-700
+
+    dark:hover:bg-slate-800
+    dark:hover:text-blue-400
+
+    dark:focus:bg-slate-800
+    dark:focus:text-blue-400
+  "
+                    >
+                      70%
+                    </SelectItem>
+                    <SelectItem
+                      value="80"
+                      className="
+    rounded-lg
+    px-3
+    py-2
+
+    text-sm
+    font-medium
+
+    cursor-pointer
+
+    transition-all
+
+    hover:bg-blue-50
+    hover:text-blue-700
+
+    focus:bg-blue-50
+    focus:text-blue-700
+
+    dark:hover:bg-slate-800
+    dark:hover:text-blue-400
+
+    dark:focus:bg-slate-800
+    dark:focus:text-blue-400
+  "
+                    >
+                      80%
+                    </SelectItem>
+                    <SelectItem
+                      value="90"
+                      className="
+    rounded-lg
+    px-3
+    py-2
+
+    text-sm
+    font-medium
+
+    cursor-pointer
+
+    transition-all
+
+    hover:bg-blue-50
+    hover:text-blue-700
+
+    focus:bg-blue-50
+    focus:text-blue-700
+
+    dark:hover:bg-slate-800
+    dark:hover:text-blue-400
+
+    dark:focus:bg-slate-800
+    dark:focus:text-blue-400
+  "
+                    >
+                      90%
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
@@ -180,11 +307,11 @@ export function Settings() {
           </Card>
 
           {/* Notification Settings */}
-          <Card>
-            <CardHeader>
+          <Card className="rounded-2xl border border-border bg-background shadow-sm hover:shadow-md transition-all">
+            <CardHeader className="pb-3">
               <CardTitle>Notifications</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-5">
               <div className="flex items-center justify-between">
                 <div>
                   <Label htmlFor="emailNotif" className="text-base">
@@ -236,29 +363,166 @@ export function Settings() {
           </Card>
 
           {/* Workflow Settings */}
-          <Card>
-            <CardHeader>
+          <Card className="rounded-2xl border border-border bg-background shadow-sm hover:shadow-md transition-all">
+            <CardHeader className="pb-3">
               <CardTitle>Workflow Settings</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="defaultSite">Default Site</Label>
                 <Select
                   value={settings.defaultSite}
                   onValueChange={setSelect("defaultSite")}
                 >
-                  <SelectTrigger id="defaultSite">
+                  <SelectTrigger
+                    id="defaultSite"
+                    className="
+    h-11
+    rounded-xl
+    border
+    border-slate-200
+    bg-white
+    px-4
+    text-sm
+    font-medium
+    text-slate-700
+    shadow-sm
+    transition-all
+    duration-200
+
+    hover:border-blue-300
+    hover:bg-slate-50
+
+    focus:ring-2
+    focus:ring-blue-500/15
+    focus:border-blue-500
+
+    dark:border-slate-700
+    dark:bg-slate-900
+    dark:text-slate-200
+    dark:hover:border-blue-500
+    dark:hover:bg-slate-800
+  "
+                  >
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="plant-a">
+                  <SelectContent
+                    className="
+    rounded-xl
+    border
+    border-slate-200
+    bg-white
+    p-2
+    shadow-xl
+
+    dark:border-slate-700
+    dark:bg-slate-900
+  "
+                  >
+                    <SelectItem
+                      value="plant-a"
+                      className="
+    rounded-lg
+    px-3
+    py-2
+    text-sm
+    font-medium
+    cursor-pointer
+    transition-all
+
+    hover:bg-blue-50
+    hover:text-blue-700
+
+    focus:bg-blue-50
+    focus:text-blue-700
+
+    dark:hover:bg-slate-800
+    dark:hover:text-blue-400
+
+    dark:focus:bg-slate-800
+    dark:focus:text-blue-400
+  "
+                    >
                       Manufacturing Plant A
                     </SelectItem>
-                    <SelectItem value="plant-b">
+                    <SelectItem
+                      value="plant-b"
+                      className="
+    rounded-lg
+    px-3
+    py-2
+    text-sm
+    font-medium
+    cursor-pointer
+    transition-all
+
+    hover:bg-blue-50
+    hover:text-blue-700
+
+    focus:bg-blue-50
+    focus:text-blue-700
+
+    dark:hover:bg-slate-800
+    dark:hover:text-blue-400
+
+    dark:focus:bg-slate-800
+    dark:focus:text-blue-400
+  "
+                    >
                       Manufacturing Plant B
                     </SelectItem>
-                    <SelectItem value="lab">Quality Lab</SelectItem>
-                    <SelectItem value="dist">Distribution Center</SelectItem>
+                    <SelectItem
+                      value="lab"
+                      className="
+    rounded-lg
+    px-3
+    py-2
+    text-sm
+    font-medium
+    cursor-pointer
+    transition-all
+
+    hover:bg-blue-50
+    hover:text-blue-700
+
+    focus:bg-blue-50
+    focus:text-blue-700
+
+    dark:hover:bg-slate-800
+    dark:hover:text-blue-400
+
+    dark:focus:bg-slate-800
+    dark:focus:text-blue-400
+  "
+                    >
+                      Quality Lab
+                    </SelectItem>
+                    <SelectItem
+                      value="dist"
+                      className="
+    rounded-lg
+    px-3
+    py-2
+    text-sm
+    font-medium
+    cursor-pointer
+    transition-all
+
+    hover:bg-blue-50
+    hover:text-blue-700
+
+    focus:bg-blue-50
+    focus:text-blue-700
+
+    dark:hover:bg-slate-800
+    dark:hover:text-blue-400
+
+    dark:focus:bg-slate-800
+    dark:focus:text-blue-400
+  "
+                    >
+                      Distribution Center
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -282,11 +546,11 @@ export function Settings() {
           </Card>
 
           {/* Audit & Compliance */}
-          <Card>
-            <CardHeader>
+          <Card className="rounded-2xl border border-border bg-background shadow-sm hover:shadow-md transition-all">
+            <CardHeader className="pb-3">
               <CardTitle>Audit & Compliance</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-5">
               <div className="flex items-center justify-between">
                 <div>
                   <Label htmlFor="detailedAudit" className="text-base">
@@ -309,14 +573,155 @@ export function Settings() {
                   value={settings.dataRetention}
                   onValueChange={setSelect("dataRetention")}
                 >
-                  <SelectTrigger id="dataRetention">
+                  <SelectTrigger
+                    id="dataRetention"
+                    className="
+    h-11
+    rounded-xl
+    border
+    border-slate-200
+    bg-white
+    px-4
+    text-sm
+    font-medium
+    text-slate-700
+    shadow-sm
+    transition-all
+    duration-200
+
+    hover:border-blue-300
+    hover:bg-slate-50
+
+    focus:ring-2
+    focus:ring-blue-500/15
+    focus:border-blue-500
+
+    dark:border-slate-700
+    dark:bg-slate-900
+    dark:text-slate-200
+    dark:hover:border-blue-500
+    dark:hover:bg-slate-800
+  "
+                  >
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="5">5 years</SelectItem>
-                    <SelectItem value="7">7 years (Recommended)</SelectItem>
-                    <SelectItem value="10">10 years</SelectItem>
-                    <SelectItem value="permanent">Permanent</SelectItem>
+                  <SelectContent
+                    className="
+    rounded-xl
+    border
+    border-slate-200
+    bg-white
+    p-2
+    shadow-xl
+
+    dark:border-slate-700
+    dark:bg-slate-900
+  "
+                  >
+                    <SelectItem
+                      value="5"
+                      className="
+    rounded-lg
+    px-3
+    py-2
+    text-sm
+    font-medium
+    cursor-pointer
+    transition-all
+
+    hover:bg-blue-50
+    hover:text-blue-700
+
+    focus:bg-blue-50
+    focus:text-blue-700
+
+    dark:hover:bg-slate-800
+    dark:hover:text-blue-400
+
+    dark:focus:bg-slate-800
+    dark:focus:text-blue-400
+  "
+                    >
+                      5 years
+                    </SelectItem>
+                    <SelectItem
+                      value="7"
+                      className="
+    rounded-lg
+    px-3
+    py-2
+    text-sm
+    font-medium
+    cursor-pointer
+    transition-all
+
+    hover:bg-blue-50
+    hover:text-blue-700
+
+    focus:bg-blue-50
+    focus:text-blue-700
+
+    dark:hover:bg-slate-800
+    dark:hover:text-blue-400
+
+    dark:focus:bg-slate-800
+    dark:focus:text-blue-400
+  "
+                    >
+                      7 years (Recommended)
+                    </SelectItem>
+                    <SelectItem
+                      value="10"
+                      className="
+    rounded-lg
+    px-3
+    py-2
+    text-sm
+    font-medium
+    cursor-pointer
+    transition-all
+
+    hover:bg-blue-50
+    hover:text-blue-700
+
+    focus:bg-blue-50
+    focus:text-blue-700
+
+    dark:hover:bg-slate-800
+    dark:hover:text-blue-400
+
+    dark:focus:bg-slate-800
+    dark:focus:text-blue-400
+  "
+                    >
+                      10 years
+                    </SelectItem>
+                    <SelectItem
+                      value="permanent"
+                      className="
+    rounded-lg
+    px-3
+    py-2
+    text-sm
+    font-medium
+    cursor-pointer
+    transition-all
+
+    hover:bg-blue-50
+    hover:text-blue-700
+
+    focus:bg-blue-50
+    focus:text-blue-700
+
+    dark:hover:bg-slate-800
+    dark:hover:text-blue-400
+
+    dark:focus:bg-slate-800
+    dark:focus:text-blue-400
+  "
+                    >
+                      Permanent
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
@@ -326,14 +731,47 @@ export function Settings() {
             </CardContent>
           </Card>
 
-          {/* Save Button */}
-          <div className="flex justify-end">
-            <Button
-              className="bg-blue-600 hover:bg-blue-700 text-white dark:text-white"
-              onClick={handleSave}
-            >
-              Save Settings
-            </Button>
+          <div
+            className="
+    xl:col-span-2
+    sticky
+    bottom-0
+    z-20
+    mt-8
+    flex
+    justify-end
+    py-2
+  "
+          >
+            {/* Right Side */}
+            <div className="ml-auto flex items-center gap-3">
+              <Button
+                onClick={handleSave}
+                className="
+    h-10
+    rounded-xl
+    bg-gradient-to-r
+    from-blue-600
+    to-blue-500
+    px-7
+    font-semibold
+    text-white
+
+    shadow-md
+    hover:shadow-xl
+
+    hover:from-blue-700
+    hover:to-blue-600
+
+    transition-all
+    duration-200
+
+    active:scale-[0.98]
+  "
+              >
+                Save Changes
+              </Button>
+            </div>
           </div>
         </div>
       </div>

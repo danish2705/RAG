@@ -84,7 +84,7 @@ export function DateRangePicker({
     dark:hover:border-blue-500
     dark:hover:bg-slate-800
     `,
-            className
+            className,
           )}
         >
           <CalendarIcon className="h-4 w-4 text-blue-600" />
@@ -128,50 +128,137 @@ dark:bg-slate-900
             months: "flex gap-6",
             month: "space-y-4",
 
-            caption:
-              "relative flex items-center justify-center h-10 mb-2",
+            caption: "relative flex items-center justify-center h-10 mb-2",
 
             caption_label:
               "text-sm font-semibold text-slate-900 dark:text-slate-100",
 
             nav: "absolute inset-x-0 top-5 flex items-center justify-between",
 
-            nav_button:
-              "h-8 w-8 flex items-center justify-center rounded-lg border bg-white shadow-sm hover:bg-blue-50",
+            nav_button: `
+  h-8
+  w-8
+  flex
+  items-center
+  justify-center
+  rounded-lg
+  border
+  border-slate-200
+  bg-white
+  text-slate-700
+  shadow-sm
+  transition-all
+
+  hover:bg-blue-50
+  hover:text-blue-700
+
+  dark:border-slate-700
+  dark:bg-slate-800
+  dark:text-slate-200
+  dark:hover:bg-slate-700
+  dark:hover:text-blue-400
+  `,
 
             nav_button_previous: "absolute left-2",
 
             nav_button_next: "absolute right-2",
 
-
-            head_cell:
-              "h-10 w-10 text-xs font-semibold uppercase text-slate-500",
+            head_cell: `
+h-10
+w-10
+text-xs
+font-semibold
+uppercase
+text-slate-500
+dark:text-slate-400
+`,
 
             cell: "h-10 w-10 p-0",
 
-            day:
-              "relative flex h-9 w-9 items-center justify-center rounded-full text-sm font-medium transition-all duration-200 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-900/20",
+            day: `
+relative
+flex
+h-9
+w-9
+items-center
+justify-center
+rounded-full
 
-            day_today:
-              "rounded-full border border-blue-400 font-semibold text-blue-700 dark:border-blue-500 dark:text-blue-300",
+text-sm
+font-medium
 
-            day_selected:
-              "rounded-full bg-blue-500 text-white font-semibold hover:bg-blue-500 focus:bg-blue-500",
+text-slate-700
+
+transition-all
+duration-200
+
+hover:bg-blue-50
+hover:text-blue-700
+
+dark:text-slate-200
+dark:hover:bg-slate-700
+dark:hover:text-blue-300
+`,
+
+            day_today: `
+rounded-full
+border
+border-blue-400
+
+font-semibold
+
+text-blue-700
+
+dark:border-blue-500
+dark:bg-blue-900/20
+dark:text-blue-300
+`,
+
+            day_selected: `
+rounded-full
+bg-blue-600
+text-white
+font-semibold
+
+hover:bg-blue-700
+focus:bg-blue-700
+
+dark:bg-blue-500
+dark:hover:bg-blue-400
+`,
 
             day_range_start:
               "rounded-full bg-blue-500 text-white font-semibold",
 
-            day_range_end:
-              "rounded-full bg-blue-500 text-white font-semibold",
+            day_range_end: "rounded-full bg-blue-500 text-white font-semibold",
 
-            day_range_middle:
-              "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200",
+            day_range_middle: `
+bg-blue-100
+text-blue-700
+
+dark:bg-blue-900/40
+dark:text-blue-200
+`,
+            day_disabled: "text-slate-300 dark:text-slate-600",
+            day_outside: "text-slate-300 dark:text-slate-600",
           }}
-
         />
 
-        <div className="flex items-center justify-between border-t bg-slate-50/60 px-4 py-3 dark:bg-slate-900/60">
+        <div
+          className="
+    flex
+    items-center
+    justify-between
+    border-t
+    border-slate-200
+    bg-slate-50/60
+    px-4
+    py-3
 
+    dark:border-slate-700
+    dark:bg-slate-900
+  "
+        >
           <Button
             variant="ghost"
             size="sm"
@@ -207,7 +294,6 @@ dark:bg-slate-900
           >
             Apply
           </Button>
-
         </div>
       </PopoverContent>
     </Popover>

@@ -110,27 +110,43 @@ export function Approvals() {
 
           {/* Search */}
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="
+  absolute
+  left-3
+  top-1/2
+  h-4
+  w-4
+  -translate-y-1/2
+  text-slate-400
+  dark:text-slate-500
+" />
 
             <Input
               placeholder="Search by user or query..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               className="
-                h-10
-                pl-10
-                rounded-lg
-                border-slate-200
-                bg-white
-                text-sm
-                shadow-sm
-                placeholder:text-slate-400
-                transition-all
-                duration-200
-                focus-visible:border-blue-500
-                focus-visible:ring-2
-                focus-visible:ring-blue-500/10
-              "
+  h-10
+  pl-10
+  rounded-lg
+  border
+  border-slate-200
+  bg-white
+  text-sm
+  text-slate-700
+  shadow-sm
+  placeholder:text-slate-400
+  transition-all
+  duration-200
+  focus-visible:border-blue-500
+  focus-visible:ring-2
+  focus-visible:ring-blue-500/10
+
+  dark:border-slate-700
+  dark:bg-slate-900
+  dark:text-slate-200
+  dark:placeholder:text-slate-500
+"
             />
           </div>
 
@@ -140,38 +156,58 @@ export function Approvals() {
             onValueChange={setSubmittedToFilter}
           >
             <SelectTrigger
-              className="
-                !h-10
-                w-52
-                rounded-lg
-                border-slate-200
-                bg-white
-                px-3
-                text-sm
-                shadow-sm
-                transition-all
-                duration-200
-                focus:border-blue-500
-                focus:ring-2
-                focus:ring-blue-500/10
-              "
+             className="
+  !h-10
+  w-52
+  rounded-lg
+  border
+  border-slate-200
+  bg-white
+  px-3
+  text-sm
+  text-slate-700
+  shadow-sm
+  transition-all
+  duration-200
+  focus:border-blue-500
+  focus:ring-2
+  focus:ring-blue-500/10
+
+  dark:border-slate-700
+  dark:bg-slate-900
+  dark:text-slate-200
+"
             >
               <SelectValue placeholder="Assigned Approver" />
             </SelectTrigger>
 
             <SelectContent
-              className="
-                rounded-lg
-                border
-                border-slate-200
-                bg-white
-                p-1
-                shadow-xl
-              "
+             className="
+  rounded-lg
+  border
+  border-slate-200
+  bg-white
+  p-1
+  shadow-xl
+
+  dark:border-slate-700
+  dark:bg-slate-900
+"
             >
               <SelectItem
                 value="all"
-                className="rounded-md text-sm focus:bg-blue-50 focus:text-blue-700"
+                className="
+  rounded-md
+  text-sm
+  text-slate-700
+
+  focus:bg-blue-50
+  focus:text-blue-700
+
+  dark:text-slate-200
+  dark:focus:bg-slate-800
+  dark:focus:text-blue-400
+"
               >
                 All Approvers
               </SelectItem>
@@ -180,7 +216,18 @@ export function Approvals() {
                 <SelectItem
                   key={name}
                   value={name}
-                  className="rounded-md text-sm focus:bg-blue-50 focus:text-blue-700"
+                  className="
+  rounded-md
+  text-sm
+  text-slate-700
+
+  focus:bg-blue-50
+  focus:text-blue-700
+
+  dark:text-slate-200
+  dark:focus:bg-slate-800
+  dark:focus:text-blue-400
+"
                 >
                   {name}
                 </SelectItem>
@@ -207,7 +254,7 @@ export function Approvals() {
               {rows.length}
             </span>
 
-            <span className="ml-1 text-slate-700">
+           <span className="ml-1 text-slate-700 dark:text-slate-300">
               result{rows.length === 1 ? "" : "s"}
             </span>
           </div>

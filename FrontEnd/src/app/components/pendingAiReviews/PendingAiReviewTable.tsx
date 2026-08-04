@@ -6,6 +6,7 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
+import { Button } from "../ui/button";
 import {
   Tooltip,
   TooltipContent,
@@ -66,39 +67,39 @@ export function PendingAiReviewsTable({
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
-      <div className="overflow-x-auto">
-        <TooltipProvider delayDuration={150}>
-          <Table className="w-full min-w-[900px]">
-            <TableHeader>
-              <TableRow className="bg-muted/50 border-b border-border">
-                <TableHead className="w-30 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+    <TooltipProvider delayDuration={150}>
+      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex h-full flex-col min-h-0">
+        <div className="flex-1 min-h-0 overflow-auto">
+          <Table>
+            <TableHeader className="bg-muted/50 border-b border-border">
+              <TableRow>
+                <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-40 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                   User
                 </TableHead>
-                <TableHead className="w-110 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
+                <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-[400px] py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
                   Query
                 </TableHead>
-                <TableHead className="w-70 py-3 px-14 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-48 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                   Stage
                 </TableHead>
-                <TableHead className="w-50 py-3 px-12 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-52 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
                   Timestamp
                 </TableHead>
-                <TableHead className="w-30 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
+                <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-28 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
                   Actions
                 </TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody className="bg-white dark:bg-background">
+            <TableBody className="divide-y divide-border/60 bg-white dark:bg-background">
               {entries.map((entry) => (
                 <TableRow
                   key={entry.id}
-                  className="transition-colors hover:bg-muted/40"
+                  className="hover:bg-muted/40 transition-colors"
                 >
-                  <TableCell className="py-3 px-4 text-xs font-medium truncate text-foreground">
+                  <TableCell className="py-3 px-4 font-medium text-xs text-foreground truncate">
                     {toTitleCase(entry.full_name)}
                   </TableCell>
-                  <TableCell className="max-w-[220px] text-xs text-gray-900 dark:text-white truncate">
+                  <TableCell className="py-3 px-4 text-xs text-gray-900 dark:text-white max-w-[220px] truncate">
                     {entry.query_text ? (
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -117,35 +118,43 @@ export function PendingAiReviewsTable({
                       "—"
                     )}
                   </TableCell>
-                  <TableCell className="text-xs px-14">
+                  <TableCell className="py-3 px-4 font-medium text-xs text-foreground">
                     {STAGE_LABELS[entry.pipeline_stage] ?? entry.pipeline_stage}
                   </TableCell>
-                  <TableCell className="text-xs font-mono text-gray-900 dark:text-white whitespace-nowrap">
+                  <TableCell className="py-3 px-4 text-xs font-mono text-gray-900 dark:text-white whitespace-nowrap text-center">
                     {formatTimestamp(entry.created_at)}
                   </TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex items-center justify-center gap-3">
-                      <button
-                        type="button"
-                        disabled={resumingId === entry.id}
-                        onClick={() => onResume(entry)}
-                        aria-label="Resume"
-                        className="text-blue-600 hover:text-blue-800 disabled:opacity-50 dark:text-blue-400 dark:hover:text-blue-300"
-                      >
-                        {resumingId === entry.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <PlayCircle className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
+                  <TableCell className="py-3 px-4 text-center">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-block">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={resumingId === entry.id}
+                            onClick={() => onResume(entry)}
+                            aria-label="Resume"
+                            className="h-8 w-8 rounded-full hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/50 dark:hover:text-blue-400 transition-colors disabled:opacity-50"
+                          >
+                            {resumingId === entry.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
+                            ) : (
+                              <PlayCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            )}
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="text-xs">
+                        Resume
+                      </TooltipContent>
+                    </Tooltip>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        </TooltipProvider>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }

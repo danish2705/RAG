@@ -60,21 +60,22 @@ export const ApprovalsTable: React.FC<ApprovalsTableProps> = ({
 
   return (
     <TooltipProvider delayDuration={150}>
-      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
+      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex h-full flex-col min-h-0">
+        <div className="flex-1 min-h-0 overflow-auto">
         <Table>
           <TableHeader className="bg-muted/50 border-b border-border">
             <TableRow>
               {/* Added standard header styling: text-[11px] font-semibold text-muted-foreground uppercase tracking-wider */}
-              <TableHead className="w-32 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Approval ID</TableHead>
-              <TableHead className="w-[220px] text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
+              <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-32 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Approval ID</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-[220px] text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
                 Query
               </TableHead>
-              <TableHead className="w-40 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Submitted By</TableHead>
-              <TableHead className="w-40 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Submitted To</TableHead>
-              <TableHead className="w-52 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Timestamp</TableHead>
-              <TableHead className="w-36 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Due Date</TableHead>
-              <TableHead className="w-32 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Status</TableHead>
-              <TableHead className="w-48 py-3 px-4 text-center text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-40 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Submitted By</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-40 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Submitted To</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-52 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Timestamp</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-36 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Due Date</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-32 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Status</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-48 py-3 px-4 text-center text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Action
               </TableHead>
             </TableRow>
@@ -177,6 +178,7 @@ export const ApprovalsTable: React.FC<ApprovalsTableProps> = ({
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
     </TooltipProvider>
   );

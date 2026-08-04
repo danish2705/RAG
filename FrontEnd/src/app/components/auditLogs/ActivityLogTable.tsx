@@ -208,20 +208,20 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
-      <div className="overflow-x-auto">
-        <Table className="w-full min-w-[900px]">
-          <TableHeader>
-            <TableRow className="bg-muted/50 border-b border-border">
-              <TableHead className="w-26 py-3 px-5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Audit ID</TableHead>
-              <TableHead className="w-34 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">User</TableHead>
-              <TableHead className="w-60 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Details</TableHead>
-              <TableHead className="w-25 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Source</TableHead>
-              <TableHead className="w-32 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Action</TableHead>
-              <TableHead className="w-50 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Timestamp</TableHead>
+    <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex h-full flex-col min-h-0">
+      <div className="flex-1 min-h-0 overflow-auto">
+        <Table>
+          <TableHeader className="bg-muted/50 border-b border-border">
+            <TableRow>
+              <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-32 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Audit ID</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-40 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">User</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-[400px] py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Details</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-28 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Source</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-36 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Action</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-52 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Timestamp</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody className="bg-white dark:bg-background">
+          <TableBody className="divide-y divide-border/60 bg-white dark:bg-background">
             {entries.length === 0 ? (
               <TableRow>
                 <TableCell
@@ -259,8 +259,8 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
                           ? `#${entry.entity_id.slice(0, 8)}`
                           : "—"}
                       </TableCell>
-                      <TableCell>
-                        <div className="px-2 flex items-center min-w-0">
+                      <TableCell className="py-3 px-4">
+                        <div className="flex items-center min-w-0">
                           <span className="text-xs font-medium truncate">
                             {toTitleCase(entry.performed_by)}
                           </span>
@@ -268,7 +268,7 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
                       </TableCell>
 
                       {/* DETAILS CELL */}
-                      <TableCell className="w-64 text-xs text-gray-900 dark:text-white">
+                      <TableCell className="py-3 px-4 w-[400px] text-xs text-gray-900 dark:text-white">
                         <div className="flex items-center justify-between gap-2">
                           <span className={`block break-words ${!isExpanded ? "line-clamp-1" : "text-muted-foreground font-medium"}`}>
                             {isExpanded ? "Expanded log view:" : truncateWords(previewText, 12)}
@@ -293,7 +293,7 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
                         </div>
                       </TableCell>
 
-                      <TableCell className="text-center">
+                      <TableCell className="py-3 px-4 text-center">
                         <Badge
                           variant="outline"
                           className={
@@ -311,7 +311,7 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
                               : "Human"}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-3 px-4 text-center">
                         <Badge
                           variant="outline"
                           className={`text-xs gap-1 ${meta.badgeClass}`}
@@ -320,7 +320,7 @@ export function ActivityLogTable({ entries }: { entries: AuditLogEntry[] }) {
                           {meta.label}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs font-mono text-gray-900 dark:text-white whitespace-nowrap text-center">
+                      <TableCell className="py-3 px-4 text-xs font-mono text-gray-900 dark:text-white whitespace-nowrap text-center">
                         {formatTimestamp(entry.created_at, {
                           dateStyle: "numeric",
                         })}

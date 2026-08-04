@@ -24,7 +24,7 @@ export function useAuditLogs() {
     try {
       const result = await fetchAuditLog({
         page,
-        pageSize: 25,
+        pageSize: 11,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
         source: sourceFilter,

@@ -29,9 +29,9 @@ export function AuditLogs() {
   return (
     <div className="relative h-full w-full">
       <div
-        className={`h-full p-6 overflow-y-auto transition-[margin] duration-200 ${chatOpen ? "mr-80" : ""}`}
+        className={`flex h-full flex-col p-6 transition-[margin] duration-200 ${chatOpen ? "mr-80" : ""}`}
       >
-        <div className="space-y-6">
+        <div className="mb-6 shrink-0">
           <AuditFilters
             startDate={startDate}
             onStartDateChange={setStartDate}
@@ -42,7 +42,9 @@ export function AuditLogs() {
             search={search}
             onSearchChange={setSearch}
           />
+        </div>
 
+        <div className="min-h-0 flex-1">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 bg-card rounded-xl border border-border">
               <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-2" />
@@ -67,31 +69,31 @@ export function AuditLogs() {
           ) : (
             <ActivityLogTable entries={entries} />
           )}
-
-          {!loading && !error && totalPages > 1 && (
-            <div className="flex items-center justify-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                Previous
-              </Button>
-              <span className="text-xs text-muted-foreground">
-                Page {page} of {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              >
-                Next
-              </Button>
-            </div>
-          )}
         </div>
+
+        {!loading && !error && totalPages > 1 && (
+          <div className="mt-4 flex shrink-0 items-center justify-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Previous
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Next
+            </Button>
+          </div>
+        )}
       </div>
       <div className="fixed top-16 right-0 bottom-0 z-40">
         <AIAssistant

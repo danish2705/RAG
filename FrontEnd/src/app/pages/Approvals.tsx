@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Loader2, AlertCircle, Search } from "lucide-react";
 import { Input } from "../components/ui/input";
 import {
@@ -8,6 +9,7 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { Dialog, DialogContent } from "../components/ui/dialog";
+import { Button } from "../components/ui/button";
 import { useApprovals } from "../hooks/useApprovals";
 import { ApprovalsTable } from "../components/approvals/ApprovalsTable";
 import { ApprovalEditModal } from "../components/approvals/ApprovalEditModal";
@@ -40,9 +42,27 @@ export function Approvals() {
   const selectedRow = rows.find((r) => r.id === selectedId);
   const readOnly = selectedRow ? !canApprove(selectedRow) : false;
 
+  // Client-side pagination over the already-filtered rows returned by the hook.
+  const PAGE_SIZE = 11;
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchText, submittedToFilter]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [totalPages, page]);
+
+  const paginatedRows = rows.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE,
+  );
+
   return (
     <div className="relative h-full w-full">
-      <div className="h-full overflow-y-auto p-6">
+      <div className="flex h-full flex-col p-6">
 
         {/* Loading / Error Dialog */}
         {selectedId && (detailLoading || detailError) && (
@@ -86,7 +106,7 @@ export function Approvals() {
         )}
 
         {/* Filter Bar */}
-        <div className="mb-5 flex items-center gap-3">
+        <div className="mb-5 flex shrink-0 items-center gap-3">
 
           {/* Search */}
           <div className="relative flex-1">
@@ -194,13 +214,39 @@ export function Approvals() {
         </div>
 
         {/* Table */}
-        <ApprovalsTable
-          loading={loading}
-          error={error}
-          rows={rows}
-          canApprove={canApprove}
-          onReview={openCase}
-        />
+        <div className="min-h-0 flex-1">
+          <ApprovalsTable
+            loading={loading}
+            error={error}
+            rows={paginatedRows}
+            canApprove={canApprove}
+            onReview={openCase}
+          />
+        </div>
+
+        {!loading && !error && totalPages > 1 && (
+          <div className="mt-4 flex shrink-0 items-center justify-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Previous
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Next
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

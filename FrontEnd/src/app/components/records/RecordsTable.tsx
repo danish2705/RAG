@@ -95,15 +95,16 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
 
   return (
     <TooltipProvider delayDuration={150}>
-      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
+      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex h-full flex-col min-h-0">
+        <div className="flex-1 min-h-0 overflow-auto">
         <Table>
           <TableHeader className="bg-muted/50 border-b border-border">
             <TableRow>
               {/* Added explicit header font styling: text-[11px] font-semibold text-muted-foreground uppercase tracking-wider across all columns */}
-              <TableHead className="w-32 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-32 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Record ID
               </TableHead>
-              <TableHead className="w-44 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-44 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 <button
                   onClick={() => onSort?.("submittedBy")}
                   className="flex items-center gap-1 hover:opacity-80 transition-colors text-[11px] font-semibold text-muted-foreground uppercase tracking-wider"
@@ -112,10 +113,10 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                   <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
               </TableHead>
-              <TableHead className="w-[400px] py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
+              <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-[400px] py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
                 Query
               </TableHead>
-              <TableHead className="w-44 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-44 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 <button
                   onClick={() => onSort?.("classification")}
                   className="flex items-center gap-1 hover:opacity-80 transition-colors text-[11px] font-semibold text-muted-foreground uppercase tracking-wider"
@@ -125,7 +126,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                 </button>
               </TableHead>
               {/* Saved Date & Time */}
-              <TableHead className="w-52 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
+              <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-52 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
                 <button
                   onClick={() => onSort?.("savedOn")}
                   className="flex items-center justify-center gap-1 hover:opacity-80 transition-colors w-full text-[11px] font-semibold text-muted-foreground uppercase tracking-wider"
@@ -135,11 +136,11 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                 </button>
               </TableHead>
               {/* Approval status */}
-              <TableHead className="w-32 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
+              <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-32 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
                 Status
               </TableHead>
               {/* Actions */}
-              <TableHead className="w-28 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
+              <TableHead className="sticky top-0 z-10 bg-slate-50 dark:bg-neutral-900 w-28 py-3 px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
                 Actions
               </TableHead>
             </TableRow>
@@ -269,6 +270,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
     </TooltipProvider>
   );

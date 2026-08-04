@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Loader2, AlertCircle, PenSquare } from "lucide-react";
 import { Button } from "../components/ui/button";
@@ -45,10 +46,28 @@ export function Records() {
     submitResubmission,
   } = useRecords();
 
+  // Client-side pagination over the already-filtered/sorted cases from the hook.
+  const PAGE_SIZE = 11;
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(filteredCases.length / PAGE_SIZE));
+
+  useEffect(() => {
+    setPage(1);
+  }, [submittedByFilter, classificationFilter]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [totalPages, page]);
+
+  const paginatedCases = filteredCases.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE,
+  );
+
   return (
     <div className="relative h-full w-full">
       <div
-        className={`h-full p-6 overflow-y-auto transition-[margin] duration-200 ${chatOpen ? "mr-80" : ""
+        className={`flex h-full flex-col p-6 transition-[margin] duration-200 ${chatOpen ? "mr-80" : ""
           }`}
       >
         {/* Case Details View Modal — full pipeline detail, fetched on demand */}
@@ -143,26 +162,53 @@ export function Records() {
           onConfirmDelete={handleDeleteRecord}
         />
 
-        
-        <RecordsFilterBar
-          submittedByFilter={submittedByFilter}
-          onSubmittedByFilterChange={setSubmittedByFilter}
-          classificationFilter={classificationFilter}
-          onClassificationFilterChange={setClassificationFilter}
-          resultCount={filteredCases.length}
-        />
+        <div className="shrink-0">
+          <RecordsFilterBar
+            submittedByFilter={submittedByFilter}
+            onSubmittedByFilterChange={setSubmittedByFilter}
+            classificationFilter={classificationFilter}
+            onClassificationFilterChange={setClassificationFilter}
+            resultCount={filteredCases.length}
+          />
+        </div>
 
-        <RecordsTable
-          loading={loading}
-          error={error}
-          cases={cases}
-          filteredCases={filteredCases}
-          onSort={handleSort}
-          onSelectCase={setSelectedCase}
-          onDeleteCase={setCaseToDelete}
-          canResubmit={canResubmit}
-          onResubmit={openResubmit}
-        />
+        <div className="min-h-0 flex-1">
+          <RecordsTable
+            loading={loading}
+            error={error}
+            cases={cases}
+            filteredCases={paginatedCases}
+            onSort={handleSort}
+            onSelectCase={setSelectedCase}
+            onDeleteCase={setCaseToDelete}
+            canResubmit={canResubmit}
+            onResubmit={openResubmit}
+          />
+        </div>
+
+        {!loading && !error && totalPages > 1 && (
+          <div className="mt-4 flex shrink-0 items-center justify-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Previous
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Next
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="fixed top-16 right-0 bottom-0 z-40">

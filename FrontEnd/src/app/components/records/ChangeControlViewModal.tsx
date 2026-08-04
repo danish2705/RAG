@@ -1,4 +1,10 @@
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
@@ -20,6 +26,9 @@ import {
   ConfidenceBar,
   DownloadSummaryMenu,
 } from "./RecordsShared";
+import { SectionComments } from "./SectionComments";
+import { useCaseComments } from "../../hooks/useCaseComments";
+import { useAuth } from "../../context/AuthContext";
 import { formatTimestamp } from "../../utils/timezone";
 
 export function ChangeControlViewModal({
@@ -34,6 +43,13 @@ export function ChangeControlViewModal({
   const risk = record.risk_criticality;
   const validation = record.validation_testing;
   const implementation = record.implementation_control;
+
+  const { user } = useAuth();
+  const { forSection, addComment } = useCaseComments(
+    record.id,
+    "Change Control",
+  );
+  const commenterName = user?.displayName || user?.username || "Unknown";
 
   const handleUploadToVeeva = () => {
     window.open(
@@ -97,6 +113,15 @@ export function ChangeControlViewModal({
                 <CardTitle className="flex items-center gap-2 text-base">
                   Classification
                 </CardTitle>
+                <CardAction>
+                  <SectionComments
+                    sectionLabel="Classification"
+                    comments={forSection("Classification")}
+                    onAdd={(text) =>
+                      addComment("Classification", text, commenterName)
+                    }
+                  />
+                </CardAction>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-2">
@@ -127,6 +152,19 @@ export function ChangeControlViewModal({
                   <CardTitle className="text-base">
                     Change Impact Assessment
                   </CardTitle>
+                  <CardAction>
+                    <SectionComments
+                      sectionLabel="Change Impact Assessment"
+                      comments={forSection("Change Impact Assessment")}
+                      onAdd={(text) =>
+                        addComment(
+                          "Change Impact Assessment",
+                          text,
+                          commenterName,
+                        )
+                      }
+                    />
+                  </CardAction>
                 </CardHeader>
                 <CardContent>
                   <ConfidenceBar score={impact.confidence_score} />
@@ -222,6 +260,15 @@ export function ChangeControlViewModal({
                   <CardTitle className="text-base">
                     Risk &amp; Criticality Evaluation
                   </CardTitle>
+                  <CardAction>
+                    <SectionComments
+                      sectionLabel="Risk & Criticality"
+                      comments={forSection("Risk & Criticality")}
+                      onAdd={(text) =>
+                        addComment("Risk & Criticality", text, commenterName)
+                      }
+                    />
+                  </CardAction>
                 </CardHeader>
                 <CardContent>
                   <ConfidenceBar score={risk.confidence_score} />
@@ -329,6 +376,15 @@ export function ChangeControlViewModal({
                   <CardTitle className="text-base">
                     Validation &amp; Testing Strategy
                   </CardTitle>
+                  <CardAction>
+                    <SectionComments
+                      sectionLabel="Validation & Testing"
+                      comments={forSection("Validation & Testing")}
+                      onAdd={(text) =>
+                        addComment("Validation & Testing", text, commenterName)
+                      }
+                    />
+                  </CardAction>
                 </CardHeader>
                 <CardContent>
                   <ConfidenceBar score={validation.confidence_score} />
@@ -406,6 +462,19 @@ export function ChangeControlViewModal({
                   <CardTitle className="text-base">
                     Implementation &amp; Control Actions
                   </CardTitle>
+                  <CardAction>
+                    <SectionComments
+                      sectionLabel="Implementation & Control"
+                      comments={forSection("Implementation & Control")}
+                      onAdd={(text) =>
+                        addComment(
+                          "Implementation & Control",
+                          text,
+                          commenterName,
+                        )
+                      }
+                    />
+                  </CardAction>
                 </CardHeader>
                 <CardContent>
                   <ConfidenceBar score={implementation.confidence_score} />

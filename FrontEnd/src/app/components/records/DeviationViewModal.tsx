@@ -1,4 +1,10 @@
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
@@ -14,6 +20,9 @@ import {
   ConfidenceBar,
   DownloadSummaryMenu,
 } from "./RecordsShared";
+import { SectionComments } from "./SectionComments";
+import { useCaseComments } from "../../hooks/useCaseComments";
+import { useAuth } from "../../context/AuthContext";
 import { formatTimestamp } from "../../utils/timezone";
 
 export function DeviationViewModal({
@@ -27,6 +36,10 @@ export function DeviationViewModal({
   const imp = record.impact_assessment;
   const rca = record.rca;
   const capa = record.capa;
+
+  const { user } = useAuth();
+  const { forSection, addComment } = useCaseComments(record.id, "Deviation");
+  const commenterName = user?.displayName || user?.username || "Unknown";
 
   const impactEntries = imp
     ? Object.entries(imp.impact_assessment).map(([key, val]) => ({
@@ -101,6 +114,15 @@ export function DeviationViewModal({
                   Classification
                   <Sparkles className="h-4 w-4 text-blue-600" />
                 </CardTitle>
+                <CardAction>
+                  <SectionComments
+                    sectionLabel="Classification"
+                    comments={forSection("Classification")}
+                    onAdd={(text) =>
+                      addComment("Classification", text, commenterName)
+                    }
+                  />
+                </CardAction>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-2">
@@ -132,6 +154,15 @@ export function DeviationViewModal({
                     <Sparkles className="h-4 w-4 text-blue-600" />
                     Impact Assessment — Overall Confidence
                   </CardTitle>
+                  <CardAction>
+                    <SectionComments
+                      sectionLabel="Impact Assessment"
+                      comments={forSection("Impact Assessment")}
+                      onAdd={(text) =>
+                        addComment("Impact Assessment", text, commenterName)
+                      }
+                    />
+                  </CardAction>
                 </CardHeader>
                 <CardContent>
                   <ConfidenceBar score={imp.confidence_score} />
@@ -169,6 +200,15 @@ export function DeviationViewModal({
                     <Sparkles className="h-4 w-4 text-blue-600" />
                     Root Cause Analysis — Overall Confidence
                   </CardTitle>
+                  <CardAction>
+                    <SectionComments
+                      sectionLabel="Root Cause"
+                      comments={forSection("Root Cause")}
+                      onAdd={(text) =>
+                        addComment("Root Cause", text, commenterName)
+                      }
+                    />
+                  </CardAction>
                 </CardHeader>
                 <CardContent>
                   <ConfidenceBar score={rca.confidence_score} />
@@ -237,6 +277,13 @@ export function DeviationViewModal({
                     <Sparkles className="h-4 w-4 text-blue-600" />
                     CAPA — Overall Confidence
                   </CardTitle>
+                  <CardAction>
+                    <SectionComments
+                      sectionLabel="CAPA"
+                      comments={forSection("CAPA")}
+                      onAdd={(text) => addComment("CAPA", text, commenterName)}
+                    />
+                  </CardAction>
                 </CardHeader>
                 <CardContent>
                   <ConfidenceBar score={capa.confidence_score} />

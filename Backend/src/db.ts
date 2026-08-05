@@ -56,6 +56,27 @@ export async function runMigrations(): Promise<void> {
       ON notifications (LOWER(recipient), created_at DESC)
   `);
 
+  // Case comments — per-section discussion thread on a Deviation/Change
+  // Control record, viewed from the Records page's "View" modal
+  // (SectionComments.tsx). The frontend already speaks this exact shape
+  // (case_id, case_type, section, comment, created_by, created_at) and
+  // previously fell back to localStorage when this route didn't exist.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS case_comments (
+      id SERIAL PRIMARY KEY,
+      case_id TEXT NOT NULL,
+      case_type TEXT NOT NULL,
+      section TEXT NOT NULL,
+      comment TEXT NOT NULL,
+      created_by TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS case_comments_case_idx
+      ON case_comments (case_id, case_type, created_at)
+  `);
+
   // The audit_log.action column has a CHECK constraint written against the
   // original, smaller set of action values. The approval workflow adds new
   // distinct actions (review_started/approved/rejected/resubmitted), so the

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import * as casesController from "../controllers/cases.controller.js";
+import * as commentsController from "../controllers/comments.controller.js";
 
 const router = Router();
 
@@ -32,6 +33,18 @@ router.get("/records", asyncHandler(casesController.listCombinedRecords));
 // Single case detail (by id + ?case_type=Deviation|Change Control) — used
 // by the View modal, since /records only returns summary columns.
 router.get("/records/:id", asyncHandler(casesController.getCaseDetail));
+
+// Per-section comment thread on a case (Records page "View" modal). Body
+// for POST: { case_type, section, comment, created_by }. Notifies the
+// original submitter (saved_by) unless they're commenting on their own case.
+router.get(
+  "/records/:id/comments",
+  asyncHandler(commentsController.listComments),
+);
+router.post(
+  "/records/:id/comments",
+  asyncHandler(commentsController.createComment),
+);
 
 // Approve a record (by id + ?case_type=Deviation|Change Control). Body:
 // { approved_by: string, updates: { ...edited sections... } }. Applies the

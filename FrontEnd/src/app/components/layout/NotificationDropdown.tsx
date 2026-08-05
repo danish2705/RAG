@@ -33,7 +33,7 @@ export const NotificationDropdown: React.FC = () => {
         className="relative p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
         aria-label="View notifications"
       >
-        <Bell className="h-5 w-5" />
+        <Bell className="h-6 w-6 text-muted-foreground hover:text-foreground transition-colors" />
         {unreadCount > 0 && (
           <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white ring-2 ring-background animate-pulse">
             {unreadCount}

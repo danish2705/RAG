@@ -82,6 +82,7 @@ export function useSummary() {
         saved_by: user.displayName || user.username,
         submitted_to: submittedTo,
         due_date: dueDate,
+        due_date: dueDate,
         provenance: provenance ?? null,
       });
 

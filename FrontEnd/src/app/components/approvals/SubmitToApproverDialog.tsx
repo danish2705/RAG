@@ -34,6 +34,41 @@ import { getDefaultDueDate, toDateKey, formatDueDate } from "../../utils/dueDate
  * environment with no cases yet), we fall back to a plain text field so the
  * user is never blocked from submitting.
  */
+
+/** Formats a Date as YYYY-MM-DD (local time, no timezone shift). */
+function toDateKey(d: Date): string {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/** Parses a YYYY-MM-DD string back into a local Date (avoids UTC shift). */
+function fromDateKey(key: string): Date | undefined {
+  if (!key) return undefined;
+  const [yyyy, mm, dd] = key.split("-").map(Number);
+  if (!yyyy || !mm || !dd) return undefined;
+  return new Date(yyyy, mm - 1, dd);
+}
+
+/** Formats YYYY-MM-DD as a friendly display string, e.g. "10 Aug 2026". */
+function formatDisplayDate(key: string): string {
+  const date = fromDateKey(key);
+  if (!date) return "Pick a date";
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+/** Returns today + 7 days, formatted as YYYY-MM-DD. */
+function getDefaultDueDate(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 7);
+  return toDateKey(d);
+}
+
 export function SubmitToApproverDialog({
   open,
   onOpenChange,
@@ -54,6 +89,8 @@ export function SubmitToApproverDialog({
   const [loadError, setLoadError] = useState(false);
   const [selected, setSelected] = useState("");
   const [manualName, setManualName] = useState("");
+  const [dueDate, setDueDate] = useState(getDefaultDueDate());
+  const [dueDateOpen, setDueDateOpen] = useState(false);
   const [error, setError] = useState("");
   const [dueDate, setDueDate] = useState<Date>(() => getDefaultDueDate());
   const [dueDateOpen, setDueDateOpen] = useState(false);

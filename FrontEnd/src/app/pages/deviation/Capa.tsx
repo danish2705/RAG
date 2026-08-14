@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import {
   DecisionAction,
-  RejectDialog,
+  DiscardDialog,
   StepProgressBar,
 } from "../../components/eventIntake";
 import { AIAssistant } from "../../components/chat/AiAssistant";
@@ -35,15 +35,15 @@ export function Capa() {
     setDueDate,
     showWeakCapaWarning,
     decisionMade,
-    showRejectDialog,
-    setShowRejectDialog,
-    rejectJustification,
-    setRejectJustification,
+    showDiscardDialog,
+    setShowDiscardDialog,
+    discardJustification,
+    setDiscardJustification,
     showAiSuggestion,
     emptyFieldsWarning,
     canAccept,
     handleAccept,
-    handleReject,
+    handleDiscard,
     handleGetAiSuggestion,
   } = useCapaReview();
 
@@ -109,23 +109,23 @@ export function Capa() {
             onAccept={handleAccept}
             acceptDisabled={decisionMade || !canAccept}
             acceptSelected={capaAccepted}
-            onReject={() => setShowRejectDialog(true)}
-            rejectDisabled={decisionMade}
+            onDiscard={() => setShowDiscardDialog(true)}
+            discardDisabled={decisionMade}
             warning={emptyFieldsWarning}
             footerText="Your decision will be logged in the audit trail"
           />
         </div>
 
-        <RejectDialog
-          open={showRejectDialog}
-          onOpenChange={setShowRejectDialog}
-          title="Reject CAPA"
-          description="Please provide a reason for rejecting this CAPA. You will be redirected to the deviation form. This will be recorded in the audit trail."
+        <DiscardDialog
+          open={showDiscardDialog}
+          onOpenChange={setShowDiscardDialog}
+          title="Discard CAPA"
+          description="Please provide a reason for discarding this CAPA. You will be redirected to the deviation form. This will be recorded in the audit trail."
           subjectLabel="the CAPA"
-          value={rejectJustification}
-          onChange={setRejectJustification}
-          onCancel={() => setShowRejectDialog(false)}
-          onConfirm={handleReject}
+          value={discardJustification}
+          onChange={setDiscardJustification}
+          onCancel={() => setShowDiscardDialog(false)}
+          onConfirm={handleDiscard}
         />
       </div>
 

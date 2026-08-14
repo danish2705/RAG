@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import {
   DecisionAction,
-  RejectDialog,
+  DiscardDialog,
   StepProgressBar,
 } from "../../components/eventIntake";
 import {
@@ -59,17 +59,17 @@ export function ChangeImpactAssessment() {
     isRiskModified,
     isSystemsModified,
     isDependenciesModified,
-    showRejectDialog,
-    setShowRejectDialog,
-    rejectJustification,
-    setRejectJustification,
+    showDiscardDialog,
+    setShowDiscardDialog,
+    discardJustification,
+    setDiscardJustification,
     showRationaleWarning,
     setShowRationaleWarning,
     warningFields,
     isSubmitting,
     submitError,
     handleAccept,
-    handleReject,
+    handleDiscard,
     handleGetAiSuggestion,
     showAiSuggestion,
     emptyFieldsWarning,
@@ -156,7 +156,7 @@ export function ChangeImpactAssessment() {
             acceptLoadingLabel="Submitting Assessment..."
             onAccept={handleAccept}
             acceptDisabled={isSubmitting || !canAccept}
-            onReject={() => setShowRejectDialog(true)}
+            onDiscard={() => setShowDiscardDialog(true)}
             isLoading={isSubmitting}
             error={submitError}
             errorTitle="Assessment submission failed"
@@ -208,17 +208,17 @@ export function ChangeImpactAssessment() {
           </DialogContent>
         </Dialog>
 
-        {/* Reject Dialog */}
-        <RejectDialog
-          open={showRejectDialog}
-          onOpenChange={setShowRejectDialog}
-          title="Reject Change Impact Assessment"
-          description="Please provide a reason for rejecting this assessment. This will be recorded in the audit trail."
+        {/* Discard Dialog */}
+        <DiscardDialog
+          open={showDiscardDialog}
+          onOpenChange={setShowDiscardDialog}
+          title="Discard Change Impact Assessment"
+          description="Please provide a reason for discarding this assessment. This will be recorded in the audit trail."
           subjectLabel="the change impact assessment"
-          value={rejectJustification}
-          onChange={setRejectJustification}
-          onCancel={() => setShowRejectDialog(false)}
-          onConfirm={handleReject}
+          value={discardJustification}
+          onChange={setDiscardJustification}
+          onCancel={() => setShowDiscardDialog(false)}
+          onConfirm={handleDiscard}
         />
 
         <div className="fixed top-16 right-0 bottom-0 z-40">

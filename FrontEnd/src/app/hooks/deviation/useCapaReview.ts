@@ -73,10 +73,10 @@ export function useCapaReview() {
   const [capaAccepted, setCapaAccepted] = useState(false);
   const [correction, setCorrection] = useState("");
   const [showWeakCapaWarning, setShowWeakCapaWarning] = useState(false);
-  // Only surfaced after the user rejects the CAPA (and the fields get
+  // Only surfaced after the user discards the CAPA (and the fields get
   // cleared) — hidden otherwise.
   const [showAiSuggestion, setShowAiSuggestion] = useState(false);
-  // Client-side check so an accidental Accept right after Reject clears the
+  // Client-side check so an accidental Accept right after Discard clears the
   // fields doesn't silently save empty data to the audit trail.
   const [emptyFieldsWarning, setEmptyFieldsWarning] = useState<string | null>(
     null,
@@ -100,7 +100,7 @@ export function useCapaReview() {
       : (capaParsed?.due_date ?? ""),
   });
 
-  // Disables the Accept/Reject buttons once a decision has been made, to
+  // Disables the Accept/Discard buttons once a decision has been made, to
   // avoid double-navigating while the page transitions to the summary.
   const decisionMade = capaAccepted;
 
@@ -193,7 +193,7 @@ export function useCapaReview() {
   // Whatever is currently in the form — edited or left as the AI suggested
   // it — is what gets approved.
   // Accept stays disabled until every field is filled in — most notably
-  // right after a Reject clears them.
+  // right after a Discard clears them.
   const canAccept =
     form.correctiveAction.trim() !== "" &&
     form.preventiveAction.trim() !== "" &&
@@ -201,7 +201,7 @@ export function useCapaReview() {
     form.dueDate.trim() !== "";
 
   const handleAccept = () => {
-    // Guard against accepting right after a Reject cleared the fields —
+    // Guard against accepting right after a Discard cleared the fields —
     // don't silently save empty data to the audit trail.
     if (
       form.correctiveAction.trim() === "" ||
@@ -220,9 +220,9 @@ export function useCapaReview() {
     proceed();
   };
 
-  const handleReject = () => {
-    override.setShowRejectDialog(false);
-    // Clear the AI-generated fields — the user rejected the AI's
+  const handleDiscard = () => {
+    override.setShowDiscardDialog(false);
+    // Clear the AI-generated fields — the user discarded the AI's
     // suggestion, so we don't leave it sitting in the form. They can
     // either fill this in manually or pull the AI suggestion back in
     // with the button above.
@@ -231,7 +231,7 @@ export function useCapaReview() {
   };
 
   // Restores the original AI-generated CAPA recommendations into the form —
-  // used by the "AI Suggestion" button so a rejected/cleared field can be
+  // used by the "AI Suggestion" button so a discarded/cleared field can be
   // brought back.
   const handleGetAiSuggestion = () => {
     if (!capaParsed) return;
@@ -265,16 +265,16 @@ export function useCapaReview() {
     setDueDate,
     showWeakCapaWarning,
     decisionMade,
-    showRejectDialog: override.showRejectDialog,
-    setShowRejectDialog: override.setShowRejectDialog,
-    rejectJustification: override.rejectJustification,
-    setRejectJustification: override.setRejectJustification,
+    showDiscardDialog: override.showDiscardDialog,
+    setShowDiscardDialog: override.setShowDiscardDialog,
+    discardJustification: override.discardJustification,
+    setDiscardJustification: override.setDiscardJustification,
     showAiSuggestion,
     emptyFieldsWarning,
     canAccept,
     proceed,
     handleAccept,
-    handleReject,
+    handleDiscard,
     handleGetAiSuggestion,
   };
 }

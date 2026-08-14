@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import {
   DecisionAction,
-  RejectDialog,
+  DiscardDialog,
   StepProgressBar,
 } from "../../components/eventIntake";
 import { AIAssistant } from "../../components/chat/AiAssistant";
@@ -30,17 +30,17 @@ export function RootCause() {
     setContributingFactors,
     evidence,
     setEvidence,
-    showRejectDialog,
-    setShowRejectDialog,
-    rejectJustification,
-    setRejectJustification,
+    showDiscardDialog,
+    setShowDiscardDialog,
+    discardJustification,
+    setDiscardJustification,
     showAiSuggestion,
     emptyFieldsWarning,
     canAccept,
     isGeneratingCAPA,
     capaError,
     handleAccept,
-    handleReject,
+    handleDiscard,
     handleGetAiSuggestion,
     llmFailure,
   } = useRootCauseReview();
@@ -98,7 +98,7 @@ export function RootCause() {
             acceptLoadingLabel="Generating CAPA..."
             onAccept={handleAccept}
             acceptDisabled={isGeneratingCAPA || !canAccept}
-            onReject={() => setShowRejectDialog(true)}
+            onDiscard={() => setShowDiscardDialog(true)}
             isLoading={isGeneratingCAPA}
             error={capaError}
             errorTitle="CAPA generation failed"
@@ -107,16 +107,16 @@ export function RootCause() {
           />
         </div>
 
-        <RejectDialog
-          open={showRejectDialog}
-          onOpenChange={setShowRejectDialog}
-          title="Reject Root Cause"
-          description="Please provide a reason for rejecting this root cause analysis. You will be redirected to the deviation form. This will be recorded in the audit trail."
+        <DiscardDialog
+          open={showDiscardDialog}
+          onOpenChange={setShowDiscardDialog}
+          title="Discard Root Cause"
+          description="Please provide a reason for discarding this root cause analysis. You will be redirected to the deviation form. This will be recorded in the audit trail."
           subjectLabel="the root cause analysis"
-          value={rejectJustification}
-          onChange={setRejectJustification}
-          onCancel={() => setShowRejectDialog(false)}
-          onConfirm={handleReject}
+          value={discardJustification}
+          onChange={setDiscardJustification}
+          onCancel={() => setShowDiscardDialog(false)}
+          onConfirm={handleDiscard}
         />
 
         <div className="fixed top-16 right-0 bottom-0 z-40">

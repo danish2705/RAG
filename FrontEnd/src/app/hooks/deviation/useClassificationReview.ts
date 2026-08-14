@@ -42,15 +42,15 @@ export function useClassificationReview() {
   const [editedRationale, setEditedRationale] = useState(
     (parsed?.rationale ?? []).join("\n"),
   );
-  const [showRejectDialog, setShowRejectDialog] = useState(false);
-  const [rejectJustification, setRejectJustification] = useState("");
-  // Only surfaced after the user rejects the AI classification (and the
+  const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+  const [discardJustification, setDiscardJustification] = useState("");
+  // Only surfaced after the user discards the AI classification (and the
   // fields get cleared) — hidden otherwise so it doesn't imply there's
-  // something to "undo" before a rejection has happened.
+  // something to "undo" before a discard action has happened.
   const [showAiSuggestion, setShowAiSuggestion] = useState(false);
   const [isAssessing, setIsAssessing] = useState(false);
   const [assessError, setAssessError] = useState<string | null>(null);
-  // Client-side check so an accidental Accept right after Reject clears the
+  // Client-side check so an accidental Accept right after Discard clears the
   // fields doesn't silently save empty data to the audit trail.
   const [emptyFieldsWarning, setEmptyFieldsWarning] = useState<string | null>(
     null,
@@ -63,7 +63,7 @@ export function useClassificationReview() {
   );
 
   // Accept stays disabled until both fields are filled in — most notably
-  // right after a Reject clears them — so there's nothing empty to
+  // right after a Discard clears them — so there's nothing empty to
   // accidentally save to the audit trail.
   const canAccept = !!editedClassification && rationaleLines.length > 0;
 
@@ -272,10 +272,10 @@ export function useClassificationReview() {
     runImpactAssessment,
   ]);
 
-  const handleReject = useCallback(() => {
-    setShowRejectDialog(false);
-    setRejectJustification("");
-    // Clear the AI-classified fields — the user rejected the AI's
+  const handleDiscard = useCallback(() => {
+    setShowDiscardDialog(false);
+    setDiscardJustification("");
+    // Clear the AI-classified fields — the user discarded the AI's
     // suggestion, so we don't leave it sitting in the form. They can
     // either fill this in manually or pull the AI suggestion back in
     // with the button at the top of the page.
@@ -285,7 +285,7 @@ export function useClassificationReview() {
   }, []);
 
   // Restores the original AI suggestion into the form — used by the
-  // "AI Suggestion" button so a rejected/cleared field can be brought back.
+  // "AI Suggestion" button so a discarded/cleared field can be brought back.
   const handleGetAiSuggestion = useCallback(() => {
     if (!parsed) return;
     setEditedClassification(parsed.classification);
@@ -303,10 +303,10 @@ export function useClassificationReview() {
     editedRationale,
     setEditedRationale,
     rationaleLines,
-    showRejectDialog,
-    setShowRejectDialog,
-    rejectJustification,
-    setRejectJustification,
+    showDiscardDialog,
+    setShowDiscardDialog,
+    discardJustification,
+    setDiscardJustification,
     showAiSuggestion,
     isAssessing,
     assessError,
@@ -314,7 +314,7 @@ export function useClassificationReview() {
     canAccept,
     currentClassification: editedClassification,
     handleAccept,
-    handleReject,
+    handleDiscard,
     handleGetAiSuggestion,
     llmFailure,
   };

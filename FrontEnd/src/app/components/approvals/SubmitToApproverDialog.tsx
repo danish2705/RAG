@@ -21,7 +21,7 @@ import { Calendar } from "../ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { fetchApprovers } from "../../services/approvalsApi";
 import { getDefaultDueDate, toDateKey, formatDueDate } from "../../utils/dueDate";
-
+ 
 /**
  * Shown at the very end of the Summary page (both Deviation and Change
  * Control) when the user clicks Submit. Lets the user pick — from a fixed
@@ -34,41 +34,6 @@ import { getDefaultDueDate, toDateKey, formatDueDate } from "../../utils/dueDate
  * environment with no cases yet), we fall back to a plain text field so the
  * user is never blocked from submitting.
  */
-
-/** Formats a Date as YYYY-MM-DD (local time, no timezone shift). */
-function toDateKey(d: Date): string {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-/** Parses a YYYY-MM-DD string back into a local Date (avoids UTC shift). */
-function fromDateKey(key: string): Date | undefined {
-  if (!key) return undefined;
-  const [yyyy, mm, dd] = key.split("-").map(Number);
-  if (!yyyy || !mm || !dd) return undefined;
-  return new Date(yyyy, mm - 1, dd);
-}
-
-/** Formats YYYY-MM-DD as a friendly display string, e.g. "10 Aug 2026". */
-function formatDisplayDate(key: string): string {
-  const date = fromDateKey(key);
-  if (!date) return "Pick a date";
-  return date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-/** Returns today + 7 days, formatted as YYYY-MM-DD. */
-function getDefaultDueDate(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 7);
-  return toDateKey(d);
-}
-
 export function SubmitToApproverDialog({
   open,
   onOpenChange,
@@ -89,12 +54,10 @@ export function SubmitToApproverDialog({
   const [loadError, setLoadError] = useState(false);
   const [selected, setSelected] = useState("");
   const [manualName, setManualName] = useState("");
-  const [dueDate, setDueDate] = useState(getDefaultDueDate());
-  const [dueDateOpen, setDueDateOpen] = useState(false);
   const [error, setError] = useState("");
   const [dueDate, setDueDate] = useState<Date>(() => getDefaultDueDate());
   const [dueDateOpen, setDueDateOpen] = useState(false);
-
+ 
   useEffect(() => {
     if (!open) return;
     setSelected("");
@@ -116,9 +79,9 @@ export function SubmitToApproverDialog({
       .catch(() => setLoadError(true))
       .finally(() => setLoadingApprovers(false));
   }, [open, submittedBy]);
-
+ 
   const usingDropdown = !loadError && (loadingApprovers || approvers.length > 0);
-
+ 
   const handleConfirm = () => {
     const trimmed = (usingDropdown ? selected : manualName).trim();
     if (!trimmed) {
@@ -142,7 +105,7 @@ export function SubmitToApproverDialog({
     }
     onConfirm(trimmed, toDateKey(dueDate));
   };
-
+ 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -151,7 +114,7 @@ export function SubmitToApproverDialog({
             <UserCheck className="h-5 w-5 text-blue-600" /> Submit for Approval
           </DialogTitle>
         </DialogHeader>
-
+ 
         <div className="py-4 space-y-3">
           <p className="text-sm text-muted-foreground">
             Choose who this case should be{" "}
@@ -161,7 +124,7 @@ export function SubmitToApproverDialog({
           </p>
           <div className="space-y-1.5">
             <Label>Submitted To</Label>
-
+ 
             {usingDropdown ? (
               <Select
                 value={selected}
@@ -202,7 +165,7 @@ export function SubmitToApproverDialog({
                 autoFocus
               />
             )}
-
+ 
             {error ? (
               <p className="text-xs text-red-600">{error}</p>
             ) : loadError ? (
@@ -216,7 +179,7 @@ export function SubmitToApproverDialog({
               </p>
             )}
           </div>
-
+ 
           <div className="space-y-1.5">
             <Label>Due Date</Label>
             <Popover open={dueDateOpen} onOpenChange={setDueDateOpen}>
@@ -249,7 +212,7 @@ export function SubmitToApproverDialog({
             </p>
           </div>
         </div>
-
+ 
         <DialogFooter>
           <Button
             variant="outline"
@@ -276,3 +239,4 @@ export function SubmitToApproverDialog({
     </Dialog>
   );
 }
+ 

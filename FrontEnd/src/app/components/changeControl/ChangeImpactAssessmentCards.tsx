@@ -11,6 +11,7 @@ import {
 } from "../ui/select";
 import { AlertTriangle, Sparkles } from "lucide-react";
 import { ModifiedBadge } from "../eventIntake";
+import { SourcesUsed } from "../shared/SourcesUsed";
 
 // Styling aligned with the reference image badges
 export function getGxpBadgeClass(value: string): string {
@@ -74,8 +75,9 @@ export const NoImpactAssessmentDataGuard: React.FC<{
 export const ImpactConfidenceCard = React.memo<{
   score: number;
   onGetAiSuggestion?: () => void;
+  sources?: string[];
 }>(
-  ({ score, onGetAiSuggestion }) => (
+  ({ score, onGetAiSuggestion, sources }) => (
     <Card className="shadow-sm dark:shadow-none border-gray-100 dark:border-white/10 bg-white dark:bg-black">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
@@ -95,6 +97,7 @@ export const ImpactConfidenceCard = React.memo<{
         </p>
       </CardHeader>
       <CardContent>
+        <SourcesUsed sources={sources} className="mb-3" />
         <div className="flex items-center gap-4 mt-2">
           <div className="flex-1 h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
             <div

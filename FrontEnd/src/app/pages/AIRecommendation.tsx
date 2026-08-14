@@ -81,6 +81,7 @@ export function AIRecommendation() {
             originalClassification={parsed.classification}
             originalRationale={parsed.rationale ?? []}
             onGetAiSuggestion={showAiSuggestion ? handleGetAiSuggestion : undefined}
+            rationaleSources={parsed.rationale_sources}
           />
 
           <DecisionAction

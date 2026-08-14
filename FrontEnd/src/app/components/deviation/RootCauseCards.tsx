@@ -5,6 +5,7 @@ import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 import { AlertTriangle, Sparkles } from "lucide-react";
 import { ModifiedStatus } from "../eventIntake";
+import { SourcesUsed } from "../shared/SourcesUsed";
 
 export const NoRcaDataGuard: React.FC<{ onGoBack: () => void }> = ({ onGoBack }) => (
   <div className="p-6 w-full">
@@ -36,7 +37,7 @@ export const RcaConfidenceCard: React.FC<{
         </Button>
       )}
     </CardHeader>
-    <CardContent>
+    <CardContent className="space-y-3">
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm text-muted-foreground">Based on root cause analysis</span>
         <span className="text-sm font-semibold text-foreground">{score}%</span>
@@ -58,11 +59,15 @@ interface PrimaryCauseCardProps {
   originalImmediateCause: string;
   onPrimaryChange: (val: string) => void;
   onImmediateChange: (val: string) => void;
+  /** KB sources that specifically back the primary root cause field. */
+  primarySources?: string[];
+  /** KB sources that specifically back the immediate cause field. */
+  immediateSources?: string[];
 }
 
 export const PrimaryRootCauseCard: React.FC<PrimaryCauseCardProps> = ({
   primaryCause, originalPrimaryCause, immediateCause, originalImmediateCause,
-  onPrimaryChange, onImmediateChange
+  onPrimaryChange, onImmediateChange, primarySources, immediateSources
 }) => (
   <Card>
     <CardHeader>
@@ -81,6 +86,9 @@ export const PrimaryRootCauseCard: React.FC<PrimaryCauseCardProps> = ({
           value={primaryCause}
           onChange={(e) => onPrimaryChange(e.target.value)}
         />
+        {primarySources && primarySources.length > 0 && (
+          <SourcesUsed sources={primarySources} />
+        )}
       </div>
       <div className="space-y-2">
         <div className="flex items-center gap-2">
@@ -92,6 +100,9 @@ export const PrimaryRootCauseCard: React.FC<PrimaryCauseCardProps> = ({
           value={immediateCause}
           onChange={(e) => onImmediateChange(e.target.value)}
         />
+        {immediateSources && immediateSources.length > 0 && (
+          <SourcesUsed sources={immediateSources} />
+        )}
       </div>
     </CardContent>
   </Card>
@@ -103,10 +114,11 @@ interface ListTextareaCardProps {
   value: string;
   originalValue: string;
   onChange: (val: string) => void;
+  sources?: string[];
 }
 
 export const ListTextareaCard: React.FC<ListTextareaCardProps> = ({
-  title, label, value, originalValue, onChange
+  title, label, value, originalValue, onChange, sources
 }) => (
   <Card>
     <CardHeader>
@@ -125,6 +137,11 @@ export const ListTextareaCard: React.FC<ListTextareaCardProps> = ({
           value={value}
           onChange={(e) => onChange(e.target.value)}
         />
+        {sources && sources.length > 0 && (
+          <div className="pt-1">
+            <SourcesUsed sources={sources} />
+          </div>
+        )}
       </div>
     </CardContent>
   </Card>

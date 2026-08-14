@@ -34,6 +34,7 @@ export function useImpactAssessmentReview() {
         originalSeverity: val.severity as ImpactSeverity,
         originalDescription: val.rationale,
         severityChangedWithoutDescription: false,
+        sources: val.sources ?? [],
       }))
     : [];
 
@@ -120,13 +121,14 @@ export function useImpactAssessmentReview() {
     // Explicitly rebuild the object to bypass TypeScript's generic dictionary errors
     const updatedImpact = {} as Record<
       string,
-      { severity: ImpactSeverity; rationale: string }
+      { severity: ImpactSeverity; rationale: string; sources: string[] }
     >;
 
     assessments.forEach((a) => {
       updatedImpact[a.key] = {
         severity: a.severity || "None",
         rationale: a.description,
+        sources: a.sources ?? [],
       };
     });
 

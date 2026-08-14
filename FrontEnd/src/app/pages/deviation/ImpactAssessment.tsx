@@ -16,7 +16,6 @@ import {
 export function ImpactAssessment() {
   const navigate = useNavigate();
   const {
-    result,
     classificationParsed,
     impactParsed,
     chatOpen,

@@ -7,6 +7,7 @@ import {
 import { AIAssistant } from "../../components/chat/AiAssistant";
 import { LlmFailureDialog } from "../../components/LlmFailureDialog";
 import { useRootCauseReview } from "../../hooks/deviation/useRootCauseReview";
+import { flattenSources } from "../../components/shared/SourcesUsed";
 import {
   NoRcaDataGuard,
   RcaConfidenceCard,
@@ -71,6 +72,8 @@ export function RootCause() {
             originalImmediateCause={rcaParsed.immediate_cause}
             onPrimaryChange={setPrimaryRootCause}
             onImmediateChange={setImmediateCause}
+            primarySources={rcaParsed.primary_root_cause_sources}
+            immediateSources={rcaParsed.immediate_cause_sources}
           />
 
           <ListTextareaCard
@@ -79,6 +82,7 @@ export function RootCause() {
             value={contributingFactors}
             originalValue={(rcaParsed.contributing_factors ?? []).join("\n")}
             onChange={setContributingFactors}
+            sources={flattenSources(rcaParsed.contributing_factors_sources)}
           />
 
           <ListTextareaCard
@@ -87,6 +91,7 @@ export function RootCause() {
             value={evidence}
             originalValue={(rcaParsed.evidence ?? []).join("\n")}
             onChange={setEvidence}
+            sources={flattenSources(rcaParsed.evidence_sources)}
           />
 
           <DecisionAction

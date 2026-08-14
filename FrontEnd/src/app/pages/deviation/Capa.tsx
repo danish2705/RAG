@@ -6,6 +6,7 @@ import {
 } from "../../components/eventIntake";
 import { AIAssistant } from "../../components/chat/AiAssistant";
 import { useCapaReview } from "../../hooks/deviation/useCapaReview";
+import { flattenSources } from "../../components/shared/SourcesUsed";
 import {
   NoCapaDataGuard,
   CapaConfidenceCard,
@@ -70,6 +71,7 @@ export function Capa() {
 
           <CapaCorrectionCard value={correction} onChange={setCorrection} />
 
+          {/* SOURCES PASSED TO CORRECTIVE ACTION CARD */}
           <CapaActionCard
             title="Corrective Action"
             label="Corrective Action (What will prevent THIS deviation from recurring?)"
@@ -78,8 +80,10 @@ export function Capa() {
             originalValue={capaParsed.corrective_actions.join("\n")}
             onChange={handleCorrectiveActionChange}
             showWarning={showWeakCapaWarning}
+            sources={flattenSources(capaParsed.corrective_actions_sources)}
           />
 
+          {/* SOURCES PASSED TO PREVENTIVE ACTION CARD */}
           <CapaActionCard
             title="Preventive Action"
             label="Preventive Action (What will prevent SIMILAR deviations?)"
@@ -87,8 +91,10 @@ export function Capa() {
             value={preventiveAction}
             originalValue={capaParsed.preventive_actions.join("\n")}
             onChange={setPreventiveAction}
+            sources={flattenSources(capaParsed.preventive_actions_sources)}
           />
 
+          {/* SOURCES PASSED TO EFFECTIVENESS CHECK CARD */}
           <CapaEffectivenessCard
             checkValue={effectivenessCheck}
             originalCheck={capaParsed.effectiveness_check}
@@ -96,6 +102,7 @@ export function Capa() {
             dateValue={dueDate}
             originalDate={capaParsed.due_date}
             onDateChange={setDueDate}
+            sources={capaParsed.effectiveness_check_sources}
           />
 
           <DecisionAction

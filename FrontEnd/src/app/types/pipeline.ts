@@ -46,11 +46,15 @@ export interface AssessmentItem {
   originalSeverity: ImpactSeverity;
   originalDescription: string;
   severityChangedWithoutDescription: boolean;
+  /** KB source document names that back this specific parameter's rating. */
+  sources?: string[];
 }
 
 export interface ImpactParameter {
   severity: ImpactSeverity;
   rationale: string;
+  /** KB source document names that back this specific parameter's rating. */
+  sources?: string[];
 }
 
 export interface ImpactAssessmentParsed {
@@ -182,6 +186,8 @@ export type ClassificationType = "Deviation" | "Change Control";
 export interface ClassificationParsed {
   classification: ClassificationType;
   rationale: string[];
+  /** KB source document names per rationale bullet, same order/length as rationale. */
+  rationale_sources?: string[][];
   confidence_score: number;
 }
 
@@ -189,9 +195,17 @@ export interface RCAResult {
   impact_summary: string;
   sequence_of_events: string[];
   immediate_cause: string;
+  /** KB source document names that back immediate_cause. */
+  immediate_cause_sources?: string[];
   primary_root_cause: string;
+  /** KB source document names that back primary_root_cause. */
+  primary_root_cause_sources?: string[];
   contributing_factors: string[];
+  /** KB source document names per contributing_factors entry, same order/length. */
+  contributing_factors_sources?: string[][];
   evidence: string[];
+  /** KB source document names per evidence entry, same order/length. */
+  evidence_sources?: string[][];
   impact_assessment: string;
   confidence_score: number;
 }
@@ -199,8 +213,14 @@ export interface RCAResult {
 export interface CAPAResult {
   capa_required: boolean;
   corrective_actions: string[];
+  /** KB source document names per corrective_actions entry, same order/length. */
+  corrective_actions_sources?: string[][];
   preventive_actions: string[];
+  /** KB source document names per preventive_actions entry, same order/length. */
+  preventive_actions_sources?: string[][];
   effectiveness_check: string;
+  /** KB source document names that back effectiveness_check. */
+  effectiveness_check_sources?: string[];
   due_date: string;
   confidence_score: number;
 }
@@ -211,6 +231,14 @@ export interface StageWrapper<T> {
   parsed: T | null;
   error: unknown;
   gate: GateResult;
+  /**
+   * "Sources used" for this stage — the deduped list of knowledge-base
+   * documents that were retrieved and given to the AI for this stage's
+   * generation. Only present for stages that actually query the KB
+   * (classification, impact assessment, RCA, change impact assessment);
+   * later stages that only reuse upstream approved data won't have it.
+   */
+  sources?: string[];
 }
 
 export type ClassificationStage = StageWrapper<ClassificationParsed> & {

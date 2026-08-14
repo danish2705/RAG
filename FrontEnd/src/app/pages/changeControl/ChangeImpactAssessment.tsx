@@ -100,6 +100,7 @@ export function ChangeImpactAssessment() {
           <ImpactConfidenceCard
             score={changeImpactParsed.confidence_score}
             onGetAiSuggestion={showAiSuggestion ? handleGetAiSuggestion : undefined}
+            sources={result?.stages?.changeImpactAssessment?.sources}
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

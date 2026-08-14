@@ -18,6 +18,7 @@ export interface CAPAStageResult {
 // Stage 4 of 4. Only runs if Stage 3 (RCA) passed the gate.
 export async function runCAPAStage(
   query: string,
+  contextText: string,
   classification: ClassificationResult | null,
   impactAssessment: ImpactAssessmentResult | null,
   rca: RCAResult | null,
@@ -34,6 +35,9 @@ ${JSON.stringify(impactAssessment, null, 2)}
 
 RCA Findings (from Stage 3, confirmed by human reviewer):
 ${JSON.stringify(rca, null, 2)}
+
+Knowledge Base Context:
+${contextText}
 `.trim();
 
   const rawText = await callLLM(userPrompt, CAPA_PROMPT);

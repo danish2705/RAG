@@ -24,6 +24,22 @@ export interface RetrieveContextResult {
 }
 
 /**
+ * "Sources used" for a stage: the deduped, human-readable list of KB
+ * documents whose chunks were retrieved for a given query. Used to show
+ * citations for AI-generated content without persisting anything — it's
+ * recomputed from the same `chunks` a stage's retrieval already returns.
+ */
+export function extractSourceNames(chunks: RetrievedChunk[]): string[] {
+  const seen = new Set<string>();
+  for (const chunk of chunks) {
+    if (chunk.meta?.source) {
+      seen.add(chunk.meta.source);
+    }
+  }
+  return [...seen];
+}
+
+/**
  * Loads both knowledge bases from Azure Blob Storage (the "deviation" and
  * "change-control" folders in the KB container) and builds their vector indexes.
  */
@@ -71,7 +87,12 @@ export async function retrieveContext(
   }
 
   return {
-    contextText: chunks.map((c) => c.text).join("\n"),
+    // Each chunk is tagged with its source document name so the LLM can
+    // cite a specific, real source per field/rationale instead of only
+    // knowing a KB was used at all.
+    contextText: chunks
+      .map((c) => `[Source: ${c.meta?.source ?? "Unknown"}]\n${c.text}`)
+      .join("\n\n"),
     chunks,
     routing,
   };

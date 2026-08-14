@@ -69,6 +69,7 @@ async function main(): Promise<void> {
   console.log("\n--- Stage 4: CAPA (simulating human approval) ---");
   const capaResult = await runCAPAOnly(
     query,
+    contextText,
     approvedClassification,
     approvedImpactAssessment,
     approvedRCA,

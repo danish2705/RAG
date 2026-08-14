@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { retrieveContext } from "../kb/knowledgeBase.js";
+import { retrieveContext, extractSourceNames } from "../kb/knowledgeBase.js";
 import {
   runClassificationOnly,
   runImpactAssessmentOnly,
@@ -27,8 +27,12 @@ export async function inputQuery(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const { contextText, routing } = await retrieveContext(query);
-  const result = await runClassificationOnly(query, contextText);
+  const { contextText, routing, chunks } = await retrieveContext(query);
+  const result = await runClassificationOnly(
+    query,
+    contextText,
+    extractSourceNames(chunks),
+  );
   res.json({ query, routing, ...result });
 }
 
@@ -61,11 +65,12 @@ export async function impactAssessment(
     return;
   }
 
-  const { contextText } = await retrieveContext(query);
+  const { contextText, chunks } = await retrieveContext(query);
   const result = await runImpactAssessmentOnly(
     query,
     contextText,
     parsedClassification.data,
+    extractSourceNames(chunks),
   );
   res.json({ query, ...result });
 }
@@ -110,12 +115,13 @@ export async function rca(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const { contextText } = await retrieveContext(query);
+  const { contextText, chunks } = await retrieveContext(query);
   const result = await runRCAOnly(
     query,
     contextText,
     parsedClassification.data,
     parsedImpactAssessment.data,
+    extractSourceNames(chunks),
   );
   res.json({ query, ...result });
 }
@@ -172,11 +178,16 @@ export async function capa(req: Request, res: Response): Promise<void> {
     return;
   }
 
+  const { contextText, chunks } = await retrieveContext(query);
   const result = await runCAPAOnly(
     query,
+    contextText,
     parsedClassification.data,
     parsedImpactAssessment.data,
     parsedRCA.data,
+    extractSourceNames(chunks),
   );
   res.json({ query, ...result });
 }
+
+

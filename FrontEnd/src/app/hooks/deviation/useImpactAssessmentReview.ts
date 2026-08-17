@@ -34,6 +34,7 @@ export function useImpactAssessmentReview() {
         originalSeverity: val.severity as ImpactSeverity,
         originalDescription: val.rationale,
         severityChangedWithoutDescription: false,
+        sources: val.sources ?? [],
       }))
     : [];
 
@@ -43,12 +44,12 @@ export function useImpactAssessmentReview() {
   const [assessments, setAssessments] =
     useState<AssessmentItem[]>(initialAssessments);
 
-  const [showRejectDialog, setShowRejectDialog] = useState(false);
-  const [rejectJustification, setRejectJustification] = useState("");
-  // Only surfaced after the user rejects the assessment (and the fields get
+  const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+  const [discardJustification, setDiscardJustification] = useState("");
+  // Only surfaced after the user discards the assessment (and the fields get
   // cleared) — hidden otherwise.
   const [showAiSuggestion, setShowAiSuggestion] = useState(false);
-  // Client-side check so an accidental Accept right after Reject clears the
+  // Client-side check so an accidental Accept right after Discard clears the
   // fields doesn't silently save empty data to the audit trail.
   const [emptyFieldsWarning, setEmptyFieldsWarning] = useState<string | null>(
     null,
@@ -83,7 +84,7 @@ export function useImpactAssessmentReview() {
   };
 
   // Restores the original AI-generated severities/descriptions into the
-  // form — used by the "AI Suggestion" button so a rejected/cleared
+  // form — used by the "AI Suggestion" button so a discarded/cleared
   // assessment can be brought back.
   const handleGetAiSuggestion = () => {
     setAssessments(initialAssessments);
@@ -120,13 +121,14 @@ export function useImpactAssessmentReview() {
     // Explicitly rebuild the object to bypass TypeScript's generic dictionary errors
     const updatedImpact = {} as Record<
       string,
-      { severity: ImpactSeverity; rationale: string }
+      { severity: ImpactSeverity; rationale: string; sources: string[] }
     >;
 
     assessments.forEach((a) => {
       updatedImpact[a.key] = {
         severity: a.severity || "None",
         rationale: a.description,
+        sources: a.sources ?? [],
       };
     });
 
@@ -209,7 +211,7 @@ export function useImpactAssessmentReview() {
   };
 
   // Accept stays disabled until every assessment description is filled in —
-  // most notably right after a Reject clears them.
+  // most notably right after a Discard clears them.
   const canAccept = assessments.every((a) => a.description.trim() !== "");
 
   const handleAccept = () => {
@@ -226,7 +228,7 @@ export function useImpactAssessmentReview() {
       return;
     }
 
-    // Guard against accepting right after a Reject cleared the
+    // Guard against accepting right after a Discard cleared the
     // descriptions — don't silently save empty data to the audit trail.
     const emptyDescriptions = assessments.some(
       (a) => a.description.trim() === "",
@@ -259,9 +261,9 @@ export function useImpactAssessmentReview() {
     void runRCA(impactProvenance);
   };
 
-  const handleReject = () => {
-    setShowRejectDialog(false);
-    // Clear the AI-assessed fields — the user rejected the AI's suggestion,
+  const handleDiscard = () => {
+    setShowDiscardDialog(false);
+    // Clear the AI-assessed fields — the user discarded the AI's suggestion,
     // so we don't leave it sitting in the form. They can either fill this
     // in manually or pull the AI suggestion back in with the button above.
     setAssessments((prev) =>
@@ -282,10 +284,10 @@ export function useImpactAssessmentReview() {
     chatOpen,
     setChatOpen,
     assessments,
-    showRejectDialog,
-    setShowRejectDialog,
-    rejectJustification,
-    setRejectJustification,
+    showDiscardDialog,
+    setShowDiscardDialog,
+    discardJustification,
+    setDiscardJustification,
     showAiSuggestion,
     emptyFieldsWarning,
     canAccept,
@@ -297,7 +299,7 @@ export function useImpactAssessmentReview() {
     updateSeverity,
     updateDescription,
     handleAccept,
-    handleReject,
+    handleDiscard,
     handleGetAiSuggestion,
     llmFailure,
   };

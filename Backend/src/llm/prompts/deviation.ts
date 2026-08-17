@@ -220,6 +220,23 @@ Rationale rules:
   appears in the Knowledge Base Context
 - Minimum 3 bullets, maximum 8 bullets
 
+Citing sources:
+- The Knowledge Base Context is made up of chunks, each preceded by a
+  "[Source: <document name>]" label.
+- Also return "rationale_sources": an array the SAME LENGTH and in the SAME
+  ORDER as "rationale". Each entry is an array of the document name(s)
+  (copied EXACTLY from their "[Source: ...]" labels) whose criteria or
+  precedent you checked that specific bullet's fact against.
+- Only include a source for a bullet if a KB document genuinely helped you
+  interpret or validate that bullet's fact — do not list every retrieved
+  source on every bullet, and never invent a source name that doesn't appear
+  in a "[Source: ...]" label.
+- If no KB source clearly applied to a bullet, use an empty array [] for
+  that bullet rather than guessing.
+- This does not change the rationale text itself, which must still describe
+  only the Event Description's own facts, never the KB — "rationale_sources"
+  is only a citation of what you checked those facts against.
+
 Confidence score rubric (apply this explicitly, do not just guess a number):
 Start at 0 and build the score from these factors:
   +25  Every relevant field in the Event Description (not just Description)
@@ -228,8 +245,8 @@ Start at 0 and build the score from these factors:
   +15  All fields are internally consistent with each other (no contradictions
        between e.g. Event Type, Source System, and Description)
   +30  The fields' facts can be directly matched against specific terms,
-       criteria, or precedents found in the Knowledge Base Context (cite which
-       ones internally; do not put KB-only facts in the rationale)
+       criteria, or precedents found in the Knowledge Base Context (cite them
+       in "rationale_sources"; do not put KB-only facts in the rationale text)
   +15  The match between the Event Description and the Knowledge Base
        Context is unambiguous — only one classification fits well
   +15  All key fields needed for this classification (what occurred, scope,
@@ -250,6 +267,11 @@ Required JSON structure (return ONLY this, no extra text):
     "Bullet point reason 1",
     "Bullet point reason 2",
     "Bullet point reason 3"
+  ],
+  "rationale_sources": [
+    ["Source Document Name.pdf"],
+    [],
+    ["Source Document Name.pdf", "Other Document.pdf"]
   ],
   "confidence_score": 0
 }
@@ -283,6 +305,21 @@ Severity rules:
 - Every severity level must be backed by a short rationale string grounded in
   the Event Description — not generic boilerplate.
 
+Citing sources:
+- The Knowledge Base Context is made up of chunks, each preceded by a
+  "[Source: <document name>]" label.
+- For EACH of the 4 impact parameters, list in "sources" the document
+  name(s) (copied EXACTLY from their "[Source: ...]" labels) whose criteria
+  or precedent you actually used to judge that parameter's severity level.
+- Only include a source if it genuinely informed that specific parameter —
+  do not list every retrieved source on every parameter, and never invent a
+  source name that doesn't appear in a "[Source: ...]" label.
+- If no KB source clearly applied to a parameter, leave its "sources" array
+  empty rather than guessing.
+- The rationale text itself must still describe the Event Description's own
+  facts, not the KB — "sources" is only a citation of what you checked those
+  facts against, never a substitute for grounding the rationale itself.
+
 Confidence score rubric (apply this explicitly, do not just guess a number):
 Start at 0 and build the score from these factors:
   +25  Every relevant field in the Event Description contains specific,
@@ -300,10 +337,10 @@ any reliance on KB-only details to fill gaps in the input.
 Required JSON structure (return ONLY this, no extra text):
 {
   "impact_assessment": {
-      "product_impact": { "severity": "None | Minor | Major | Critical", "rationale": "" },
-      "patient_impact": { "severity": "None | Minor | Major | Critical", "rationale": "" },
-      "data_integrity_impact": { "severity": "None | Minor | Major | Critical", "rationale": "" },
-      "compliance_impact": { "severity": "None | Minor | Major | Critical", "rationale": "" }
+      "product_impact": { "severity": "None | Minor | Major | Critical", "rationale": "", "sources": [] },
+      "patient_impact": { "severity": "None | Minor | Major | Critical", "rationale": "", "sources": [] },
+      "data_integrity_impact": { "severity": "None | Minor | Major | Critical", "rationale": "", "sources": [] },
+      "compliance_impact": { "severity": "None | Minor | Major | Critical", "rationale": "", "sources": [] }
   },
   "confidence_score": 0
 }
@@ -331,7 +368,25 @@ yourself; that decision has already been made and approved upstream.
 CRITICAL — all array fields must contain plain strings only, not objects:
 - sequence_of_events: array of strings, each string describes one event in chronological order
 - contributing_factors: array of strings, each string is one factor
-- evidence: array of strings, each string is one piece of evidence (cite source inline e.g. "Knowledge Base: ...")
+- evidence: array of strings, each string is one piece of evidence, grounded in
+  the Event Description, Classification, or Impact Assessment — never a fact
+  that only appears in the Knowledge Base Context
+
+Citing sources:
+- The Knowledge Base Context is made up of chunks, each preceded by a
+  "[Source: <document name>]" label.
+- immediate_cause_sources and primary_root_cause_sources: arrays of the
+  document name(s) (copied EXACTLY from their "[Source: ...]" labels) whose
+  criteria or precedent you checked that field's finding against. Use an
+  empty array if no KB source clearly applied.
+- contributing_factors_sources and evidence_sources: arrays the SAME LENGTH
+  and SAME ORDER as contributing_factors and evidence respectively. Each
+  entry is an array of the document name(s) that informed that specific
+  entry — empty array [] for an entry with no clear KB source.
+- Only cite a source that genuinely informed the specific field/entry — do
+  not list every retrieved source everywhere, and never invent a source name
+  that doesn't appear in a "[Source: ...]" label. This is a citation only;
+  the field's own text must still describe the event's own facts, not the KB.
 
 Confidence score rubric (apply this explicitly, do not just guess a number):
 Start at 0 and build the score from these factors:
@@ -361,14 +416,24 @@ Required JSON (return ONLY this, no extra text, no trailing commentary):
     "Second event that occurred"
   ],
   "immediate_cause": "single string describing the direct trigger",
+  "immediate_cause_sources": ["Source Document Name.pdf"],
   "primary_root_cause": "single string describing the underlying root cause",
+  "primary_root_cause_sources": ["Source Document Name.pdf"],
   "contributing_factors": [
     "Factor one",
     "Factor two"
   ],
+  "contributing_factors_sources": [
+    ["Source Document Name.pdf"],
+    []
+  ],
   "evidence": [
-    "Evidence item one with source",
-    "Evidence item two with source"
+    "Evidence item one",
+    "Evidence item two"
+  ],
+  "evidence_sources": [
+    [],
+    ["Source Document Name.pdf"]
   ],
   "impact_summary": "single string summarising overall impact, consistent with the approved Impact Assessment",
   "confidence_score": 0
@@ -402,6 +467,20 @@ Rules:
   warrant formal CAPA, not default to true
 - return valid JSON only, no trailing text
 
+Citing sources:
+- The Knowledge Base Context is made up of chunks, each preceded by a
+  "[Source: <document name>]" label.
+- corrective_actions_sources and preventive_actions_sources: arrays the SAME
+  LENGTH and SAME ORDER as corrective_actions and preventive_actions
+  respectively. Each entry is an array of the document name(s) (copied
+  EXACTLY from their "[Source: ...]" labels) whose criteria or precedent you
+  used to shape that specific action — empty array [] if none clearly applied.
+- effectiveness_check_sources: array of document name(s) that informed the
+  effectiveness_check. Empty array if none clearly applied.
+- Only cite a source that genuinely informed that specific action — do not
+  list every retrieved source on every action, and never invent a source
+  name that doesn't appear in a "[Source: ...]" label.
+
 Confidence score rubric (apply this explicitly, do not just guess a number):
 Start at 0 and build the score from these factors:
   +25  Each corrective_action traces directly to a specific contributing
@@ -430,11 +509,20 @@ Required JSON (return ONLY this):
     "Action one",
     "Action two"
   ],
+  "corrective_actions_sources": [
+    ["Source Document Name.pdf"],
+    []
+  ],
   "preventive_actions": [
     "Action one",
     "Action two"
   ],
+  "preventive_actions_sources": [
+    [],
+    ["Source Document Name.pdf"]
+  ],
   "effectiveness_check": "",
+  "effectiveness_check_sources": [],
   "due_date": "",
   "confidence_score": 0
 }

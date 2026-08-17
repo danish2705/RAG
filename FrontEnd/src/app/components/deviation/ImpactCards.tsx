@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 import { AlertTriangle, Sparkles } from "lucide-react";
 import { ModifiedBadge } from "../eventIntake";
+import { SourcesUsed } from "../shared/SourcesUsed";
 import { getSeverityBadgeClass } from "../../utils/deviation/impactAssessment";
 import type { AssessmentItem } from "../../types/pipeline";
 
@@ -40,7 +41,7 @@ export const ImpactConfidenceCard: React.FC<{
         </Button>
       )}
     </CardHeader>
-    <CardContent>
+    <CardContent className="space-y-3">
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm text-muted-foreground">Based on {classificationName} classification</span>
         <span className="text-sm font-semibold text-foreground">{score}%</span>
@@ -110,6 +111,7 @@ export const ImpactAssessmentCard: React.FC<ImpactAssessmentCardProps> = ({
             className={assessment.severityChangedWithoutDescription ? "border-orange-400 focus:ring-orange-400" : ""}
           />
         </div>
+        <SourcesUsed sources={assessment.sources} />
       </CardContent>
     </Card>
   );

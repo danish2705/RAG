@@ -43,6 +43,8 @@ export type HaltedStage =
 export interface PipelineStages {
   changeImpactAssessment?: ChangeImpactAssessmentStageResult & {
     gate: GateResult;
+    /** KB documents whose chunks were retrieved for this stage's query. */
+    sources?: string[];
   };
   riskCriticality?: RiskCriticalityStageResult & { gate: GateResult };
   validationTesting?: ValidationTestingStageResult & { gate: GateResult };
@@ -65,6 +67,7 @@ export async function runChangeImpactAssessmentOnly(
   query: string,
   contextText: string,
   approvedClassification: ClassificationResult,
+  sources: string[] = [],
 ): Promise<PipelineResult> {
   const audit = createAuditTrail();
   const stages: PipelineStages = {};
@@ -79,7 +82,7 @@ export async function runChangeImpactAssessmentOnly(
     result.parsed,
     result.error,
   );
-  stages.changeImpactAssessment = { ...result, gate };
+  stages.changeImpactAssessment = { ...result, gate, sources };
   audit.record({ ...gate });
 
   if (!gate.passed) {

@@ -17,6 +17,7 @@ import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
 import { Sparkles, Info } from "lucide-react";
 import { ModifiedStatus } from "../eventIntake";
+import { flattenSources } from "../shared/SourcesUsed";
 import type { ClassificationType } from "../../types/pipeline";
 
 interface ClassificationCardProps {
@@ -28,6 +29,8 @@ interface ClassificationCardProps {
   originalClassification: ClassificationType;
   originalRationale: string[];
   onGetAiSuggestion?: () => void;
+  /** KB source document names per rationale bullet, same order/length as originalRationale. */
+  rationaleSources?: string[][];
 }
 
 export const ClassificationCard: React.FC<ClassificationCardProps> = ({
@@ -39,6 +42,7 @@ export const ClassificationCard: React.FC<ClassificationCardProps> = ({
   originalClassification,
   originalRationale,
   onGetAiSuggestion,
+  rationaleSources,
 }) => {
   return (
     <Card>
@@ -56,30 +60,32 @@ export const ClassificationCard: React.FC<ClassificationCardProps> = ({
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Classification Type Section */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-muted-foreground">
-            Classification:
-          </span>
-          <Select
-            value={editedClassification || undefined}
-            onValueChange={(v) =>
-              setEditedClassification(v as ClassificationType)
-            }
-          >
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Select classification..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Deviation">Deviation</SelectItem>
-              <SelectItem value="Change Control">Change Control</SelectItem>
-            </SelectContent>
-          </Select>
-          <ModifiedStatus
-            original={originalClassification}
-            current={editedClassification}
-          />
-        </div>
+  {/* Classification Type Section */}
+  <div className="flex items-center gap-2 flex-wrap">
+    <span className="text-sm font-medium text-muted-foreground">
+      Classification:
+    </span>
+    <Select
+      value={editedClassification || undefined}
+      onValueChange={(v) =>
+        setEditedClassification(v as ClassificationType)
+      }
+    >
+      <SelectTrigger className="w-48">
+        <SelectValue placeholder="Select classification..." />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="Deviation">Deviation</SelectItem>
+        <SelectItem value="Change Control">Change Control</SelectItem>
+      </SelectContent>
+    </Select>
+    <ModifiedStatus
+      original={originalClassification}
+      current={editedClassification}
+    />
+  </div>
+
+  {/* ...rest of the component stays exactly the same */}
 
         {/* Confidence Score Section */}
         <div>
@@ -137,9 +143,19 @@ export const ClassificationCard: React.FC<ClassificationCardProps> = ({
               onChange={(e) => setEditedRationale(e.target.value)}
               placeholder="One rationale point per line..."
             />
-            <p className="text-xs text-muted-foreground">
-              One point per line
-            </p>
+            {(() => {
+              const sources = flattenSources(rationaleSources);
+              return sources.length > 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground">Sources used: </span>
+                  {sources.join(", ")}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  One point per line
+                </p>
+              );
+            })()}
           </div>
         </div>
       </CardContent>

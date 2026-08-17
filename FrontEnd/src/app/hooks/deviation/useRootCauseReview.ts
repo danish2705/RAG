@@ -47,12 +47,12 @@ export function useRootCauseReview() {
       : (rcaParsed?.evidence ?? []).join("\n"),
   );
 
-  const [showRejectDialog, setShowRejectDialog] = useState(false);
-  const [rejectJustification, setRejectJustification] = useState("");
-  // Only surfaced after the user rejects the analysis (and the fields get
+  const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+  const [discardJustification, setDiscardJustification] = useState("");
+  // Only surfaced after the user discards the analysis (and the fields get
   // cleared) — hidden otherwise.
   const [showAiSuggestion, setShowAiSuggestion] = useState(false);
-  // Client-side check so an accidental Accept right after Reject clears the
+  // Client-side check so an accidental Accept right after Discard clears the
   // fields doesn't silently save empty data to the audit trail.
   const [emptyFieldsWarning, setEmptyFieldsWarning] = useState<string | null>(
     null,
@@ -173,7 +173,7 @@ export function useRootCauseReview() {
   };
 
   // Accept stays disabled until every field is filled in — most notably
-  // right after a Reject clears them.
+  // right after a Discard clears them.
   const canAccept =
     primaryRootCause.trim() !== "" &&
     immediateCause.trim() !== "" &&
@@ -181,7 +181,7 @@ export function useRootCauseReview() {
     evidence.trim() !== "";
 
   const handleAccept = () => {
-    // Guard against accepting right after a Reject cleared the fields —
+    // Guard against accepting right after a Discard cleared the fields —
     // don't silently save empty data to the audit trail.
     if (
       primaryRootCause.trim() === "" ||
@@ -212,9 +212,9 @@ export function useRootCauseReview() {
     void runCAPA(rcaProvenance);
   };
 
-  const handleReject = () => {
-    setShowRejectDialog(false);
-    // Clear the AI-generated fields — the user rejected the AI's
+  const handleDiscard = () => {
+    setShowDiscardDialog(false);
+    // Clear the AI-generated fields — the user discarded the AI's
     // suggestion, so we don't leave it sitting in the form. They can
     // either fill this in manually or pull the AI suggestion back in
     // with the button above.
@@ -226,7 +226,7 @@ export function useRootCauseReview() {
   };
 
   // Restores the original AI-generated root cause analysis into the form —
-  // used by the "AI Suggestion" button so a rejected/cleared field can be
+  // used by the "AI Suggestion" button so a discarded/cleared field can be
   // brought back.
   const handleGetAiSuggestion = () => {
     if (!rcaParsed) return;
@@ -249,17 +249,17 @@ export function useRootCauseReview() {
     setContributingFactors,
     evidence,
     setEvidence,
-    showRejectDialog,
-    setShowRejectDialog,
-    rejectJustification,
-    setRejectJustification,
+    showDiscardDialog,
+    setShowDiscardDialog,
+    discardJustification,
+    setDiscardJustification,
     showAiSuggestion,
     emptyFieldsWarning,
     canAccept,
     isGeneratingCAPA,
     capaError,
     handleAccept,
-    handleReject,
+    handleDiscard,
     handleGetAiSuggestion,
     llmFailure,
   };

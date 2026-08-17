@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import {
   DecisionAction,
-  RejectDialog,
+  DiscardDialog,
   StepProgressBar,
 } from "../components/eventIntake";
 import { AIAssistant } from "../components/chat/AiAssistant";
@@ -26,17 +26,17 @@ export function AIRecommendation() {
     setEditedClassification,
     editedRationale,
     setEditedRationale,
-    showRejectDialog,
-    setShowRejectDialog,
-    rejectJustification,
-    setRejectJustification,
+    showDiscardDialog,
+    setShowDiscardDialog,
+    discardJustification,
+    setDiscardJustification,
     showAiSuggestion,
     isAssessing,
     assessError,
     emptyFieldsWarning,
     canAccept,
     handleAccept,
-    handleReject,
+    handleDiscard,
     handleGetAiSuggestion,
     llmFailure,
   } = useClassificationReview();
@@ -81,13 +81,14 @@ export function AIRecommendation() {
             originalClassification={parsed.classification}
             originalRationale={parsed.rationale ?? []}
             onGetAiSuggestion={showAiSuggestion ? handleGetAiSuggestion : undefined}
+            rationaleSources={parsed.rationale_sources}
           />
 
           <DecisionAction
             acceptLoadingLabel="Running Impact Assessment..."
             onAccept={handleAccept}
             acceptDisabled={isAssessing || !canAccept}
-            onReject={() => setShowRejectDialog(true)}
+            onDiscard={() => setShowDiscardDialog(true)}
             isLoading={isAssessing}
             error={assessError}
             errorTitle="Impact assessment failed"
@@ -96,16 +97,16 @@ export function AIRecommendation() {
           />
         </div>
 
-        <RejectDialog
-          open={showRejectDialog}
-          onOpenChange={setShowRejectDialog}
-          title="Reject AI Classification"
-          description="Please provide a reason for rejecting this AI classification. You will be returned to the event intake form. This will be recorded in the audit trail."
+        <DiscardDialog
+          open={showDiscardDialog}
+          onOpenChange={setShowDiscardDialog}
+          title="Discard AI Classification"
+          description="Please provide a reason for discarding this AI classification. You will be returned to the event intake form. This will be recorded in the audit trail."
           subjectLabel="the AI classification"
-          value={rejectJustification}
-          onChange={setRejectJustification}
-          onCancel={() => setShowRejectDialog(false)}
-          onConfirm={handleReject}
+          value={discardJustification}
+          onChange={setDiscardJustification}
+          onCancel={() => setShowDiscardDialog(false)}
+          onConfirm={handleDiscard}
         />
 
         <div className="fixed top-16 right-0 bottom-0 z-40">

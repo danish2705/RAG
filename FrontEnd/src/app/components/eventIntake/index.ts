@@ -5,8 +5,8 @@ export type { DecisionActionProps } from "./DecisionAction";
 
 export { ModifiedBadge, ModifiedStatus } from "./ModifiedStatus";
 
-export { RejectDialog } from "./RejectDialog";
-export type { RejectDialogProps } from "./RejectDialog";
+export { DiscardDialog } from "./DiscardDialog";
+export type { DiscardDialogProps } from "./DiscardDialog";
 export type { Classification } from "./StepProgressBar";
 
 export { StepProgressBar } from "./StepProgressBar";

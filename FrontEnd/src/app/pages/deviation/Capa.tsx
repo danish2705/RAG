@@ -1,11 +1,12 @@
 import { useNavigate } from "react-router";
 import {
   DecisionAction,
-  RejectDialog,
+  DiscardDialog,
   StepProgressBar,
 } from "../../components/eventIntake";
 import { AIAssistant } from "../../components/chat/AiAssistant";
 import { useCapaReview } from "../../hooks/deviation/useCapaReview";
+import { flattenSources } from "../../components/shared/SourcesUsed";
 import {
   NoCapaDataGuard,
   CapaConfidenceCard,
@@ -34,15 +35,15 @@ export function Capa() {
     setDueDate,
     showWeakCapaWarning,
     decisionMade,
-    showRejectDialog,
-    setShowRejectDialog,
-    rejectJustification,
-    setRejectJustification,
+    showDiscardDialog,
+    setShowDiscardDialog,
+    discardJustification,
+    setDiscardJustification,
     showAiSuggestion,
     emptyFieldsWarning,
     canAccept,
     handleAccept,
-    handleReject,
+    handleDiscard,
     handleGetAiSuggestion,
   } = useCapaReview();
 
@@ -70,6 +71,7 @@ export function Capa() {
 
           <CapaCorrectionCard value={correction} onChange={setCorrection} />
 
+          {/* SOURCES PASSED TO CORRECTIVE ACTION CARD */}
           <CapaActionCard
             title="Corrective Action"
             label="Corrective Action (What will prevent THIS deviation from recurring?)"
@@ -78,8 +80,10 @@ export function Capa() {
             originalValue={capaParsed.corrective_actions.join("\n")}
             onChange={handleCorrectiveActionChange}
             showWarning={showWeakCapaWarning}
+            sources={flattenSources(capaParsed.corrective_actions_sources)}
           />
 
+          {/* SOURCES PASSED TO PREVENTIVE ACTION CARD */}
           <CapaActionCard
             title="Preventive Action"
             label="Preventive Action (What will prevent SIMILAR deviations?)"
@@ -87,8 +91,10 @@ export function Capa() {
             value={preventiveAction}
             originalValue={capaParsed.preventive_actions.join("\n")}
             onChange={setPreventiveAction}
+            sources={flattenSources(capaParsed.preventive_actions_sources)}
           />
 
+          {/* SOURCES PASSED TO EFFECTIVENESS CHECK CARD */}
           <CapaEffectivenessCard
             checkValue={effectivenessCheck}
             originalCheck={capaParsed.effectiveness_check}
@@ -96,29 +102,30 @@ export function Capa() {
             dateValue={dueDate}
             originalDate={capaParsed.due_date}
             onDateChange={setDueDate}
+            sources={capaParsed.effectiveness_check_sources}
           />
 
           <DecisionAction
             onAccept={handleAccept}
             acceptDisabled={decisionMade || !canAccept}
             acceptSelected={capaAccepted}
-            onReject={() => setShowRejectDialog(true)}
-            rejectDisabled={decisionMade}
+            onDiscard={() => setShowDiscardDialog(true)}
+            discardDisabled={decisionMade}
             warning={emptyFieldsWarning}
             footerText="Your decision will be logged in the audit trail"
           />
         </div>
 
-        <RejectDialog
-          open={showRejectDialog}
-          onOpenChange={setShowRejectDialog}
-          title="Reject CAPA"
-          description="Please provide a reason for rejecting this CAPA. You will be redirected to the deviation form. This will be recorded in the audit trail."
+        <DiscardDialog
+          open={showDiscardDialog}
+          onOpenChange={setShowDiscardDialog}
+          title="Discard CAPA"
+          description="Please provide a reason for discarding this CAPA. You will be redirected to the deviation form. This will be recorded in the audit trail."
           subjectLabel="the CAPA"
-          value={rejectJustification}
-          onChange={setRejectJustification}
-          onCancel={() => setShowRejectDialog(false)}
-          onConfirm={handleReject}
+          value={discardJustification}
+          onChange={setDiscardJustification}
+          onCancel={() => setShowDiscardDialog(false)}
+          onConfirm={handleDiscard}
         />
       </div>
 

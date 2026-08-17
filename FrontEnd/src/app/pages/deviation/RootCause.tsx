@@ -1,12 +1,13 @@
 import { useNavigate } from "react-router";
 import {
   DecisionAction,
-  RejectDialog,
+  DiscardDialog,
   StepProgressBar,
 } from "../../components/eventIntake";
 import { AIAssistant } from "../../components/chat/AiAssistant";
 import { LlmFailureDialog } from "../../components/LlmFailureDialog";
 import { useRootCauseReview } from "../../hooks/deviation/useRootCauseReview";
+import { flattenSources } from "../../components/shared/SourcesUsed";
 import {
   NoRcaDataGuard,
   RcaConfidenceCard,
@@ -29,17 +30,17 @@ export function RootCause() {
     setContributingFactors,
     evidence,
     setEvidence,
-    showRejectDialog,
-    setShowRejectDialog,
-    rejectJustification,
-    setRejectJustification,
+    showDiscardDialog,
+    setShowDiscardDialog,
+    discardJustification,
+    setDiscardJustification,
     showAiSuggestion,
     emptyFieldsWarning,
     canAccept,
     isGeneratingCAPA,
     capaError,
     handleAccept,
-    handleReject,
+    handleDiscard,
     handleGetAiSuggestion,
     llmFailure,
   } = useRootCauseReview();
@@ -71,6 +72,8 @@ export function RootCause() {
             originalImmediateCause={rcaParsed.immediate_cause}
             onPrimaryChange={setPrimaryRootCause}
             onImmediateChange={setImmediateCause}
+            primarySources={rcaParsed.primary_root_cause_sources}
+            immediateSources={rcaParsed.immediate_cause_sources}
           />
 
           <ListTextareaCard
@@ -79,6 +82,7 @@ export function RootCause() {
             value={contributingFactors}
             originalValue={(rcaParsed.contributing_factors ?? []).join("\n")}
             onChange={setContributingFactors}
+            sources={flattenSources(rcaParsed.contributing_factors_sources)}
           />
 
           <ListTextareaCard
@@ -87,13 +91,14 @@ export function RootCause() {
             value={evidence}
             originalValue={(rcaParsed.evidence ?? []).join("\n")}
             onChange={setEvidence}
+            sources={flattenSources(rcaParsed.evidence_sources)}
           />
 
           <DecisionAction
             acceptLoadingLabel="Generating CAPA..."
             onAccept={handleAccept}
             acceptDisabled={isGeneratingCAPA || !canAccept}
-            onReject={() => setShowRejectDialog(true)}
+            onDiscard={() => setShowDiscardDialog(true)}
             isLoading={isGeneratingCAPA}
             error={capaError}
             errorTitle="CAPA generation failed"
@@ -102,16 +107,16 @@ export function RootCause() {
           />
         </div>
 
-        <RejectDialog
-          open={showRejectDialog}
-          onOpenChange={setShowRejectDialog}
-          title="Reject Root Cause"
-          description="Please provide a reason for rejecting this root cause analysis. You will be redirected to the deviation form. This will be recorded in the audit trail."
+        <DiscardDialog
+          open={showDiscardDialog}
+          onOpenChange={setShowDiscardDialog}
+          title="Discard Root Cause"
+          description="Please provide a reason for discarding this root cause analysis. You will be redirected to the deviation form. This will be recorded in the audit trail."
           subjectLabel="the root cause analysis"
-          value={rejectJustification}
-          onChange={setRejectJustification}
-          onCancel={() => setShowRejectDialog(false)}
-          onConfirm={handleReject}
+          value={discardJustification}
+          onChange={setDiscardJustification}
+          onCancel={() => setShowDiscardDialog(false)}
+          onConfirm={handleDiscard}
         />
 
         <div className="fixed top-16 right-0 bottom-0 z-40">

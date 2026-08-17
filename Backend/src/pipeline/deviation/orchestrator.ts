@@ -31,10 +31,17 @@ export type HaltedStage =
   | null;
 
 export interface PipelineStages {
-  classification?: ClassificationStageResult & { gate: GateResult };
-  impactAssessment?: ImpactAssessmentStageResult & { gate: GateResult };
-  rca?: RCAStageResult & { gate: GateResult };
-  capa?: CAPAStageResult & { gate: GateResult };
+  classification?: ClassificationStageResult & {
+    gate: GateResult;
+    /** KB documents whose chunks were retrieved for this stage's query. */
+    sources?: string[];
+  };
+  impactAssessment?: ImpactAssessmentStageResult & {
+    gate: GateResult;
+    sources?: string[];
+  };
+  rca?: RCAStageResult & { gate: GateResult; sources?: string[] };
+  capa?: CAPAStageResult & { gate: GateResult; sources?: string[] };
 }
 
 export interface PipelineResult {
@@ -48,6 +55,7 @@ export interface PipelineResult {
 export async function runClassificationOnly(
   query: string,
   contextText: string,
+  sources: string[] = [],
 ): Promise<PipelineResult> {
   const audit = createAuditTrail();
   const stages: PipelineStages = {};
@@ -61,7 +69,11 @@ export async function runClassificationOnly(
       "classification",
       classificationResult.insufficientInput.reason,
     );
-    stages.classification = { ...classificationResult, gate: insufficientGate };
+    stages.classification = {
+      ...classificationResult,
+      gate: insufficientGate,
+      sources,
+    };
     audit.record({ ...insufficientGate });
     return finalize(
       "halted_for_human_review",
@@ -76,7 +88,11 @@ export async function runClassificationOnly(
     classificationResult.parsed,
     classificationResult.error,
   );
-  stages.classification = { ...classificationResult, gate: classificationGate };
+  stages.classification = {
+    ...classificationResult,
+    gate: classificationGate,
+    sources,
+  };
   audit.record({ ...classificationGate });
 
   if (!classificationGate.passed) {
@@ -107,6 +123,7 @@ export async function runImpactAssessmentOnly(
   query: string,
   contextText: string,
   approvedClassification: ClassificationResult,
+  sources: string[] = [],
 ): Promise<PipelineResult> {
   const audit = createAuditTrail();
   const stages: PipelineStages = {};
@@ -125,7 +142,7 @@ export async function runImpactAssessmentOnly(
   // yet (see confidenceGate.ts) — using "rca"'s generic confidence-only path
   // is safe since impact assessment has no classification/evidence checks,
   // but rename this once confidenceGate.ts grows an "impact_assessment" case.
-  stages.impactAssessment = { ...impactResult, gate: impactGate };
+  stages.impactAssessment = { ...impactResult, gate: impactGate, sources };
   audit.record({ ...impactGate });
 
   if (!impactGate.passed) {
@@ -155,6 +172,7 @@ export async function runRCAOnly(
   contextText: string,
   approvedClassification: ClassificationResult,
   approvedImpactAssessment: ImpactAssessmentResult,
+  sources: string[] = [],
 ): Promise<PipelineResult> {
   const audit = createAuditTrail();
   const stages: PipelineStages = {};
@@ -166,7 +184,7 @@ export async function runRCAOnly(
     approvedImpactAssessment,
   );
   const rcaGate = evaluateGate("rca", rcaResult.parsed, rcaResult.error);
-  stages.rca = { ...rcaResult, gate: rcaGate };
+  stages.rca = { ...rcaResult, gate: rcaGate, sources };
   audit.record({ ...rcaGate });
 
   if (!rcaGate.passed) {
@@ -187,21 +205,24 @@ export async function runRCAOnly(
  */
 export async function runCAPAOnly(
   query: string,
+  contextText: string,
   approvedClassification: ClassificationResult,
   approvedImpactAssessment: ImpactAssessmentResult,
   approvedRCA: RCAStageResult["parsed"],
+  sources: string[] = [],
 ): Promise<PipelineResult> {
   const audit = createAuditTrail();
   const stages: PipelineStages = {};
 
   const capaResult = await runCAPAStage(
     query,
+    contextText,
     approvedClassification,
     approvedImpactAssessment,
     approvedRCA,
   );
   const capaGate = evaluateGate("capa", capaResult.parsed, capaResult.error);
-  stages.capa = { ...capaResult, gate: capaGate };
+  stages.capa = { ...capaResult, gate: capaGate, sources };
   audit.record({ ...capaGate });
 
   if (!capaGate.passed) {

@@ -138,10 +138,10 @@ export function useValidationTestingReview() {
   );
   const override = useOverrideDialogState();
   const llmFailure = useLlmFailureRecovery();
-  // Only surfaced after the user rejects the strategy (and the fields get
+  // Only surfaced after the user discards the strategy (and the fields get
   // cleared) — hidden otherwise.
   const [showAiSuggestion, setShowAiSuggestion] = useState(false);
-  // Client-side check so an accidental Accept right after Reject clears the
+  // Client-side check so an accidental Accept right after Discard clears the
   // fields doesn't silently save empty data to the audit trail.
   const [emptyFieldsWarning, setEmptyFieldsWarning] = useState<string | null>(
     null,
@@ -332,7 +332,7 @@ export function useValidationTestingReview() {
   };
 
   // Accept stays disabled until every field is filled in — most notably
-  // right after a Reject clears them.
+  // right after a Discard clears them.
   const canAccept =
     form.levelRationale.trim() !== "" &&
     form.scenarioTesting.trim() !== "" &&
@@ -350,7 +350,7 @@ export function useValidationTestingReview() {
       return;
     }
 
-    // Guard against accepting right after a Reject cleared the fields —
+    // Guard against accepting right after a Discard cleared the fields —
     // don't silently save empty data to the audit trail.
     if (
       form.levelRationale.trim() === "" ||
@@ -388,9 +388,9 @@ export function useValidationTestingReview() {
     void submitValidationTesting(validationProvenance);
   };
 
-  const handleReject = () => {
-    override.setShowRejectDialog(false);
-    // Clear the AI-generated fields — the user rejected the AI's
+  const handleDiscard = () => {
+    override.setShowDiscardDialog(false);
+    // Clear the AI-generated fields — the user discarded the AI's
     // suggestion, so we don't leave it sitting in the form. They can
     // either fill this in manually or pull the AI suggestion back in
     // with the button above.
@@ -399,7 +399,7 @@ export function useValidationTestingReview() {
   };
 
   // Restores the original AI-generated strategy into the form — used by
-  // the "AI Suggestion" button so a rejected/cleared field can be brought
+  // the "AI Suggestion" button so a discarded/cleared field can be brought
   // back.
   const handleGetAiSuggestion = () => {
     if (!validationParsed) return;
@@ -435,10 +435,10 @@ export function useValidationTestingReview() {
     updateLevelRationale,
     levelChangedWithoutRationale: form.levelChangedWithoutRationale,
     isLevelModified,
-    showRejectDialog: override.showRejectDialog,
-    setShowRejectDialog: override.setShowRejectDialog,
-    rejectJustification: override.rejectJustification,
-    setRejectJustification: override.setRejectJustification,
+    showDiscardDialog: override.showDiscardDialog,
+    setShowDiscardDialog: override.setShowDiscardDialog,
+    discardJustification: override.discardJustification,
+    setDiscardJustification: override.setDiscardJustification,
     showRationaleWarning: override.showRationaleWarning,
     setShowRationaleWarning: override.setShowRationaleWarning,
     isSubmitting: override.isSubmitting,
@@ -448,7 +448,7 @@ export function useValidationTestingReview() {
     canAccept,
     llmFailure,
     handleAccept,
-    handleReject,
+    handleDiscard,
     handleGetAiSuggestion,
   };
 }

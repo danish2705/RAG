@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 const ACCEPT_CLASS =
   "flex-1 bg-green-600 hover:bg-green-700 text-white disabled:opacity-50";
-const REJECT_CLASS =
+const DISCARD_CLASS =
   "flex-1 bg-red-600 hover:bg-red-700 text-white disabled:opacity-50";
 
 export interface DecisionActionProps {
@@ -16,8 +16,8 @@ export interface DecisionActionProps {
   /** Highlights the accept button as the chosen decision (used by the CAPA page). */
   acceptSelected?: boolean;
 
-  onReject: () => void;
-  rejectDisabled?: boolean;
+  onDiscard: () => void;
+  discardDisabled?: boolean;
 
   /** Shared loading flag driving default disabled states + the accept button spinner. */
   isLoading?: boolean;
@@ -25,7 +25,7 @@ export interface DecisionActionProps {
   errorTitle?: string;
   /**
    * Client-side validation notice (e.g. required fields are empty after a
-   * Reject cleared them) — shown distinctly from `error`, which is reserved
+   * Discard cleared them) — shown distinctly from `error`, which is reserved
    * for API/submission failures. Accept should not have been allowed to
    * proceed when this is set, so nothing gets written to the audit log.
    */
@@ -36,7 +36,7 @@ export interface DecisionActionProps {
 /**
  * The "Decision Required" card shared by the AI Recommendation, Impact
  * Assessment, Root Cause, CAPA, and change control equivalent pages: just
- * Accept / Reject. Every field on these pages is directly editable at all
+ * Accept / Discard. Every field on these pages is directly editable at all
  * times (no separate Override mode to step into first) — Accept simply
  * submits whatever is currently in the form, edited or not.
  */
@@ -45,8 +45,8 @@ export function DecisionAction({
   onAccept,
   acceptDisabled,
   acceptSelected,
-  onReject,
-  rejectDisabled,
+  onDiscard,
+  discardDisabled,
   isLoading = false,
   error,
   errorTitle = "Something went wrong",
@@ -91,11 +91,11 @@ export function DecisionAction({
           </Button>
 
           <Button
-            onClick={onReject}
-            disabled={rejectDisabled ?? isLoading}
-            className={REJECT_CLASS}
+            onClick={onDiscard}
+            disabled={discardDisabled ?? isLoading}
+            className={DISCARD_CLASS}
           >
-            Reject
+            Discard
           </Button>
         </div>
 

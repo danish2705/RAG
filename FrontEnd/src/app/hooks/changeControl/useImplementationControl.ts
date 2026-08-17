@@ -182,10 +182,10 @@ export function useImplementationControl() {
 
   const override = useOverrideDialogState();
   const [implementationAccepted, setImplementationAccepted] = useState(false);
-  // Only surfaced after the user rejects the implementation plan (and the
+  // Only surfaced after the user discards the implementation plan (and the
   // fields get cleared) — hidden otherwise.
   const [showAiSuggestion, setShowAiSuggestion] = useState(false);
-  // Client-side check so an accidental Accept right after Reject clears the
+  // Client-side check so an accidental Accept right after Discard clears the
   // fields doesn't silently save empty data to the audit trail.
   const [emptyFieldsWarning, setEmptyFieldsWarning] = useState<string | null>(
     null,
@@ -248,7 +248,7 @@ export function useImplementationControl() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [implementationParsed]);
 
-  // Disables the Accept/Reject buttons once a decision has been made, to
+  // Disables the Accept/Discard buttons once a decision has been made, to
   // avoid double-navigating while the page transitions to the summary.
   const decisionMade = implementationAccepted;
 
@@ -313,7 +313,7 @@ export function useImplementationControl() {
   };
 
   // Accept stays disabled until every field is filled in — most notably
-  // right after a Reject clears them.
+  // right after a Discard clears them.
   const canAccept =
     form.requiredActions.trim() !== "" &&
     form.sopWiUpdates.trim() !== "" &&
@@ -327,7 +327,7 @@ export function useImplementationControl() {
   // Whatever is currently in the form — edited or left as the AI suggested
   // it — is what gets approved.
   const handleAccept = () => {
-    // Guard against accepting right after a Reject cleared the fields —
+    // Guard against accepting right after a Discard cleared the fields —
     // don't silently save empty data to the audit trail.
     if (
       form.requiredActions.trim() === "" ||
@@ -347,9 +347,9 @@ export function useImplementationControl() {
     proceed();
   };
 
-  const handleReject = () => {
-    override.setShowRejectDialog(false);
-    // Clear the AI-generated fields — the user rejected the AI's
+  const handleDiscard = () => {
+    override.setShowDiscardDialog(false);
+    // Clear the AI-generated fields — the user discarded the AI's
     // suggestion, so we don't leave it sitting in the form. They can
     // either fill this in manually or pull the AI suggestion back in
     // with the button above.
@@ -358,7 +358,7 @@ export function useImplementationControl() {
   };
 
   // Restores the original AI-generated implementation plan into the form —
-  // used by the "AI Suggestion" button so a rejected/cleared field can be
+  // used by the "AI Suggestion" button so a discarded/cleared field can be
   // brought back.
   const handleGetAiSuggestion = () => {
     if (!implementationParsed) return;
@@ -390,10 +390,10 @@ export function useImplementationControl() {
     setImplementationPlan,
     rollbackPlan: form.rollbackPlan,
     setRollbackPlan,
-    showRejectDialog: override.showRejectDialog,
-    setShowRejectDialog: override.setShowRejectDialog,
-    rejectJustification: override.rejectJustification,
-    setRejectJustification: override.setRejectJustification,
+    showDiscardDialog: override.showDiscardDialog,
+    setShowDiscardDialog: override.setShowDiscardDialog,
+    discardJustification: override.discardJustification,
+    setDiscardJustification: override.setDiscardJustification,
     decisionMade,
     confidenceScore,
     riskLevel,
@@ -403,7 +403,7 @@ export function useImplementationControl() {
     canAccept,
     proceed,
     handleAccept,
-    handleReject,
+    handleDiscard,
     handleGetAiSuggestion,
   };
 }

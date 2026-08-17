@@ -1,8 +1,8 @@
 import { useReducer, useCallback } from "react";
 
 interface SubmissionDialogState {
-  showRejectDialog: boolean;
-  rejectJustification: string;
+  showDiscardDialog: boolean;
+  discardJustification: string;
   showRationaleWarning: boolean;
   warningFields: string[];
   isSubmitting: boolean;
@@ -10,8 +10,8 @@ interface SubmissionDialogState {
 }
 
 type Action =
-  | { type: "SET_SHOW_REJECT_DIALOG"; value: boolean }
-  | { type: "SET_REJECT_JUSTIFICATION"; value: string }
+  | { type: "SET_SHOW_DISCARD_DIALOG"; value: boolean }
+  | { type: "SET_DISCARD_JUSTIFICATION"; value: string }
   | { type: "SET_SHOW_RATIONALE_WARNING"; value: boolean }
   | { type: "SET_WARNING_FIELDS"; value: string[] }
   | { type: "SUBMIT_START" }
@@ -20,8 +20,8 @@ type Action =
   | { type: "RESET_ON_HYDRATE" };
 
 const initialState: SubmissionDialogState = {
-  showRejectDialog: false,
-  rejectJustification: "",
+  showDiscardDialog: false,
+  discardJustification: "",
   showRationaleWarning: false,
   warningFields: [],
   isSubmitting: false,
@@ -33,10 +33,10 @@ function reducer(
   action: Action,
 ): SubmissionDialogState {
   switch (action.type) {
-    case "SET_SHOW_REJECT_DIALOG":
-      return { ...state, showRejectDialog: action.value };
-    case "SET_REJECT_JUSTIFICATION":
-      return { ...state, rejectJustification: action.value };
+    case "SET_SHOW_DISCARD_DIALOG":
+      return { ...state, showDiscardDialog: action.value };
+    case "SET_DISCARD_JUSTIFICATION":
+      return { ...state, discardJustification: action.value };
     case "SET_SHOW_RATIONALE_WARNING":
       return { ...state, showRationaleWarning: action.value };
     case "SET_WARNING_FIELDS":
@@ -59,22 +59,22 @@ function reducer(
 }
 
 /**
- * Shared reject-dialog / rationale-warning / submit state used by the CAPA,
+ * Shared discard-dialog / rationale-warning / submit state used by the CAPA,
  * Risk & Criticality, Implementation & Control, Change Impact Assessment,
  * and Validation & Testing review hooks. (Previously also carried an
  * Override-mode toggle + justification dialog; that concept is gone now
- * that every field is naturally editable, so accept/reject are the only
+ * that every field is naturally editable, so accept/discard are the only
  * decisions left to track here.)
  */
 export function useOverrideDialogState() {
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  const setShowRejectDialog = useCallback(
-    (value: boolean) => dispatch({ type: "SET_SHOW_REJECT_DIALOG", value }),
+  const setShowDiscardDialog = useCallback(
+    (value: boolean) => dispatch({ type: "SET_SHOW_DISCARD_DIALOG", value }),
     [],
   );
-  const setRejectJustification = useCallback(
-    (value: string) => dispatch({ type: "SET_REJECT_JUSTIFICATION", value }),
+  const setDiscardJustification = useCallback(
+    (value: string) => dispatch({ type: "SET_DISCARD_JUSTIFICATION", value }),
     [],
   );
   const setShowRationaleWarning = useCallback(
@@ -101,8 +101,8 @@ export function useOverrideDialogState() {
 
   return {
     ...state,
-    setShowRejectDialog,
-    setRejectJustification,
+    setShowDiscardDialog,
+    setDiscardJustification,
     setShowRationaleWarning,
     setWarningFields,
     submitStart,

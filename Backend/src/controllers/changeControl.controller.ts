@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { retrieveContext } from "../kb/knowledgeBase.js";
+import { retrieveContext, extractSourceNames } from "../kb/knowledgeBase.js";
 import {
   runChangeImpactAssessmentOnly,
   runRiskCriticalityOnly,
@@ -45,11 +45,12 @@ export async function changeImpactAssessment(
     return;
   }
 
-  const { contextText } = await retrieveContext(query);
+  const { contextText, chunks } = await retrieveContext(query);
   const result = await runChangeImpactAssessmentOnly(
     query,
     contextText,
     parsedClassification.data,
+    extractSourceNames(chunks),
   );
   res.json({ query, ...result });
 }

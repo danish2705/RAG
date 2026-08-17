@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import {
   DecisionAction,
-  RejectDialog,
+  DiscardDialog,
   StepProgressBar,
 } from "../../components/eventIntake";
 import {
@@ -56,10 +56,10 @@ export function ValidationTesting() {
     updateLevelRationale,
     levelChangedWithoutRationale,
     isLevelModified,
-    showRejectDialog,
-    setShowRejectDialog,
-    rejectJustification,
-    setRejectJustification,
+    showDiscardDialog,
+    setShowDiscardDialog,
+    discardJustification,
+    setDiscardJustification,
     showRationaleWarning,
     setShowRationaleWarning,
     isSubmitting,
@@ -68,7 +68,7 @@ export function ValidationTesting() {
     emptyFieldsWarning,
     canAccept,
     handleAccept,
-    handleReject,
+    handleDiscard,
     handleGetAiSuggestion,
     llmFailure,
   } = useValidationTestingReview();
@@ -165,7 +165,7 @@ export function ValidationTesting() {
             acceptLoadingLabel="Submitting Strategy..."
             onAccept={handleAccept}
             acceptDisabled={isSubmitting || !canAccept}
-            onReject={() => setShowRejectDialog(true)}
+            onDiscard={() => setShowDiscardDialog(true)}
             isLoading={isSubmitting}
             error={submitError}
             errorTitle="Strategy submission failed"
@@ -205,17 +205,17 @@ export function ValidationTesting() {
           </DialogContent>
         </Dialog>
 
-        {/* Reject Dialog */}
-        <RejectDialog
-          open={showRejectDialog}
-          onOpenChange={setShowRejectDialog}
-          title="Reject Validation & Testing Strategy"
-          description="Please provide a reason for rejecting this strategy. This will be recorded in the audit trail."
+        {/* Discard Dialog */}
+        <DiscardDialog
+          open={showDiscardDialog}
+          onOpenChange={setShowDiscardDialog}
+          title="Discard Validation & Testing Strategy"
+          description="Please provide a reason for discarding this strategy. This will be recorded in the audit trail."
           subjectLabel="the validation & testing strategy"
-          value={rejectJustification}
-          onChange={setRejectJustification}
-          onCancel={() => setShowRejectDialog(false)}
-          onConfirm={handleReject}
+          value={discardJustification}
+          onChange={setDiscardJustification}
+          onCancel={() => setShowDiscardDialog(false)}
+          onConfirm={handleDiscard}
         />
 
         <div className="fixed top-16 right-0 bottom-0 z-40">

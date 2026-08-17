@@ -1,4 +1,4 @@
-import type { FormState } from "../../types/InputQuery";
+import type { FormState } from "../types/InputQuery";
 
 export function buildQueryFromForm(formData: FormState): string {
   const lines = [

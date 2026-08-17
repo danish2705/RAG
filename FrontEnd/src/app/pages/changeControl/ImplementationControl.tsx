@@ -1,6 +1,6 @@
 import {
   DecisionAction,
-  RejectDialog,
+  DiscardDialog,
   StepProgressBar,
 } from "../../components/eventIntake";
 import { AIAssistant } from "../../components/chat/AiAssistant";
@@ -42,15 +42,15 @@ export function ImplementationControl() {
     setImplementationPlan,
     rollbackPlan,
     setRollbackPlan,
-    showRejectDialog,
-    setShowRejectDialog,
-    rejectJustification,
-    setRejectJustification,
+    showDiscardDialog,
+    setShowDiscardDialog,
+    discardJustification,
+    setDiscardJustification,
     decisionMade,
     confidenceScore,
     riskLevel,
     handleAccept,
-    handleReject,
+    handleDiscard,
     handleGetAiSuggestion,
     showAiSuggestion,
     emptyFieldsWarning,
@@ -158,24 +158,24 @@ export function ImplementationControl() {
             onAccept={handleAccept}
             acceptDisabled={decisionMade || !canAccept}
             acceptSelected={implementationAccepted}
-            onReject={() => setShowRejectDialog(true)}
-            rejectDisabled={decisionMade}
+            onDiscard={() => setShowDiscardDialog(true)}
+            discardDisabled={decisionMade}
             warning={emptyFieldsWarning}
             footerText="Your decision will be logged in the audit trail"
           />
         </div>
 
-        {/* Reject Dialog */}
-        <RejectDialog
-          open={showRejectDialog}
-          onOpenChange={setShowRejectDialog}
-          title="Reject Implementation Plan"
-          description="Please provide a reason for rejecting this implementation plan. You will be redirected to the intake form. This will be recorded in the audit trail."
+        {/* Discard Dialog */}
+        <DiscardDialog
+          open={showDiscardDialog}
+          onOpenChange={setShowDiscardDialog}
+          title="Discard Implementation Plan"
+          description="Please provide a reason for discarding this implementation plan. You will be redirected to the intake form. This will be recorded in the audit trail."
           subjectLabel="the implementation & control actions"
-          value={rejectJustification}
-          onChange={setRejectJustification}
-          onCancel={() => setShowRejectDialog(false)}
-          onConfirm={handleReject}
+          value={discardJustification}
+          onChange={setDiscardJustification}
+          onCancel={() => setShowDiscardDialog(false)}
+          onConfirm={handleDiscard}
         />
       </div>
 

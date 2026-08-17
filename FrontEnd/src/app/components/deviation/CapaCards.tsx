@@ -5,6 +5,7 @@ import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
 import { Sparkles, AlertTriangle } from "lucide-react";
 import { ModifiedStatus, AlertBanner } from "../eventIntake";
+import { SourcesUsed } from "../shared/SourcesUsed";
 
 export const NoCapaDataGuard: React.FC<{ onGoBack: () => void }> = ({
   onGoBack,
@@ -94,10 +95,12 @@ interface CapaActionCardProps {
   originalValue: string;
   onChange: (v: string) => void;
   showWarning?: boolean;
+  /** KB source document names that back this action's original AI text. */
+  sources?: string[];
 }
 
 export const CapaActionCard = React.memo<CapaActionCardProps>(
-  ({ title, label, placeholder, value, originalValue, onChange, showWarning }) => (
+  ({ title, label, placeholder, value, originalValue, onChange, showWarning, sources }) => (
     <>
       <Card>
         <CardHeader>
@@ -117,6 +120,9 @@ export const CapaActionCard = React.memo<CapaActionCardProps>(
               value={value}
               onChange={(e) => onChange(e.target.value)}
             />
+            {sources && sources.length > 0 && (
+              <SourcesUsed sources={sources} />
+            )}
           </div>
         </CardContent>
       </Card>
@@ -139,10 +145,12 @@ interface CapaEffectivenessCardProps {
   originalDate: string;
   onCheckChange: (v: string) => void;
   onDateChange: (v: string) => void;
+  /** KB source document names that back the effectiveness check text. */
+  sources?: string[];
 }
 
 export const CapaEffectivenessCard = React.memo<CapaEffectivenessCardProps>(
-  ({ checkValue, originalCheck, dateValue, originalDate, onCheckChange, onDateChange }) => (
+  ({ checkValue, originalCheck, dateValue, originalDate, onCheckChange, onDateChange, sources }) => (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
@@ -161,6 +169,9 @@ export const CapaEffectivenessCard = React.memo<CapaEffectivenessCardProps>(
             value={checkValue}
             onChange={(e) => onCheckChange(e.target.value)}
           />
+          {sources && sources.length > 0 && (
+            <SourcesUsed sources={sources} />
+          )}
         </div>
         <div className="space-y-2">
           <div className="flex items-center gap-2">

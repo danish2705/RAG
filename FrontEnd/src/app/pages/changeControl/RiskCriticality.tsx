@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import {
   DecisionAction,
-  RejectDialog,
+  DiscardDialog,
   StepProgressBar,
 } from "../../components/eventIntake";
 import { Button } from "../../components/ui/button";
@@ -66,10 +66,10 @@ export function RiskCriticality() {
     isDiModified,
     isOdModified,
     isRankingModified,
-    showRejectDialog,
-    setShowRejectDialog,
-    rejectJustification,
-    setRejectJustification,
+    showDiscardDialog,
+    setShowDiscardDialog,
+    discardJustification,
+    setDiscardJustification,
     showRationaleWarning,
     setShowRationaleWarning,
     warningFields,
@@ -80,7 +80,7 @@ export function RiskCriticality() {
     emptyFieldsWarning,
     canAccept,
     handleAccept,
-    handleReject,
+    handleDiscard,
     handleGetAiSuggestion,
     llmFailure,
   } = useRiskCriticality();
@@ -185,7 +185,7 @@ export function RiskCriticality() {
             acceptLoadingLabel="Submitting Evaluation..."
             onAccept={handleAccept}
             acceptDisabled={isSubmitting || !canAccept}
-            onReject={() => setShowRejectDialog(true)}
+            onDiscard={() => setShowDiscardDialog(true)}
             isLoading={isSubmitting}
             error={submitError}
             errorTitle="Evaluation submission failed"
@@ -237,17 +237,17 @@ export function RiskCriticality() {
           </DialogContent>
         </Dialog>
 
-        {/* Reject Dialog */}
-        <RejectDialog
-          open={showRejectDialog}
-          onOpenChange={setShowRejectDialog}
-          title="Reject Risk & Criticality Evaluation"
-          description="Please provide a reason for rejecting this evaluation. This will be recorded in the audit trail."
+        {/* Discard Dialog */}
+        <DiscardDialog
+          open={showDiscardDialog}
+          onOpenChange={setShowDiscardDialog}
+          title="Discard Risk & Criticality Evaluation"
+          description="Please provide a reason for discarding this evaluation. This will be recorded in the audit trail."
           subjectLabel="the risk & criticality evaluation"
-          value={rejectJustification}
-          onChange={setRejectJustification}
-          onCancel={() => setShowRejectDialog(false)}
-          onConfirm={handleReject}
+          value={discardJustification}
+          onChange={setDiscardJustification}
+          onCancel={() => setShowDiscardDialog(false)}
+          onConfirm={handleDiscard}
         />
 
         <div className="fixed top-16 right-0 bottom-0 z-40">

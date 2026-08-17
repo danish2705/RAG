@@ -197,10 +197,10 @@ export function useRiskCriticality() {
   );
   const override = useOverrideDialogState();
   const llmFailure = useLlmFailureRecovery();
-  // Only surfaced after the user rejects the evaluation (and the fields get
+  // Only surfaced after the user discards the evaluation (and the fields get
   // cleared) — hidden otherwise.
   const [showAiSuggestion, setShowAiSuggestion] = useState(false);
-  // Client-side check so an accidental Accept right after Reject clears the
+  // Client-side check so an accidental Accept right after Discard clears the
   // fields doesn't silently save empty data to the audit trail.
   const [emptyFieldsWarning, setEmptyFieldsWarning] = useState<string | null>(
     null,
@@ -492,7 +492,7 @@ export function useRiskCriticality() {
   };
 
   // Accept stays disabled until every field is filled in — most notably
-  // right after a Reject clears them.
+  // right after a Discard clears them.
   const canAccept =
     form.psRationale.trim() !== "" &&
     form.regRationale.trim() !== "" &&
@@ -523,7 +523,7 @@ export function useRiskCriticality() {
       return;
     }
 
-    // Guard against accepting right after a Reject cleared the fields —
+    // Guard against accepting right after a Discard cleared the fields —
     // don't silently save empty data to the audit trail.
     if (
       form.psRationale.trim() === "" ||
@@ -566,9 +566,9 @@ export function useRiskCriticality() {
     void submitRiskCriticality(riskProvenance);
   };
 
-  const handleReject = () => {
-    override.setShowRejectDialog(false);
-    // Clear the AI-generated fields — the user rejected the AI's
+  const handleDiscard = () => {
+    override.setShowDiscardDialog(false);
+    // Clear the AI-generated fields — the user discarded the AI's
     // suggestion, so we don't leave it sitting in the form. They can
     // either fill this in manually or pull the AI suggestion back in
     // with the button above.
@@ -577,7 +577,7 @@ export function useRiskCriticality() {
   };
 
   // Restores the original AI-generated evaluation into the form — used by
-  // the "AI Suggestion" button so a rejected/cleared field can be brought
+  // the "AI Suggestion" button so a discarded/cleared field can be brought
   // back.
   const handleGetAiSuggestion = () => {
     if (!riskParsed) return;
@@ -648,10 +648,10 @@ export function useRiskCriticality() {
     isDiModified,
     isOdModified,
     isRankingModified,
-    showRejectDialog: override.showRejectDialog,
-    setShowRejectDialog: override.setShowRejectDialog,
-    rejectJustification: override.rejectJustification,
-    setRejectJustification: override.setRejectJustification,
+    showDiscardDialog: override.showDiscardDialog,
+    setShowDiscardDialog: override.setShowDiscardDialog,
+    discardJustification: override.discardJustification,
+    setDiscardJustification: override.setDiscardJustification,
     showRationaleWarning: override.showRationaleWarning,
     setShowRationaleWarning: override.setShowRationaleWarning,
     warningFields: override.warningFields,
@@ -663,7 +663,7 @@ export function useRiskCriticality() {
     canAccept,
     llmFailure,
     handleAccept,
-    handleReject,
+    handleDiscard,
     handleGetAiSuggestion,
   };
 }
